@@ -53,14 +53,7 @@ public extension AWSCognitoAuthenticatable {
         let request = CognitoIdentityProvider.AdminCreateUserRequest(desiredDeliveryMediums:[.email], userAttributes: userAttributes, username: username, userPoolId: Self.userPoolId)
         return cognitoIDP.adminCreateUser(request)
             .thenIfErrorThrowing { error in
-                switch error {
-                case CognitoIdentityProviderErrorType.usernameExistsException(_):
-                    throw Abort(.conflict, reason:"Username already exists")
-                case CognitoIdentityProviderErrorType.invalidParameterException(let message):
-                    throw Abort(.badRequest, reason: message)
-                default:
-                    throw error
-                }
+                throw translateError(error: error)
             }
             .thenThrowing { response in
                 guard let user = response.user,
@@ -110,16 +103,7 @@ public extension AWSCognitoAuthenticatable {
                                                                                      userPoolId: Self.userPoolId)
             return cognitoIDP.adminRespondToAuthChallenge(request)
                 .thenIfErrorThrowing { error in
-                    switch error {
-                    case CognitoIdentityProviderErrorType.codeMismatchException(_):
-                        throw Abort(.badRequest)
-                    case CognitoIdentityProviderErrorType.notAuthorizedException(_):
-                        throw Abort(.unauthorized)
-                    case CognitoIdentityProviderErrorType.invalidPasswordException(let message):
-                        throw Abort(.badRequest, reason: message)
-                    default:
-                        throw error
-                    }
+                    throw translateError(error: error)
                 }
                 .map { (response)->AWSCognitoAuthenticateResponse in
                     guard let authenticationResult = response.authenticationResult,
@@ -145,6 +129,17 @@ public extension AWSCognitoAuthenticatable {
             }
             .hopTo(eventLoop: worker.next())
         }
+    }
+    
+    /// update the users attributes
+    static func updateUserAttributes(username: String, attributes: [String: String], on worker: Worker) -> Future<Void> {
+        let attributes = attributes.map { CognitoIdentityProvider.AttributeType(name: $0.key, value:  $0.value) }
+        let request = CognitoIdentityProvider.AdminUpdateUserAttributesRequest(userAttributes: attributes, username: username, userPoolId: Self.userPoolId)
+        return cognitoIDP.adminUpdateUserAttributes(request)
+            .thenIfErrorThrowing { error in
+                throw translateError(error: error)
+            }
+            .transform(to: Void()).hopTo(eventLoop: worker.next())
     }
 }
 
@@ -175,13 +170,7 @@ extension AWSCognitoAuthenticatable {
             userPoolId: Self.userPoolId)
         return cognitoIDP.adminInitiateAuth(request)
             .thenIfErrorThrowing { error in
-                switch error {
-                case CognitoIdentityProviderErrorType.notAuthorizedException(_),
-                     CognitoIdentityProviderErrorType.userNotFoundException(_):
-                    throw Abort(.unauthorized)
-                default:
-                    throw error
-                }
+                throw translateError(error: error)
             }
             .map { (response)->AWSCognitoAuthenticateResponse in
                 guard let authenticationResult = response.authenticationResult,
@@ -206,6 +195,25 @@ extension AWSCognitoAuthenticatable {
                     deviceKey: authenticationResult.newDeviceMetadata?.deviceKey))
         }
         .hopTo(eventLoop: worker.next())
+    }
+
+    static func translateError(error: Error) -> Error {
+        switch error {
+        case CognitoIdentityProviderErrorType.codeMismatchException(_):
+            return Abort(.badRequest)
+        case CognitoIdentityProviderErrorType.notAuthorizedException(_):
+            return Abort(.unauthorized)
+        case CognitoIdentityProviderErrorType.invalidPasswordException(let message),
+             CognitoIdentityProviderErrorType.invalidParameterException(let message):
+            return Abort(.badRequest, reason: message)
+        case CognitoIdentityProviderErrorType.notAuthorizedException(_),
+             CognitoIdentityProviderErrorType.userNotFoundException(_):
+            return Abort(.unauthorized)
+        case CognitoIdentityProviderErrorType.usernameExistsException(_):
+            return Abort(.conflict, reason:"Username already exists")
+        default:
+            return error
+        }
     }
 }
 
