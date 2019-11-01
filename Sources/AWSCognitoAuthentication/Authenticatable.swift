@@ -48,39 +48,6 @@ extension AWSCognitoAuthenticatable {
         }
     }
 
-    /// load JSON web keys and create JWT signers from them
-    static func loadSigners(region: Region, on worker: Worker) -> Future<JWTSigners> {
-        // check we haven't already loaded the jwt signing key set
-        guard Self.jwtSigners == nil else { return worker.future(Self.jwtSigners!)}
-        
-        let JWTSignersHost = "cognito-idp.\(region.rawValue).amazonaws.com"
-        let JWTSignersURL = URL(string: "https://cognito-idp.\(region.rawValue).amazonaws.com/\(Self.userPoolId)/.well-known/jwks.json")!
-
-        return HTTP.HTTPClient.connect(scheme: .https, hostname: JWTSignersHost, on: worker)
-            .then { (client)->Future<HTTPResponse> in
-                let request = HTTP.HTTPRequest(method: .GET, url: JWTSignersURL)
-                return client.send(request)
-            }
-            .thenThrowing { response in
-                if let data = response.body.data {
-                    let jwks = try JSONDecoder().decode(JWKS.self, from: data)
-                    Self.jwtSigners = try JWTSigners(jwks: jwks)
-                    return Self.jwtSigners!
-                }
-                // shouldnt get here
-                return JWTSigners()
-        }
-    }
-    
-    /// authenticate a JWT token and return its payload
-    static func authenticate<Token: JWTPayload>(bearer: BearerAuthorization, on worker: Worker) -> Future<Token> {
-        return loadSigners(region: .euwest1, on: worker)
-            .thenThrowing { signers in
-                let jwt = try JWT<Token>(from: bearer.token.data(using: .utf8)!, verifiedUsing: signers)
-                return jwt.payload
-        }
-    }
-
     /// return an authorization request future
     static func initiateAuthRequest(authFlow: CognitoIdentityProvider.AuthFlowType, authParameters: [String: String], on worker: Worker) -> Future<AWSCognitoAuthenticateResponse> {
         let request = CognitoIdentityProvider.AdminInitiateAuthRequest(
@@ -219,16 +186,6 @@ public extension AWSCognitoAuthenticatable {
                                            authParameters: authParameters,
                                            on: worker)
         }
-    }
-    
-    /// verify IdToken JWT and return contents
-    static func authenticateIdToken(bearer: BearerAuthorization, on worker: Worker) -> Future<AWSCognitoIdToken<Self>> {
-        return authenticate(bearer: bearer, on: worker)
-    }
-
-    /// verify AccessToken JWT and return contents
-    static func authenticateAccessToken(bearer: BearerAuthorization, on worker: Worker) -> Future<AWSCognitoAccessToken<Self>> {
-        return authenticate(bearer: bearer, on: worker)
     }
 }
 
