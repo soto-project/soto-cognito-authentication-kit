@@ -39,77 +39,12 @@ public struct AWSCognitoAuthenticateResponse: Content {
     }
 }
 
-public struct AWSCognitoChallengedResponse {
-    public var challengeName: String?
-    public var challengeParameters: [String: String]?
-    public var session: String?
+
+/// Protocol for AWS Cognito authentication class
+public protocol AWSCognitoAuthenticatable: AWSCognitoConfiguration {
 }
 
-///
-public protocol AWSCognitoAuthenticatable: AWSCognitoConfiguration, Decodable {
-}
-
-extension AWSCognitoAuthenticatable {
-    /// return secret hash to include in cognito identity provider calls
-    static func secretHash(username: String) throws -> String {
-        let hmac = HMAC(algorithm: .sha256)
-        let message = username + Self.clientId
-        let messageHmac = try Data(hmac.authenticate(message, key: Self.clientSecret))
-        return messageHmac.base64EncodedString()
-    }
-
-    /// return future containing secret hash to include in cognito identity provider calls
-    static func secretHashFuture(username: String, on worker: Worker) -> Future<String> {
-        do {
-            return try worker.future(secretHash(username: username))
-        } catch {
-            return worker.future(error: error)
-        }
-    }
-
-    /// return an authorization request future
-    static func initiateAuthRequest(authFlow: CognitoIdentityProvider.AuthFlowType, authParameters: [String: String], on worker: Worker) -> Future<AWSCognitoAuthenticateResponse> {
-        let request = CognitoIdentityProvider.AdminInitiateAuthRequest(
-            authFlow: authFlow,
-            authParameters: authParameters,
-            clientId: clientId,
-            userPoolId: Self.userPoolId)
-        return cognitoIDP.adminInitiateAuth(request)
-            .thenIfErrorThrowing { error in
-                switch error {
-                case CognitoIdentityProviderErrorType.notAuthorizedException(_),
-                     CognitoIdentityProviderErrorType.userNotFoundException(_):
-                    throw Abort(.unauthorized)
-                default:
-                    throw error
-                }
-            }
-            .map { (response)->AWSCognitoAuthenticateResponse in
-                guard let authenticationResult = response.authenticationResult,
-                    let accessToken = authenticationResult.accessToken,
-                    let idToken = authenticationResult.idToken
-                    else {
-                        // if there was no tokens returned, return challenge if it exists
-                        if let challengeName = response.challengeName {
-                            return AWSCognitoAuthenticateResponse(challenged: ChallengedResponse(
-                                name: challengeName.rawValue,
-                                parameters: response.challengeParameters,
-                                session: response.session))
-                        }
-                        throw Abort(.unauthorized)
-                }
-                
-                return AWSCognitoAuthenticateResponse(authenticated: AuthenticatedResponse(
-                    accessToken: accessToken,
-                    idToken: idToken,
-                    refreshToken: authenticationResult.refreshToken,
-                    expiresIn: authenticationResult.expiresIn != nil ? Date(timeIntervalSinceNow: TimeInterval(authenticationResult.expiresIn!)) : nil,
-                    deviceKey: authenticationResult.newDeviceMetadata?.deviceKey))
-        }
-        .hopTo(eventLoop: worker.next())
-    }
-}
-
+/// public interface functions for user and token authentication
 public extension AWSCognitoAuthenticatable {
     
     /// create a new user
@@ -210,6 +145,67 @@ public extension AWSCognitoAuthenticatable {
             }
             .hopTo(eventLoop: worker.next())
         }
+    }
+}
+
+extension AWSCognitoAuthenticatable {
+    /// return secret hash to include in cognito identity provider calls
+    static func secretHash(username: String) throws -> String {
+        let hmac = HMAC(algorithm: .sha256)
+        let message = username + Self.clientId
+        let messageHmac = try Data(hmac.authenticate(message, key: Self.clientSecret))
+        return messageHmac.base64EncodedString()
+    }
+
+    /// return future containing secret hash to include in cognito identity provider calls
+    static func secretHashFuture(username: String, on worker: Worker) -> Future<String> {
+        do {
+            return try worker.future(secretHash(username: username))
+        } catch {
+            return worker.future(error: error)
+        }
+    }
+
+    /// return an authorization request future
+    static func initiateAuthRequest(authFlow: CognitoIdentityProvider.AuthFlowType, authParameters: [String: String], on worker: Worker) -> Future<AWSCognitoAuthenticateResponse> {
+        let request = CognitoIdentityProvider.AdminInitiateAuthRequest(
+            authFlow: authFlow,
+            authParameters: authParameters,
+            clientId: clientId,
+            userPoolId: Self.userPoolId)
+        return cognitoIDP.adminInitiateAuth(request)
+            .thenIfErrorThrowing { error in
+                switch error {
+                case CognitoIdentityProviderErrorType.notAuthorizedException(_),
+                     CognitoIdentityProviderErrorType.userNotFoundException(_):
+                    throw Abort(.unauthorized)
+                default:
+                    throw error
+                }
+            }
+            .map { (response)->AWSCognitoAuthenticateResponse in
+                guard let authenticationResult = response.authenticationResult,
+                    let accessToken = authenticationResult.accessToken,
+                    let idToken = authenticationResult.idToken
+                    else {
+                        // if there was no tokens returned, return challenge if it exists
+                        if let challengeName = response.challengeName {
+                            return AWSCognitoAuthenticateResponse(challenged: ChallengedResponse(
+                                name: challengeName.rawValue,
+                                parameters: response.challengeParameters,
+                                session: response.session))
+                        }
+                        throw Abort(.unauthorized)
+                }
+                
+                return AWSCognitoAuthenticateResponse(authenticated: AuthenticatedResponse(
+                    accessToken: accessToken,
+                    idToken: idToken,
+                    refreshToken: authenticationResult.refreshToken,
+                    expiresIn: authenticationResult.expiresIn != nil ? Date(timeIntervalSinceNow: TimeInterval(authenticationResult.expiresIn!)) : nil,
+                    deviceKey: authenticationResult.newDeviceMetadata?.deviceKey))
+        }
+        .hopTo(eventLoop: worker.next())
     }
 }
 
