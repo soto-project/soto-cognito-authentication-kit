@@ -1,7 +1,6 @@
 import XCTest
+@testable import AWSCognitoAuthenticationTests
 
-import AWSCognitoAuthenticationTests
-
-var tests = [XCTestCaseEntry]()
-tests += AWSCognitoAuthenticationTests.allTests()
-XCTMain(tests)
+XCTMain([
+    testCase(AWSCognitoAuthenticationTests.allTests)
+])
