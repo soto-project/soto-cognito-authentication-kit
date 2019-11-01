@@ -2,21 +2,34 @@ import AWSSDKSwiftCore
 import JWT
 import Vapor
 
+/// struct returning when authenticating an access token
+public struct AWSCognitoAccessToken: Codable {
+    public let username: String
+    public let subject: UUID
+    
+    private enum CodingKeys: String, CodingKey {
+        case username = "username"
+        case subject = "sub"
+    }
+}
+
 public extension AWSCognitoAuthenticatable {
     /// verify IdToken JWT and return contents
-    static func authenticateIdToken<Payload: Codable>(bearer: BearerAuthorization, on worker: Worker) -> Future<Payload> {
+    static func authenticate<Payload: Codable>(idToken: String, on worker: Worker) -> Future<Payload> {
         return loadSigners(region: .euwest1, on: worker)
             .thenThrowing { signers in
-                let jwt = try JWT<VerifiedToken<IdToken<Self>, Payload>>(from: bearer.token.data(using: .utf8)!, verifiedUsing: signers)
+                guard let tokenData = idToken.data(using: .utf8) else { throw Abort(.unauthorized) }
+                let jwt = try JWT<VerifiedToken<IdTokenVerifier<Self>, Payload>>(from: tokenData, verifiedUsing: signers)
                 return jwt.payload.payload
         }
     }
 
     /// verify AccessToken JWT and return contents
-    static func authenticateAccessToken<Payload: Codable>(bearer: BearerAuthorization, on worker: Worker) -> Future<Payload> {
+    static func authenticate(accessToken: String, on worker: Worker) -> Future<AWSCognitoAccessToken> {
         return loadSigners(region: .euwest1, on: worker)
             .thenThrowing { signers in
-                let jwt = try JWT<VerifiedToken<AccessToken<Self>, Payload>>(from: bearer.token.data(using: .utf8)!, verifiedUsing: signers)
+                guard let tokenData = accessToken.data(using: .utf8) else { throw Abort(.unauthorized) }
+                let jwt = try JWT<VerifiedToken<AccessTokenVerifier<Self>, AWSCognitoAccessToken>>(from: tokenData, verifiedUsing: signers)
                 return jwt.payload.payload
         }
     }
