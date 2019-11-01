@@ -1,3 +1,3 @@
-# aws-cognito-authentication
+# AWS Cognito Authentication
 
-A description of this package.
+A Vapor library for authenticating with AWS Cognito
