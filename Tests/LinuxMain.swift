@@ -1,7 +1,7 @@
 import XCTest
 
-import aws_cognito_authenticationTests
+import AWSCognitoAuthenticationTests
 
 var tests = [XCTestCaseEntry]()
-tests += aws_cognito_authenticationTests.allTests()
+tests += AWSCognitoAuthenticationTests.allTests()
 XCTMain(tests)
