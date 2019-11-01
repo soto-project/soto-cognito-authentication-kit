@@ -16,22 +16,22 @@ public struct AWSCognitoCreateUserResponse: Content {
 
 /// Response to initAuth
 public struct AuthenticatedResponse: Codable {
-    public var accessToken : String?
-    public var idToken : String?
-    public var refreshToken : String?
-    public var expiresIn: Date?
-    public var deviceKey: String?
+    public let accessToken : String?
+    public let idToken : String?
+    public let refreshToken : String?
+    public let expiresIn: Date?
+    public let deviceKey: String?
 }
 
 public struct ChallengedResponse: Codable {
-    public var name: String?
-    public var parameters: [String: String]?
-    public var session: String?
+    public let name: String?
+    public let parameters: [String: String]?
+    public let session: String?
 }
 
 public struct AWSCognitoAuthenticateResponse: Content {
-    let authenticated: AuthenticatedResponse?
-    let challenged: ChallengedResponse?
+    public let authenticated: AuthenticatedResponse?
+    public let challenged: ChallengedResponse?
     
     init(authenticated: AuthenticatedResponse? = nil, challenged: ChallengedResponse? = nil) {
         self.authenticated = authenticated
