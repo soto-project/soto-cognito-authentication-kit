@@ -15,12 +15,31 @@ public struct AWSCognitoCreateUserResponse: Content {
 }
 
 /// Response to initAuth
-public struct AWSCognitoAuthenticateResponse: Content {
+public struct AuthenticatedResponse: Codable {
     public var accessToken : String?
     public var idToken : String?
     public var refreshToken : String?
     public var expiresIn: Date?
     public var deviceKey: String?
+}
+
+public struct ChallengedResponse: Codable {
+    public var name: String?
+    public var parameters: [String: String]?
+    public var session: String?
+}
+
+public struct AWSCognitoAuthenticateResponse: Content {
+    let authenticated: AuthenticatedResponse?
+    let challenged: ChallengedResponse?
+    
+    init(authenticated: AuthenticatedResponse? = nil, challenged: ChallengedResponse? = nil) {
+        self.authenticated = authenticated
+        self.challenged = challenged
+    }
+}
+
+public struct AWSCognitoChallengedResponse {
     public var challengeName: String?
     public var challengeParameters: [String: String]?
     public var session: String?
@@ -72,18 +91,20 @@ extension AWSCognitoAuthenticatable {
                     else {
                         // if there was no tokens returned, return challenge if it exists
                         if let challengeName = response.challengeName {
-                            return AWSCognitoAuthenticateResponse(challengeName: challengeName.rawValue,
-                                                 challengeParameters: response.challengeParameters,
-                                                 session: response.session)
+                            return AWSCognitoAuthenticateResponse(challenged: ChallengedResponse(
+                                name: challengeName.rawValue,
+                                parameters: response.challengeParameters,
+                                session: response.session))
                         }
                         throw Abort(.unauthorized)
                 }
                 
-                return AWSCognitoAuthenticateResponse(accessToken: accessToken,
-                                     idToken: idToken,
-                                     refreshToken: authenticationResult.refreshToken,
-                                     expiresIn: authenticationResult.expiresIn != nil ? Date(timeIntervalSinceNow: TimeInterval(authenticationResult.expiresIn!)) : nil,
-                                     deviceKey: authenticationResult.newDeviceMetadata?.deviceKey)
+                return AWSCognitoAuthenticateResponse(authenticated: AuthenticatedResponse(
+                    accessToken: accessToken,
+                    idToken: idToken,
+                    refreshToken: authenticationResult.refreshToken,
+                    expiresIn: authenticationResult.expiresIn != nil ? Date(timeIntervalSinceNow: TimeInterval(authenticationResult.expiresIn!)) : nil,
+                    deviceKey: authenticationResult.newDeviceMetadata?.deviceKey))
         }
         .hopTo(eventLoop: worker.next())
     }
@@ -172,18 +193,20 @@ public extension AWSCognitoAuthenticatable {
                         else {
                             // if there was no tokens returned, return challenge if it exists
                             if let challengeName = response.challengeName {
-                                return AWSCognitoAuthenticateResponse(challengeName: challengeName.rawValue,
-                                                     challengeParameters: response.challengeParameters,
-                                                     session: response.session)
+                                return AWSCognitoAuthenticateResponse(challenged: ChallengedResponse(
+                                    name: challengeName.rawValue,
+                                    parameters: response.challengeParameters,
+                                    session: response.session))
                             }
                             throw Abort(.unauthorized)
                     }
                     
-                    return AWSCognitoAuthenticateResponse(accessToken: accessToken,
-                                         idToken: idToken,
-                                         refreshToken: authenticationResult.refreshToken,
-                                         expiresIn: authenticationResult.expiresIn != nil ? Date(timeIntervalSinceNow: TimeInterval(authenticationResult.expiresIn!)) : nil,
-                                         deviceKey: authenticationResult.newDeviceMetadata?.deviceKey)
+                    return AWSCognitoAuthenticateResponse(authenticated: AuthenticatedResponse(
+                        accessToken: accessToken,
+                        idToken: idToken,
+                        refreshToken: authenticationResult.refreshToken,
+                        expiresIn: authenticationResult.expiresIn != nil ? Date(timeIntervalSinceNow: TimeInterval(authenticationResult.expiresIn!)) : nil,
+                        deviceKey: authenticationResult.newDeviceMetadata?.deviceKey))
             }
             .hopTo(eventLoop: worker.next())
         }

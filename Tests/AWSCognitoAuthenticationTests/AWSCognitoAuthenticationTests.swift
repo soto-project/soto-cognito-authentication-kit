@@ -1,5 +1,5 @@
 import XCTest
-@testable import aws_cognito_authentication
+@testable import AWSCognitoAuthentication
 
 final class aws_cognito_authenticationTests: XCTestCase {
     func testExample() {
