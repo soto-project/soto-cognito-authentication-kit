@@ -39,7 +39,7 @@ extension AWSCognitoAuthenticatable {
         return messageHmac.base64EncodedString()
     }
 
-    /// return secret hash to include in cognito identity provider calls
+    /// return future containing secret hash to include in cognito identity provider calls
     static func secretHashFuture(username: String, on worker: Worker) -> Future<String> {
         do {
             return try worker.future(secretHash(username: username))
@@ -92,7 +92,7 @@ extension AWSCognitoAuthenticatable {
 public extension AWSCognitoAuthenticatable {
     
     /// create a new user
-    static func createUser(username: String, attributes: [String:String]) -> Future<AWSCognitoCreateUserResponse> {
+    static func createUser(username: String, attributes: [String:String], on worker: Worker) -> Future<AWSCognitoCreateUserResponse> {
         let userAttributes = attributes.map { return CognitoIdentityProvider.AttributeType(name: $0.key, value: $0.value) }
         let request = CognitoIdentityProvider.AdminCreateUserRequest(desiredDeliveryMediums:[.email], userAttributes: userAttributes, username: username, userPoolId: Self.userPoolId)
         return cognitoIDP.adminCreateUser(request)
@@ -113,6 +113,7 @@ public extension AWSCognitoAuthenticatable {
                     else { throw Abort(.internalServerError) }
                 return AWSCognitoCreateUserResponse(userName: username, userStatus: userStatus)
         }
+        .hopTo(eventLoop: worker.next())
     }
     
     /// authenticate using a username and password
@@ -125,6 +126,18 @@ public extension AWSCognitoAuthenticatable {
             return initiateAuthRequest(authFlow: .adminNoSrpAuth,
                                        authParameters: authParameters,
                                        on: worker)
+        }
+    }
+    
+    /// get new access and id tokens from a refresh token
+    static func refresh(username: String, refreshToken: String, deviceKey: String? = nil, on worker: Worker) -> Future<AWSCognitoAuthenticateResponse> {
+        return secretHashFuture(username: username, on: worker).flatMap { secretHash in
+            var authParameters : [String: String] = ["REFRESH_TOKEN":refreshToken,
+                                                     "SECRET_HASH":secretHash]
+            authParameters["DEVICE_KEY"] = deviceKey
+            return initiateAuthRequest(authFlow: .refreshTokenAuth,
+                                           authParameters: authParameters,
+                                           on: worker)
         }
     }
 
@@ -171,20 +184,8 @@ public extension AWSCognitoAuthenticatable {
                                          refreshToken: authenticationResult.refreshToken,
                                          expiresIn: authenticationResult.expiresIn != nil ? Date(timeIntervalSinceNow: TimeInterval(authenticationResult.expiresIn!)) : nil,
                                          deviceKey: authenticationResult.newDeviceMetadata?.deviceKey)
-                }
-                .hopTo(eventLoop: worker.next())
-        }
-    }
-    
-    /// get new access and id tokens from a refresh token
-    static func refresh(username: String, refreshToken: String, deviceKey: String? = nil, on worker: Worker) -> Future<AWSCognitoAuthenticateResponse> {
-        return secretHashFuture(username: username, on: worker).flatMap { secretHash in
-            var authParameters : [String: String] = ["REFRESH_TOKEN":refreshToken,
-                                                     "SECRET_HASH":secretHash]
-            authParameters["DEVICE_KEY"] = deviceKey
-            return initiateAuthRequest(authFlow: .refreshTokenAuth,
-                                           authParameters: authParameters,
-                                           on: worker)
+            }
+            .hopTo(eventLoop: worker.next())
         }
     }
 }
