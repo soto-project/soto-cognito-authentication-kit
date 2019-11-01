@@ -50,7 +50,7 @@ public extension AWSCognitoAuthenticatable {
     /// create a new user
     static func createUser(username: String, attributes: [String:String], on worker: Worker) -> Future<AWSCognitoCreateUserResponse> {
         let userAttributes = attributes.map { return CognitoIdentityProvider.AttributeType(name: $0.key, value: $0.value) }
-        let request = CognitoIdentityProvider.AdminCreateUserRequest(desiredDeliveryMediums:[.email], userAttributes: userAttributes, username: username, userPoolId: Self.userPoolId)
+        let request = CognitoIdentityProvider.AdminCreateUserRequest(desiredDeliveryMediums:[.email], messageAction: .resend,userAttributes: userAttributes, username: username, userPoolId: Self.userPoolId)
         return cognitoIDP.adminCreateUser(request)
             .thenIfErrorThrowing { error in
                 throw translateError(error: error)
@@ -201,16 +201,24 @@ extension AWSCognitoAuthenticatable {
         switch error {
         case CognitoIdentityProviderErrorType.codeMismatchException(_):
             return Abort(.badRequest)
-        case CognitoIdentityProviderErrorType.notAuthorizedException(_):
-            return Abort(.unauthorized)
+
         case CognitoIdentityProviderErrorType.invalidPasswordException(let message),
              CognitoIdentityProviderErrorType.invalidParameterException(let message):
             return Abort(.badRequest, reason: message)
+
+        case CognitoIdentityProviderErrorType.resourceNotFoundException(let message):
+            return Abort(.notFound, reason: message)
+
         case CognitoIdentityProviderErrorType.notAuthorizedException(_),
              CognitoIdentityProviderErrorType.userNotFoundException(_):
             return Abort(.unauthorized)
+
         case CognitoIdentityProviderErrorType.usernameExistsException(_):
             return Abort(.conflict, reason:"Username already exists")
+
+        case CognitoIdentityProviderErrorType.unsupportedUserStateException(_):
+            return Abort(.conflict, reason:"Username already exists")
+
         default:
             return error
         }
