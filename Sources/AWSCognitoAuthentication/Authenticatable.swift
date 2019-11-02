@@ -20,7 +20,6 @@ public struct AuthenticatedResponse: Codable {
     public let idToken : String?
     public let refreshToken : String?
     public let expiresIn: Date?
-    public let deviceKey: String?
 }
 
 public struct ChallengedResponse: Codable {
@@ -66,12 +65,11 @@ public extension AWSCognitoAuthenticatable {
     }
     
     /// authenticate using a username and password
-    static func authenticate(username: String, password: String, deviceKey: String? = nil, on req: Request) -> Future<AWSCognitoAuthenticateResponse> {
+    static func authenticate(username: String, password: String, on req: Request) -> Future<AWSCognitoAuthenticateResponse> {
         return secretHashFuture(username: username, on: req).flatMap { secretHash in
-            var authParameters : [String: String] = ["USERNAME":username,
+            let authParameters : [String: String] = ["USERNAME":username,
                                                      "PASSWORD": password,
                                                      "SECRET_HASH":secretHash]
-            authParameters["DEVICE_KEY"] = deviceKey
             return initiateAuthRequest(authFlow: .adminNoSrpAuth,
                                        authParameters: authParameters,
                                        on: req)
@@ -79,11 +77,10 @@ public extension AWSCognitoAuthenticatable {
     }
     
     /// get new access and id tokens from a refresh token
-    static func refresh(username: String, refreshToken: String, deviceKey: String? = nil, on req: Request) -> Future<AWSCognitoAuthenticateResponse> {
+    static func refresh(username: String, refreshToken: String, on req: Request) -> Future<AWSCognitoAuthenticateResponse> {
         return secretHashFuture(username: username, on: req).flatMap { secretHash in
-            var authParameters : [String: String] = ["REFRESH_TOKEN":refreshToken,
+            let authParameters : [String: String] = ["REFRESH_TOKEN":refreshToken,
                                                      "SECRET_HASH":secretHash]
-            authParameters["DEVICE_KEY"] = deviceKey
             return initiateAuthRequest(authFlow: .refreshTokenAuth,
                                            authParameters: authParameters,
                                            on: req)
@@ -125,8 +122,7 @@ public extension AWSCognitoAuthenticatable {
                         accessToken: accessToken,
                         idToken: idToken,
                         refreshToken: authenticationResult.refreshToken,
-                        expiresIn: authenticationResult.expiresIn != nil ? Date(timeIntervalSinceNow: TimeInterval(authenticationResult.expiresIn!)) : nil,
-                        deviceKey: authenticationResult.newDeviceMetadata?.deviceKey))
+                        expiresIn: authenticationResult.expiresIn != nil ? Date(timeIntervalSinceNow: TimeInterval(authenticationResult.expiresIn!)) : nil))
             }
             .hopTo(eventLoop: req.next())
         }
@@ -193,8 +189,7 @@ extension AWSCognitoAuthenticatable {
                     accessToken: accessToken,
                     idToken: idToken,
                     refreshToken: authenticationResult.refreshToken,
-                    expiresIn: authenticationResult.expiresIn != nil ? Date(timeIntervalSinceNow: TimeInterval(authenticationResult.expiresIn!)) : nil,
-                    deviceKey: authenticationResult.newDeviceMetadata?.deviceKey))
+                    expiresIn: authenticationResult.expiresIn != nil ? Date(timeIntervalSinceNow: TimeInterval(authenticationResult.expiresIn!)) : nil))
         }
         .hopTo(eventLoop: req.next())
     }
