@@ -27,12 +27,11 @@ return Authentication.createUser(username: username, attributes: attributes, on:
 The attributes you provide should match the attributes you selected when creating the user pool in the AWS Cognito console. Once you've created a user an email is sent to them detailing their username and randomly generated password. The `on:` parameter is a Vapor Worker object. You can use the Request class here.
 
 ## Authenticating with a username and a password
-The following will generate JWT authentication tokens from a username and password. You can also provide a device key if you have one.
+The following will generate JWT authentication tokens from a username and password. 
 ```
 let response = Authentication.authenticate(
     username: username, 
     password: password, 
-    deviceKey: deviceKey, 
     on: req)
     .then { response in
         let accessToken = response.authenticated?.accessToken
@@ -44,12 +43,11 @@ let response = Authentication.authenticate(
 The access token is used just to indicate a user has been granted access. It contains verification information, the username and a subject uuid which can be used to identify the user if you don't want to use the username. The token is valid for 60 minutes. The idToken contains claims about the identity of the user. It should contain all the attributes attached to the user. Again this token is only valid for 60 minutes. 
 
 ## Refreshing id and access tokens
-To avoid having to ask the user for their username and password every 60 minutes a refresh token is also provided. You can use this to generate new id and access tokens whenever they have expired or are about to expire. The refresh token is valid for 30 days. Although you can edit the length of this in the Cognito console. If you provided a device key when generating the refresh token you will also need to provide it when refreshing the id and access tokens.
+To avoid having to ask the user for their username and password every 60 minutes a refresh token is also provided. You can use this to generate new id and access tokens whenever they have expired or are about to expire. The refresh token is valid for 30 days. Although you can edit the length of this in the Cognito console. 
 ```
 let response = Authentication.authenticate(
     username: username, 
     refreshToken: refreshToken, 
-    deviceKey: deviceKey, 
     on: req)
     .then { response in
         let accessToken = response.authenticated?.accessToken
@@ -119,4 +117,4 @@ let response = Authentication.respondToChallenge(
 The `name` parameter is an enum containing all challenges. The `responses` parameter is a dictionary of inputs to the challenge. The `session` parameter was included in the challenge returned to you by the authentication request. If the challenge is successful `response.authenticated` will not be `nil`. If another challenge is required then you will get details of that in `response.challenged`.
 
 ## Creating user pools
-When creating the app client for your user pool on the AWS Cognito console, ensure you have 'Generate client secret' enabled. The AWS Cognito Authentication library automatically creates the secret hash required for this, so it would be sensible to take advantage of this.
+There are a few settings that are required when creating your user pool, if you want to use them with the AWS Cognito Authentication library. Because the library uses the Admin level service calls device tracking is unavailable. Ensure you set device remembering to off. Otherwise your refresh tokens will not work. When creating the app client for your user pool on the AWS Cognito console, ensure you have 'Generate client secret' enabled. The AWS Cognito Authentication library automatically creates the secret hash required for user pools that have a client secret. It would be sensible to take advantage of this. As the library is designed to work on backend secure servers it uses the Admin no SRP authorization flow to authenticate users so you will also need to tick 'Enable sign-in API for server-based authentication (ADMIN_NO_SRP_AUTH)'. 
