@@ -66,39 +66,40 @@ public extension AWSCognitoAuthenticatable {
     }
     
     /// authenticate using a username and password
-    static func authenticate(username: String, password: String, deviceKey: String? = nil, on worker: Worker) -> Future<AWSCognitoAuthenticateResponse> {
-        return secretHashFuture(username: username, on: worker).flatMap { secretHash in
+    static func authenticate(username: String, password: String, deviceKey: String? = nil, on req: Request) -> Future<AWSCognitoAuthenticateResponse> {
+        return secretHashFuture(username: username, on: req).flatMap { secretHash in
             var authParameters : [String: String] = ["USERNAME":username,
                                                      "PASSWORD": password,
                                                      "SECRET_HASH":secretHash]
             authParameters["DEVICE_KEY"] = deviceKey
             return initiateAuthRequest(authFlow: .adminNoSrpAuth,
                                        authParameters: authParameters,
-                                       on: worker)
+                                       on: req)
         }
     }
     
     /// get new access and id tokens from a refresh token
-    static func refresh(username: String, refreshToken: String, deviceKey: String? = nil, on worker: Worker) -> Future<AWSCognitoAuthenticateResponse> {
-        return secretHashFuture(username: username, on: worker).flatMap { secretHash in
+    static func refresh(username: String, refreshToken: String, deviceKey: String? = nil, on req: Request) -> Future<AWSCognitoAuthenticateResponse> {
+        return secretHashFuture(username: username, on: req).flatMap { secretHash in
             var authParameters : [String: String] = ["REFRESH_TOKEN":refreshToken,
                                                      "SECRET_HASH":secretHash]
             authParameters["DEVICE_KEY"] = deviceKey
             return initiateAuthRequest(authFlow: .refreshTokenAuth,
                                            authParameters: authParameters,
-                                           on: worker)
+                                           on: req)
         }
     }
 
     /// respond to authentication challenge
-    static func respondToChallenge(username: String, name: AWSCognitoChallengeName, responses: [String: String], session: String, on worker: Worker) -> Future<AWSCognitoAuthenticateResponse> {
-        return secretHashFuture(username: username, on: worker).flatMap { secretHash in
+    static func respondToChallenge(username: String, name: AWSCognitoChallengeName, responses: [String: String], session: String, on req: Request) -> Future<AWSCognitoAuthenticateResponse> {
+        return secretHashFuture(username: username, on: req).flatMap { secretHash in
             var challengeResponses = responses
             challengeResponses["USERNAME"] = username
             challengeResponses["SECRET_HASH"] = secretHash
             let request = CognitoIdentityProvider.AdminRespondToAuthChallengeRequest(challengeName: name,
                                                                                      challengeResponses: challengeResponses,
                                                                                      clientId: Self.clientId,
+                                                                                     contextData: contextData(from: req),
                                                                                      session: session,
                                                                                      userPoolId: Self.userPoolId)
             return cognitoIDP.adminRespondToAuthChallenge(request)
@@ -127,7 +128,7 @@ public extension AWSCognitoAuthenticatable {
                         expiresIn: authenticationResult.expiresIn != nil ? Date(timeIntervalSinceNow: TimeInterval(authenticationResult.expiresIn!)) : nil,
                         deviceKey: authenticationResult.newDeviceMetadata?.deviceKey))
             }
-            .hopTo(eventLoop: worker.next())
+            .hopTo(eventLoop: req.next())
         }
     }
     
@@ -162,11 +163,12 @@ extension AWSCognitoAuthenticatable {
     }
 
     /// return an authorization request future
-    static func initiateAuthRequest(authFlow: CognitoIdentityProvider.AuthFlowType, authParameters: [String: String], on worker: Worker) -> Future<AWSCognitoAuthenticateResponse> {
+    static func initiateAuthRequest(authFlow: CognitoIdentityProvider.AuthFlowType, authParameters: [String: String], on req: Request) -> Future<AWSCognitoAuthenticateResponse> {
         let request = CognitoIdentityProvider.AdminInitiateAuthRequest(
             authFlow: authFlow,
             authParameters: authParameters,
             clientId: clientId,
+            contextData: contextData(from: req),
             userPoolId: Self.userPoolId)
         return cognitoIDP.adminInitiateAuth(request)
             .thenIfErrorThrowing { error in
@@ -194,9 +196,23 @@ extension AWSCognitoAuthenticatable {
                     expiresIn: authenticationResult.expiresIn != nil ? Date(timeIntervalSinceNow: TimeInterval(authenticationResult.expiresIn!)) : nil,
                     deviceKey: authenticationResult.newDeviceMetadata?.deviceKey))
         }
-        .hopTo(eventLoop: worker.next())
+        .hopTo(eventLoop: req.next())
     }
 
+    /// create context data from Vapor request
+    static func contextData(from req: Request) -> CognitoIdentityProvider.ContextDataType? {
+        let host = req.http.headers["Host"].first ?? "localhost:8080"
+        guard let ipAddress = req.http.remotePeer.hostname ?? req.http.channel?.remoteAddress?.description else { return nil }
+        let headers = req.http.headers.map { CognitoIdentityProvider.HttpHeader(headerName: $0.name, headerValue: $0.value) }
+        let contextData = CognitoIdentityProvider.ContextDataType(
+            httpHeaders: headers,
+            ipAddress: ipAddress,
+            serverName: host,
+            serverPath: req.http.urlString)
+        return contextData
+    }
+    
+    /// translate error from one thrown by aws-sdk-swift to vapor error
     static func translateError(error: Error) -> Error {
         switch error {
         case CognitoIdentityProviderErrorType.codeMismatchException(_):
