@@ -54,7 +54,8 @@ public extension AWSCognitoAuthenticatable {
             return cognitoIDP.signUp(request)
                 .thenIfErrorThrowing { error in
                     throw translateError(error: error)
-            }
+                }
+                .hopTo(eventLoop: req.eventLoop)
         }
     }
     
@@ -67,6 +68,7 @@ public extension AWSCognitoAuthenticatable {
                     throw translateError(error: error)
                 }
                 .transform(to: Void())
+                .hopTo(eventLoop: req.eventLoop)
         }
     }
     
@@ -85,7 +87,7 @@ public extension AWSCognitoAuthenticatable {
                     else { throw Abort(.internalServerError) }
                 return AWSCognitoCreateUserResponse(userName: username, userStatus: userStatus)
         }
-        .hopTo(eventLoop: worker.next())
+        .hopTo(eventLoop: worker.eventLoop)
     }
     
     /// authenticate using a username and password
@@ -148,7 +150,7 @@ public extension AWSCognitoAuthenticatable {
                         refreshToken: authenticationResult.refreshToken,
                         expiresIn: authenticationResult.expiresIn != nil ? Date(timeIntervalSinceNow: TimeInterval(authenticationResult.expiresIn!)) : nil))
             }
-            .hopTo(eventLoop: req.next())
+            .hopTo(eventLoop: req.eventLoop)
         }
     }
     
@@ -160,7 +162,7 @@ public extension AWSCognitoAuthenticatable {
             .thenIfErrorThrowing { error in
                 throw translateError(error: error)
             }
-            .transform(to: Void()).hopTo(eventLoop: worker.next())
+            .transform(to: Void()).hopTo(eventLoop: worker.eventLoop)
     }
 }
 
@@ -216,7 +218,7 @@ extension AWSCognitoAuthenticatable {
                     refreshToken: authenticationResult.refreshToken,
                     expiresIn: authenticationResult.expiresIn != nil ? Date(timeIntervalSinceNow: TimeInterval(authenticationResult.expiresIn!)) : nil))
         }
-        .hopTo(eventLoop: req.next())
+        .hopTo(eventLoop: req.eventLoop)
     }
 
     /// create context data from Vapor request
