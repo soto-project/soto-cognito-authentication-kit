@@ -1,4 +1,5 @@
 import AWSSDKSwiftCore
+import CognitoIdentity
 import CognitoIdentityProvider
 import JWT
 
@@ -16,4 +17,14 @@ public protocol AWSCognitoConfiguration {
     static var region: Region { get }
     /// Json web token signers
     static var jwtSigners: JWTSigners? { get set }
+
+    /// cognito identity pool id
+    static var identityPoolId: String? { get }
+    /// Cognito Identity client
+    static var cognitoIdentity: CognitoIdentity? { get }
+}
+
+public extension AWSCognitoConfiguration {
+    static var identityPoolId: String? { return nil }
+    static var cognitoIdentity: CognitoIdentity? {return nil}
 }

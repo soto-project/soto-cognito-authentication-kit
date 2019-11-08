@@ -18,6 +18,7 @@ let package = Package(
         .target(name: "AWSCognitoAuthentication",
                 dependencies: [
                     "Authentication",
+                    "CognitoIdentity",
                     "CognitoIdentityProvider",
                     "Vapor",
                     "JWT"
