@@ -29,8 +29,12 @@ public extension AWSCognitoAuthenticatable {
         return loadSigners(region: .euwest1, on: worker)
             .thenThrowing { signers in
                 guard let tokenData = accessToken.data(using: .utf8) else { throw Abort(.unauthorized) }
-                let jwt = try JWT<VerifiedToken<AccessTokenVerifier<Self>, AWSCognitoAccessToken>>(from: tokenData, verifiedUsing: signers)
-                return jwt.payload.payload
+                do {
+                    let jwt = try JWT<VerifiedToken<AccessTokenVerifier<Self>, AWSCognitoAccessToken>>(from: tokenData, verifiedUsing: signers)
+                    return jwt.payload.payload
+                } catch DecodingError.keyNotFound(let key, _) {
+                    throw Abort(.unauthorized, reason: "This is not an access Token. Field '\(key.stringValue)' is missing")
+                }
         }
     }
 }
