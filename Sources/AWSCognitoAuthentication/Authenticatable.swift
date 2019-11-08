@@ -46,7 +46,31 @@ public protocol AWSCognitoAuthenticatable: AWSCognitoConfiguration {
 /// public interface functions for user and token authentication
 public extension AWSCognitoAuthenticatable {
     
-    /// create a new user
+    /// sign up user. An email will be sent out with either a confirmation code or a link to confirm the user
+    static func signUp(username: String, password: String, attributes: [String:String], on req: Request) -> Future<CognitoIdentityProvider.SignUpResponse> {
+        return secretHashFuture(username: username, on: req).flatMap { secretHash in
+            let userAttributes = attributes.map { return CognitoIdentityProvider.AttributeType(name: $0.key, value: $0.value) }
+            let request = CognitoIdentityProvider.SignUpRequest(clientId: Self.clientId, password: password, secretHash: secretHash, userAttributes: userAttributes, username: username)
+            return cognitoIDP.signUp(request)
+                .thenIfErrorThrowing { error in
+                    throw translateError(error: error)
+            }
+        }
+    }
+    
+    /// confirm sign up of user
+    static func confirmSignUp(username: String, confirmationCode: String, on req: Request) -> Future<Void> {
+        return secretHashFuture(username: username, on: req).flatMap { secretHash in
+            let request = CognitoIdentityProvider.ConfirmSignUpRequest(clientId: Self.clientId, confirmationCode: confirmationCode, forceAliasCreation: false, secretHash: secretHash, username: username)
+            return cognitoIDP.confirmSignUp(request)
+                .thenIfErrorThrowing { error in
+                    throw translateError(error: error)
+                }
+                .transform(to: Void())
+        }
+    }
+    
+    /// create a new user. This uses AdminCreateUser. An invitation email, with a password  is sent to the user. This password requires to be renewed as soon as it is used.
     static func createUser(username: String, attributes: [String:String], on worker: Worker) -> Future<AWSCognitoCreateUserResponse> {
         let userAttributes = attributes.map { return CognitoIdentityProvider.AttributeType(name: $0.key, value: $0.value) }
         let request = CognitoIdentityProvider.AdminCreateUserRequest(desiredDeliveryMediums:[.email], messageAction: .resend,userAttributes: userAttributes, username: username, userPoolId: Self.userPoolId)
@@ -170,6 +194,7 @@ extension AWSCognitoAuthenticatable {
             .thenIfErrorThrowing { error in
                 throw translateError(error: error)
             }
+            // map AWS response to AWSCognitoAuthenticateResponse
             .map { (response)->AWSCognitoAuthenticateResponse in
                 guard let authenticationResult = response.authenticationResult,
                     let accessToken = authenticationResult.accessToken,
@@ -210,8 +235,8 @@ extension AWSCognitoAuthenticatable {
     /// translate error from one thrown by aws-sdk-swift to vapor error
     static func translateError(error: Error) -> Error {
         switch error {
-        case CognitoIdentityProviderErrorType.codeMismatchException(_):
-            return Abort(.badRequest)
+        case CognitoIdentityProviderErrorType.codeMismatchException(let message):
+            return Abort(.badRequest, reason: message)
 
         case CognitoIdentityProviderErrorType.invalidPasswordException(let message),
              CognitoIdentityProviderErrorType.invalidParameterException(let message):
@@ -229,6 +254,9 @@ extension AWSCognitoAuthenticatable {
 
         case CognitoIdentityProviderErrorType.unsupportedUserStateException(_):
             return Abort(.conflict, reason:"Username already exists")
+
+        case CognitoIdentityProviderErrorType.userNotConfirmedException(_):
+            return Abort(.notAcceptable, reason:"User is not confirmed")
 
         default:
             return error
