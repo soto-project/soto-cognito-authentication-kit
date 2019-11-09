@@ -2,7 +2,7 @@ import JWT
 import Vapor
 
 /// JWT Access token
-struct AccessTokenVerifier<Config: AWSCognitoConfiguration>: JWTPayload {
+struct AccessTokenVerifier<Config: AWSCognitoAuthenticatable>: JWTPayload {
     let expirationTime: Date
     let issuer: String
     let tokenUse: String
@@ -21,7 +21,7 @@ struct AccessTokenVerifier<Config: AWSCognitoConfiguration>: JWTPayload {
 }
 
 /// JWT Id token
-struct IdTokenVerifier<Config: AWSCognitoConfiguration>: JWTPayload {
+struct IdTokenVerifier<Config: AWSCognitoAuthenticatable>: JWTPayload {
     let audience: String
     let expirationTime: Date
     let issuer: String

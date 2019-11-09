@@ -7,15 +7,20 @@ enum AWSCognitoIdentityError: Error {
     case noIdentityClient
 }
 
-public extension AWSCognitoAuthenticatable {
+public protocol AWSCognitoIdentifiable: AWSCognitoAuthenticatable {
+    /// cognito identity pool id
+    static var identityPoolId: String { get }
+    /// Cognito Identity client
+    static var cognitoIdentity: CognitoIdentity { get }
+}
+
+public extension AWSCognitoIdentifiable {
     
     /// return an identity id from an id token
     static func getIdentityId(idToken: String, on worker: Worker) -> EventLoopFuture<String> {
-        guard let identityPoolId = Self.identityPoolId else { return worker.next().newFailedFuture(error: AWSCognitoIdentityError.noIdentityPoolId) }
-        guard let client = Self.cognitoIdentity else { return worker.next().newFailedFuture(error: AWSCognitoIdentityError.noIdentityClient) }
         let provider = "cognito-idp.\(Self.region.rawValue).amazonaws.com/\(Self.userPoolId)"
-        let request = CognitoIdentity.GetIdInput(identityPoolId: identityPoolId, logins: [provider : idToken])
-        return client.getId(request)
+        let request = CognitoIdentity.GetIdInput(identityPoolId: Self.identityPoolId, logins: [provider : idToken])
+        return Self.cognitoIdentity.getId(request)
             .thenIfErrorThrowing { error in
                 throw translateError(error: error)
             }
@@ -28,11 +33,9 @@ public extension AWSCognitoAuthenticatable {
     
     /// get aws credentials from an identity id
     static func getCredentialForIdentity(identityId: String, idToken: String, on worker: Worker) -> EventLoopFuture<CognitoIdentity.Credentials> {
-        guard let client = Self.cognitoIdentity else { return worker.next().newFailedFuture(error: AWSCognitoIdentityError.noIdentityClient) }
         let provider = "cognito-idp.\(Self.region.rawValue).amazonaws.com/\(Self.userPoolId)"
-
         let request = CognitoIdentity.GetCredentialsForIdentityInput(identityId: identityId, logins: [provider : idToken])
-        return client.getCredentialsForIdentity(request)
+        return Self.cognitoIdentity.getCredentialsForIdentity(request)
             .thenIfErrorThrowing { error in
                 throw translateError(error: error)
             }
@@ -41,5 +44,18 @@ public extension AWSCognitoAuthenticatable {
                 return credentials
             }
             .hopTo(eventLoop: worker.eventLoop)
+    }
+}
+
+extension AWSCognitoIdentifiable {
+    /// translate error from one thrown by aws-sdk-swift to vapor error
+    static func translateError(error: Error) -> Error {
+        switch error {
+        case CognitoIdentityErrorType.notAuthorizedException(let message):
+            return Abort(.unauthorized, reason: message)
+
+        default:
+            return error
+        }
     }
 }
