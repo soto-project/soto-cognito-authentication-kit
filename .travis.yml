@@ -12,6 +12,6 @@ matrix:
       language: swift
       osx_image: xcode11
       script:
-        - brew install libressl
+        - brew install openssl
         - swift build
         - swift test --parallel -Xswiftc -DDEBUG
