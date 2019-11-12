@@ -17,33 +17,33 @@ public protocol AWSCognitoIdentifiable: AWSCognitoAuthenticatable {
 public extension AWSCognitoIdentifiable {
     
     /// return an identity id from an id token
-    static func getIdentityId(idToken: String, on worker: Worker) -> EventLoopFuture<String> {
+    static func getIdentityId(idToken: String, on eventLoopGroup: EventLoopGroup) -> EventLoopFuture<String> {
         let provider = "cognito-idp.\(Self.region.rawValue).amazonaws.com/\(Self.userPoolId)"
         let request = CognitoIdentity.GetIdInput(identityPoolId: Self.identityPoolId, logins: [provider : idToken])
         return Self.cognitoIdentity.getId(request)
-            .thenIfErrorThrowing { error in
+            .flatMapErrorThrowing { error in
                 throw translateError(error: error)
             }
-            .thenThrowing { response in
+            .flatMapThrowing { response in
                 guard let identityId = response.identityId else { throw Abort(.internalServerError) }
                 return identityId
             }
-            .hopTo(eventLoop: worker.eventLoop)
+            .hop(to: eventLoopGroup.next())
     }
     
     /// get aws credentials from an identity id
-    static func getCredentialForIdentity(identityId: String, idToken: String, on worker: Worker) -> EventLoopFuture<CognitoIdentity.Credentials> {
+    static func getCredentialForIdentity(identityId: String, idToken: String, on eventLoopGroup: EventLoopGroup) -> EventLoopFuture<CognitoIdentity.Credentials> {
         let provider = "cognito-idp.\(Self.region.rawValue).amazonaws.com/\(Self.userPoolId)"
         let request = CognitoIdentity.GetCredentialsForIdentityInput(identityId: identityId, logins: [provider : idToken])
         return Self.cognitoIdentity.getCredentialsForIdentity(request)
-            .thenIfErrorThrowing { error in
+            .flatMapErrorThrowing { error in
                 throw translateError(error: error)
             }
-            .thenThrowing { response in
+            .flatMapThrowing { response in
                 guard let credentials = response.credentials else { throw Abort(.internalServerError) }
                 return credentials
             }
-            .hopTo(eventLoop: worker.eventLoop)
+        .hop(to: eventLoopGroup.next())
     }
 }
 

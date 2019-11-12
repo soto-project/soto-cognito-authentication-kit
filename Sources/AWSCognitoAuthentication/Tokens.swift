@@ -1,4 +1,4 @@
-import JWT
+import JWTKit
 import Vapor
 
 /// JWT Access token
@@ -46,7 +46,7 @@ struct IdTokenVerifier<Config: AWSCognitoAuthenticatable>: JWTPayload {
 struct VerifiedToken<Token: JWTPayload, Payload: Codable>: JWTPayload {
     let token: Token
     let payload: Payload
-    
+
     init(from decoder: Decoder) throws {
         token = try Token(from: decoder)
         payload = try Payload(from: decoder)
@@ -56,4 +56,3 @@ struct VerifiedToken<Token: JWTPayload, Payload: Codable>: JWTPayload {
         try token.verify(using: signer)
     }
 }
-

@@ -1,8 +1,8 @@
 import AWSSDKSwiftCore
 import CognitoIdentityProvider
-import Crypto
-import Debugging
-import JWT
+import JWTKit
+import NIO
+import OpenCrypto
 import Vapor
 
 public typealias AWSCognitoChallengeName = CognitoIdentityProvider.ChallengeNameType
@@ -31,7 +31,7 @@ public struct ChallengedResponse: Codable {
 public struct AWSCognitoAuthenticateResponse: Content {
     public let authenticated: AuthenticatedResponse?
     public let challenged: ChallengedResponse?
-    
+
     init(authenticated: AuthenticatedResponse? = nil, challenged: ChallengedResponse? = nil) {
         self.authenticated = authenticated
         self.challenged = challenged
@@ -57,54 +57,54 @@ public protocol AWSCognitoAuthenticatable {
 
 /// public interface functions for user and token authentication
 public extension AWSCognitoAuthenticatable {
-    
+
     /// sign up user. An email will be sent out with either a confirmation code or a link to confirm the user
     static func signUp(username: String, password: String, attributes: [String:String], on req: Request) -> Future<CognitoIdentityProvider.SignUpResponse> {
-        return secretHashFuture(username: username, on: req).flatMap { secretHash in
+        return secretHashFuture(username: username, on: req.eventLoop).flatMap { secretHash in
             let userAttributes = attributes.map { return CognitoIdentityProvider.AttributeType(name: $0.key, value: $0.value) }
             let request = CognitoIdentityProvider.SignUpRequest(clientId: Self.clientId, password: password, secretHash: secretHash, userAttributes: userAttributes, username: username)
             return cognitoIDP.signUp(request)
-                .thenIfErrorThrowing { error in
+                .flatMapErrorThrowing { error in
                     throw translateError(error: error)
                 }
-                .hopTo(eventLoop: req.eventLoop)
+                .hop(to: req.eventLoop)
         }
     }
-    
+
     /// confirm sign up of user
     static func confirmSignUp(username: String, confirmationCode: String, on req: Request) -> Future<Void> {
-        return secretHashFuture(username: username, on: req).flatMap { secretHash in
+        return secretHashFuture(username: username, on: req.eventLoop).flatMap { secretHash in
             let request = CognitoIdentityProvider.ConfirmSignUpRequest(clientId: Self.clientId, confirmationCode: confirmationCode, forceAliasCreation: false, secretHash: secretHash, username: username)
             return cognitoIDP.confirmSignUp(request)
-                .thenIfErrorThrowing { error in
+                .flatMapErrorThrowing { error in
                     throw translateError(error: error)
                 }
                 .transform(to: Void())
-                .hopTo(eventLoop: req.eventLoop)
+                .hop(to: req.eventLoop)
         }
     }
-    
+
     /// create a new user. This uses AdminCreateUser. An invitation email, with a password  is sent to the user. This password requires to be renewed as soon as it is used.
-    static func createUser(username: String, attributes: [String:String], on worker: Worker) -> Future<AWSCognitoCreateUserResponse> {
+    static func createUser(username: String, attributes: [String:String], on eventLoop: EventLoop) -> Future<AWSCognitoCreateUserResponse> {
         let userAttributes = attributes.map { return CognitoIdentityProvider.AttributeType(name: $0.key, value: $0.value) }
         let request = CognitoIdentityProvider.AdminCreateUserRequest(desiredDeliveryMediums:[.email], messageAction: .resend,userAttributes: userAttributes, username: username, userPoolId: Self.userPoolId)
         return cognitoIDP.adminCreateUser(request)
-            .thenIfErrorThrowing { error in
+            .flatMapErrorThrowing { error in
                 throw translateError(error: error)
             }
-            .thenThrowing { response in
+            .flatMapThrowing { response in
                 guard let user = response.user,
                     let username = user.username,
                     let userStatus = user.userStatus
                     else { throw Abort(.internalServerError) }
                 return AWSCognitoCreateUserResponse(userName: username, userStatus: userStatus)
         }
-        .hopTo(eventLoop: worker.eventLoop)
+        .hop(to: eventLoop)
     }
-    
+
     /// authenticate using a username and password
     static func authenticate(username: String, password: String, on req: Request) -> Future<AWSCognitoAuthenticateResponse> {
-        return secretHashFuture(username: username, on: req).flatMap { secretHash in
+        return secretHashFuture(username: username, on: req.eventLoop).flatMap { secretHash in
             let authParameters : [String: String] = ["USERNAME":username,
                                                      "PASSWORD": password,
                                                      "SECRET_HASH":secretHash]
@@ -113,10 +113,10 @@ public extension AWSCognitoAuthenticatable {
                                        on: req)
         }
     }
-    
+
     /// get new access and id tokens from a refresh token
     static func refresh(username: String, refreshToken: String, on req: Request) -> Future<AWSCognitoAuthenticateResponse> {
-        return secretHashFuture(username: username, on: req).flatMap { secretHash in
+        return secretHashFuture(username: username, on: req.eventLoop).flatMap { secretHash in
             let authParameters : [String: String] = ["REFRESH_TOKEN":refreshToken,
                                                      "SECRET_HASH":secretHash]
             return initiateAuthRequest(authFlow: .refreshTokenAuth,
@@ -127,7 +127,7 @@ public extension AWSCognitoAuthenticatable {
 
     /// respond to authentication challenge
     static func respondToChallenge(username: String, name: AWSCognitoChallengeName, responses: [String: String], session: String, on req: Request) -> Future<AWSCognitoAuthenticateResponse> {
-        return secretHashFuture(username: username, on: req).flatMap { secretHash in
+        return secretHashFuture(username: username, on: req.eventLoop).flatMap { secretHash in
             var challengeResponses = responses
             challengeResponses["USERNAME"] = username
             challengeResponses["SECRET_HASH"] = secretHash
@@ -138,10 +138,10 @@ public extension AWSCognitoAuthenticatable {
                                                                                      session: session,
                                                                                      userPoolId: Self.userPoolId)
             return cognitoIDP.adminRespondToAuthChallenge(request)
-                .thenIfErrorThrowing { error in
+                .flatMapErrorThrowing { error in
                     throw translateError(error: error)
                 }
-                .map { (response)->AWSCognitoAuthenticateResponse in
+                .flatMapThrowing { (response)->AWSCognitoAuthenticateResponse in
                     guard let authenticationResult = response.authenticationResult,
                         let accessToken = authenticationResult.accessToken,
                         let idToken = authenticationResult.idToken
@@ -155,45 +155,41 @@ public extension AWSCognitoAuthenticatable {
                             }
                             throw Abort(.unauthorized)
                     }
-                    
+
                     return AWSCognitoAuthenticateResponse(authenticated: AuthenticatedResponse(
                         accessToken: accessToken,
                         idToken: idToken,
                         refreshToken: authenticationResult.refreshToken,
                         expiresIn: authenticationResult.expiresIn != nil ? Date(timeIntervalSinceNow: TimeInterval(authenticationResult.expiresIn!)) : nil))
             }
-            .hopTo(eventLoop: req.eventLoop)
+            .hop(to: req.eventLoop)
         }
     }
-    
+
     /// update the users attributes
-    static func updateUserAttributes(username: String, attributes: [String: String], on worker: Worker) -> Future<Void> {
+    static func updateUserAttributes(username: String, attributes: [String: String], on eventLoop: EventLoop) -> Future<Void> {
         let attributes = attributes.map { CognitoIdentityProvider.AttributeType(name: $0.key, value:  $0.value) }
         let request = CognitoIdentityProvider.AdminUpdateUserAttributesRequest(userAttributes: attributes, username: username, userPoolId: Self.userPoolId)
         return cognitoIDP.adminUpdateUserAttributes(request)
-            .thenIfErrorThrowing { error in
+            .flatMapErrorThrowing { error in
                 throw translateError(error: error)
             }
-            .transform(to: Void()).hopTo(eventLoop: worker.eventLoop)
+        .transform(to: Void()).hop(to: eventLoop)
     }
 }
 
 extension AWSCognitoAuthenticatable {
     /// return secret hash to include in cognito identity provider calls
-    static func secretHash(username: String) throws -> String {
-        let hmac = HMAC(algorithm: .sha256)
+    static func secretHash(username: String) -> String {
+
         let message = username + Self.clientId
-        let messageHmac = try Data(hmac.authenticate(message, key: Self.clientSecret))
-        return messageHmac.base64EncodedString()
+        let messageHmac: HashedAuthenticationCode<SHA256> = HMAC.authenticationCode(for: Data(message.utf8), using: SymmetricKey(data: Data(Self.clientSecret.utf8)))
+        return Data(messageHmac).base64EncodedString()
     }
 
     /// return future containing secret hash to include in cognito identity provider calls
-    static func secretHashFuture(username: String, on worker: Worker) -> Future<String> {
-        do {
-            return try worker.future(secretHash(username: username))
-        } catch {
-            return worker.future(error: error)
-        }
+    static func secretHashFuture(username: String, on eventLoopGroup: EventLoopGroup) -> Future<String> {
+        return eventLoopGroup.next().makeSucceededFuture(secretHash(username: username))
     }
 
     /// return an authorization request future
@@ -205,11 +201,10 @@ extension AWSCognitoAuthenticatable {
             contextData: contextData(from: req),
             userPoolId: Self.userPoolId)
         return cognitoIDP.adminInitiateAuth(request)
-            .thenIfErrorThrowing { error in
+            .flatMapErrorThrowing { error in
                 throw translateError(error: error)
             }
-            // map AWS response to AWSCognitoAuthenticateResponse
-            .map { (response)->AWSCognitoAuthenticateResponse in
+            .flatMapThrowing { (response)->AWSCognitoAuthenticateResponse in
                 guard let authenticationResult = response.authenticationResult,
                     let accessToken = authenticationResult.accessToken,
                     let idToken = authenticationResult.idToken
@@ -223,29 +218,29 @@ extension AWSCognitoAuthenticatable {
                         }
                         throw Abort(.unauthorized)
                 }
-                
+
                 return AWSCognitoAuthenticateResponse(authenticated: AuthenticatedResponse(
                     accessToken: accessToken,
                     idToken: idToken,
                     refreshToken: authenticationResult.refreshToken,
                     expiresIn: authenticationResult.expiresIn != nil ? Date(timeIntervalSinceNow: TimeInterval(authenticationResult.expiresIn!)) : nil))
         }
-        .hopTo(eventLoop: req.eventLoop)
+        .hop(to: req.eventLoop)
     }
 
     /// create context data from Vapor request
     static func contextData(from req: Request) -> CognitoIdentityProvider.ContextDataType? {
-        let host = req.http.headers["Host"].first ?? "localhost:8080"
-        guard let ipAddress = req.http.remotePeer.hostname ?? req.http.channel?.remoteAddress?.description else { return nil }
-        let headers = req.http.headers.map { CognitoIdentityProvider.HttpHeader(headerName: $0.name, headerValue: $0.value) }
+        let host = req.headers["Host"].first ?? "localhost:8080"
+        //guard let ipAddress = req.http.remotePeer.hostname ?? req.http.channel?.remoteAddress?.description else { return nil }
+        let headers = req.headers.map { CognitoIdentityProvider.HttpHeader(headerName: $0.name, headerValue: $0.value) }
         let contextData = CognitoIdentityProvider.ContextDataType(
             httpHeaders: headers,
-            ipAddress: ipAddress,
+            ipAddress: "ipAddress",
             serverName: host,
-            serverPath: req.http.urlString)
+            serverPath: "urlString")
         return contextData
     }
-    
+
     /// translate error from one thrown by aws-sdk-swift to vapor error
     static func translateError(error: Error) -> Error {
         switch error {
@@ -277,4 +272,3 @@ extension AWSCognitoAuthenticatable {
         }
     }
 }
-
