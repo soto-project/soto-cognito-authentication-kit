@@ -7,7 +7,7 @@ matrix:
       before_install:
         - docker pull swift:5.1.1
       script:
-        - docker run -v "$(pwd):/root/aws-cognito-authentication" swift:5.1.1 /bin/sh -c "apt install libssl-dev && cd /root/aws-cognito-authentication && swift build && swift test --parallel -Xswiftc -DDEBUG"
+        - docker run -v "$(pwd):/root/aws-cognito-authentication" swift:5.1.1 /bin/sh -c "apt-get -qq update && apt-get -q -y install tzdata libssl-dev zlib1g-dev && cd /root/aws-cognito-authentication && swift build && swift test --parallel -Xswiftc -DDEBUG"
     - os: osx
       language: swift
       osx_image: xcode11
