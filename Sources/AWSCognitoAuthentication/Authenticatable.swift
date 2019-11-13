@@ -58,34 +58,58 @@ public protocol AWSCognitoAuthenticatable {
 /// public interface functions for user and token authentication
 public extension AWSCognitoAuthenticatable {
 
-    /// sign up user. An email will be sent out with either a confirmation code or a link to confirm the user
-    static func signUp(username: String, password: String, attributes: [String:String], on req: Request) -> Future<CognitoIdentityProvider.SignUpResponse> {
-        return secretHashFuture(username: username, on: req.eventLoop).flatMap { secretHash in
+    /// Sign up as AWS Cognito user.
+    ///
+    /// An email will be sent out with either a confirmation code or a link to confirm the user.
+    /// - parameters:
+    ///     - username: user name for new user
+    ///     - attributes: user attributes. These should be from the list of standard claims detailed in the [OpenID spec](https://openid.net/specs/openid-connect-core-1_0.html#StandardClaims). You can include custom attiibutes by prepending them with "custom:".
+    ///     - on: The event loop run aws requests on.
+    /// - returns:
+    ///     EventLoopFuture holding the sign up response
+    static func signUp(username: String, password: String, attributes: [String:String], on eventLoop: EventLoop) -> EventLoopFuture<CognitoIdentityProvider.SignUpResponse> {
+        return secretHashFuture(username: username, on: eventLoop).flatMap { secretHash in
             let userAttributes = attributes.map { return CognitoIdentityProvider.AttributeType(name: $0.key, value: $0.value) }
             let request = CognitoIdentityProvider.SignUpRequest(clientId: Self.clientId, password: password, secretHash: secretHash, userAttributes: userAttributes, username: username)
             return cognitoIDP.signUp(request)
                 .flatMapErrorThrowing { error in
                     throw translateError(error: error)
                 }
-                .hop(to: req.eventLoop)
+                .hop(to: eventLoop)
         }
     }
 
-    /// confirm sign up of user
-    static func confirmSignUp(username: String, confirmationCode: String, on req: Request) -> Future<Void> {
-        return secretHashFuture(username: username, on: req.eventLoop).flatMap { secretHash in
+    /// Confirm sign up of user
+    ///
+    /// If user was created through signUp and they were sent an email containing a confirmation code the creation of the user can be confirm using this function along with the confirmation code
+    /// - parameters:
+    ///     - username: user name for user
+    ///     - confirmationCode: Confirmation code in email
+    ///     - on: The event loop to run  aws requests on.
+    /// - returns:
+    ///     Empty EventLoopFuture
+    static func confirmSignUp(username: String, confirmationCode: String, on eventLoop: EventLoop) -> EventLoopFuture<Void> {
+        return secretHashFuture(username: username, on: eventLoop).flatMap { secretHash in
             let request = CognitoIdentityProvider.ConfirmSignUpRequest(clientId: Self.clientId, confirmationCode: confirmationCode, forceAliasCreation: false, secretHash: secretHash, username: username)
             return cognitoIDP.confirmSignUp(request)
                 .flatMapErrorThrowing { error in
                     throw translateError(error: error)
                 }
                 .transform(to: Void())
-                .hop(to: req.eventLoop)
+                .hop(to: eventLoop)
         }
     }
 
-    /// create a new user. This uses AdminCreateUser. An invitation email, with a password  is sent to the user. This password requires to be renewed as soon as it is used.
-    static func createUser(username: String, attributes: [String:String], on eventLoop: EventLoop) -> Future<AWSCognitoCreateUserResponse> {
+    /// create a new AWS Cognito user.
+    ///
+    /// This uses AdminCreateUser. An invitation email, with a password  is sent to the user. This password requires to be renewed as soon as it is used.
+    /// - parameters:
+    ///     - username: user name for new user
+    ///     - attributes: user attributes. These should be from the list of standard claims detailed in the [OpenID spec](https://openid.net/specs/openid-connect-core-1_0.html#StandardClaims). You can include custom attiibutes by prepending them with "custom:".
+    ///     - on: The event loop run aws requests on.
+    /// - returns:
+    ///     EventLoopFuture holding the create user response
+    static func createUser(username: String, attributes: [String:String], on eventLoop: EventLoop) -> EventLoopFuture<AWSCognitoCreateUserResponse> {
         let userAttributes = attributes.map { return CognitoIdentityProvider.AttributeType(name: $0.key, value: $0.value) }
         let request = CognitoIdentityProvider.AdminCreateUserRequest(desiredDeliveryMediums:[.email], messageAction: .resend,userAttributes: userAttributes, username: username, userPoolId: Self.userPoolId)
         return cognitoIDP.adminCreateUser(request)
@@ -103,7 +127,14 @@ public extension AWSCognitoAuthenticatable {
     }
 
     /// authenticate using a username and password
-    static func authenticate(username: String, password: String, on req: Request) -> Future<AWSCognitoAuthenticateResponse> {
+    ///
+    /// - parameters:
+    ///     - username: user name for user
+    ///     - password: password for user
+    ///     - on: Vapor Request structure
+    /// - returns:
+    ///     An authentication response. This can contain a challenge which the user has to fulfill before being allowed to login, or authentication access, id and refresh keys
+    static func authenticate(username: String, password: String, on req: Request) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
         return secretHashFuture(username: username, on: req.eventLoop).flatMap { secretHash in
             let authParameters : [String: String] = ["USERNAME":username,
                                                      "PASSWORD": password,
@@ -114,10 +145,18 @@ public extension AWSCognitoAuthenticatable {
         }
     }
 
-    /// get new access and id tokens from a refresh token
-    static func refresh(username: String, refreshToken: String, on req: Request) -> Future<AWSCognitoAuthenticateResponse> {
+    /// Get new access and id tokens from a refresh token
+    ///
+    /// The username you provide here has to be the real username of the user not an alias like an email. You can get the real username by authenticing an access token
+    /// - parameters:
+    ///     - username: user name of user
+    ///     - refreshToken: refresh token required to generate new access and id tokens
+    /// - returns:
+    ///     - An authentication result which should include an id and status token
+    static func refresh(username: String, refreshToken: String, on req: Request) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
         return secretHashFuture(username: username, on: req.eventLoop).flatMap { secretHash in
-            let authParameters : [String: String] = ["REFRESH_TOKEN":refreshToken,
+            let authParameters : [String: String] = ["USERNAME":username,
+                                                     "REFRESH_TOKEN":refreshToken,
                                                      "SECRET_HASH":secretHash]
             return initiateAuthRequest(authFlow: .refreshTokenAuth,
                                            authParameters: authParameters,
@@ -126,7 +165,7 @@ public extension AWSCognitoAuthenticatable {
     }
 
     /// respond to authentication challenge
-    static func respondToChallenge(username: String, name: AWSCognitoChallengeName, responses: [String: String], session: String, on req: Request) -> Future<AWSCognitoAuthenticateResponse> {
+    static func respondToChallenge(username: String, name: AWSCognitoChallengeName, responses: [String: String], session: String, on req: Request) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
         return secretHashFuture(username: username, on: req.eventLoop).flatMap { secretHash in
             var challengeResponses = responses
             challengeResponses["USERNAME"] = username
@@ -167,7 +206,7 @@ public extension AWSCognitoAuthenticatable {
     }
 
     /// update the users attributes
-    static func updateUserAttributes(username: String, attributes: [String: String], on eventLoop: EventLoop) -> Future<Void> {
+    static func updateUserAttributes(username: String, attributes: [String: String], on eventLoop: EventLoop) -> EventLoopFuture<Void> {
         let attributes = attributes.map { CognitoIdentityProvider.AttributeType(name: $0.key, value:  $0.value) }
         let request = CognitoIdentityProvider.AdminUpdateUserAttributesRequest(userAttributes: attributes, username: username, userPoolId: Self.userPoolId)
         return cognitoIDP.adminUpdateUserAttributes(request)
@@ -188,12 +227,12 @@ extension AWSCognitoAuthenticatable {
     }
 
     /// return future containing secret hash to include in cognito identity provider calls
-    static func secretHashFuture(username: String, on eventLoopGroup: EventLoopGroup) -> Future<String> {
+    static func secretHashFuture(username: String, on eventLoopGroup: EventLoopGroup) -> EventLoopFuture<String> {
         return eventLoopGroup.next().makeSucceededFuture(secretHash(username: username))
     }
 
     /// return an authorization request future
-    static func initiateAuthRequest(authFlow: CognitoIdentityProvider.AuthFlowType, authParameters: [String: String], on req: Request) -> Future<AWSCognitoAuthenticateResponse> {
+    static func initiateAuthRequest(authFlow: CognitoIdentityProvider.AuthFlowType, authParameters: [String: String], on req: Request) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
         let request = CognitoIdentityProvider.AdminInitiateAuthRequest(
             authFlow: authFlow,
             authParameters: authParameters,
@@ -235,9 +274,9 @@ extension AWSCognitoAuthenticatable {
         let headers = req.headers.map { CognitoIdentityProvider.HttpHeader(headerName: $0.name, headerValue: $0.value) }
         let contextData = CognitoIdentityProvider.ContextDataType(
             httpHeaders: headers,
-            ipAddress: "ipAddress",
+            ipAddress: "127.0.0.1",
             serverName: host,
-            serverPath: "urlString")
+            serverPath: req.url.path)
         return contextData
     }
 

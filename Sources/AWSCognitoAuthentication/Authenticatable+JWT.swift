@@ -4,7 +4,7 @@ import JWTKit
 import NIO
 import Vapor
 
-/// struct returning when authenticating an access token
+/// struct returned when authenticating an access token
 public struct AWSCognitoAccessToken: Codable {
     public let username: String
     public let subject: UUID
@@ -16,7 +16,19 @@ public struct AWSCognitoAccessToken: Codable {
 }
 
 public extension AWSCognitoAuthenticatable {
-    /// verify IdToken JWT and return contents
+    /// Verify id Token JWT and return contents
+    ///
+    /// This function verifies the id token signature, verifies it was issued by your user pool, it was generated for your application client, that it hasn't
+    /// expired and that it is an id token.
+    /// Then it fills out the placeholder type `Payload`with values from the id token. The list of standard list of claims found in an id token are
+    /// detailed in the [OpenID spec](https://openid.net/specs/openid-connect-core-1_0.html#StandardClaims) . Your
+    /// `Payload` type needs to decode using these tags, plus the AWS specific "cognito:username" tag and any custom tags you have setup
+    /// for the user pool.
+    /// - parameters:
+    ///     - idToken: Id token, returned from login
+    ///     - on: Event loop to run on
+    /// - returns:
+    ///     An event loop future containing the payload structure.
     static func authenticate<Payload: Codable>(idToken: String, on eventLoopGroup: EventLoopGroup) -> EventLoopFuture<Payload> {
         return loadSigners(region: .euwest1, on: eventLoopGroup)
             .flatMapThrowing { signers in
@@ -26,7 +38,14 @@ public extension AWSCognitoAuthenticatable {
         }
     }
 
-    /// verify AccessToken JWT and return contents
+    /// Verify access token JWT and return contents
+    ///
+    /// This function verifies the access token signature, verifies it was issued by your user pool, that it hasn't expired and that it is an access token.
+    /// - parameters:
+    ///     - accessToken: Access token, returned from login
+    ///     - on: Event loop to run on
+    /// - returns:
+    ///     An event loop future returning a structure with the username and UUID for the user.
     static func authenticate(accessToken: String, on eventLoopGroup: EventLoopGroup) -> EventLoopFuture<AWSCognitoAccessToken> {
         return loadSigners(region: .euwest1, on: eventLoopGroup)
             .flatMapThrowing { signers in
@@ -48,9 +67,10 @@ extension AWSCognitoAuthenticatable {
         guard Self.jwtSigners == nil else { return eventLoopGroup.future(Self.jwtSigners!)}
 
         let JWTSignersURL = "https://cognito-idp.\(region.rawValue).amazonaws.com/\(Self.userPoolId)/.well-known/jwks.json"
-
-        return AsyncHTTPClient.HTTPClient(eventLoopGroupProvider:.shared(eventLoopGroup))
+        let httpClient = AsyncHTTPClient.HTTPClient(eventLoopGroupProvider:.shared(eventLoopGroup))
+        return httpClient
             .get(url: JWTSignersURL, deadline: .now() + TimeAmount.seconds(10))
+            .always { _ in try? httpClient.syncShutdown() }
             .flatMapThrowing { response in
                 let signers = JWTSigners()
                 guard let body = response.body else { return JWTSigners() }
@@ -59,5 +79,6 @@ extension AWSCognitoAuthenticatable {
                 }
                 return signers
         }
+        
     }
 }

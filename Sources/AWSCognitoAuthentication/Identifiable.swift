@@ -7,6 +7,9 @@ enum AWSCognitoIdentityError: Error {
     case noIdentityClient
 }
 
+/// Protocol that include the configuration setup for AWS Cognito Identity.
+///
+/// If you are using CognitoIdentity you are required to provide setup for CognitoIdentityProvider as well
 public protocol AWSCognitoIdentifiable: AWSCognitoAuthenticatable {
     /// cognito identity pool id
     static var identityPoolId: String { get }
