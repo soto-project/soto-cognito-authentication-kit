@@ -45,20 +45,6 @@ let response = Authentication.authenticate(
 ```
 The access token is used just to indicate a user has been granted access. It contains verification information, the username and a subject uuid which can be used to identify the user if you don't want to use the username. The token is valid for 60 minutes. The idToken contains claims about the identity of the user. It should contain all the attributes attached to the user. Again this token is only valid for 60 minutes. 
 
-## Refreshing id and access tokens
-To avoid having to ask the user for their username and password every 60 minutes a refresh token is also provided. You can use this to generate new id and access tokens whenever they have expired or are about to expire. The refresh token is valid for 30 days. Although you can edit the length of this in the Cognito console. 
-```
-let response = Authentication.authenticate(
-    username: username, 
-    refreshToken: refreshToken, 
-    on: req)
-    .then { response in
-        let accessToken = response.authenticated?.accessToken
-        let idToken = response.authenticated?.idToken
-        ...
-}
-```
-
 ## Verifying an access token is valid
 The following will verify whether a token gives access.
 ```
@@ -102,6 +88,20 @@ let response = Authentication.authenticate(idToken: token, on: req.eventLoop)
 NB The username tag in an ID Token is "cognito:username"
 
 As with the access tokens there is also a Vapor 4 shortcut for id tokens. Assuming your id token is sent in the "Authorization" header as a bearer token you can call `Authentication.authenticateIdToken<Payload>(_ req: Request)`.
+
+## Refreshing id and access tokens
+To avoid having to ask the user for their username and password every 60 minutes a refresh token is also provided. You can use this to generate new id and access tokens whenever they have expired or are about to expire. The refresh token is valid for 30 days. Although you can edit the length of this in the Cognito console. 
+```
+let response = Authentication.authenticate(
+    username: username, 
+    refreshToken: refreshToken, 
+    on: req)
+    .then { response in
+        let accessToken = response.authenticated?.accessToken
+        let idToken = response.authenticated?.idToken
+        ...
+}
+```
 
 ## Responding to authentication challenges
 Sometimes when you try to authenticate a username and password or a refresh token you will be returned a challenge instead of the authentication challenges. An example of being when someone logs in for the first time they are required to change their password before they can continue. In this situation AWS Cognito returns a new password challenge. When you respond to this with a new password it provides you with the authentication tokens. Other situations would include Multi Factor Authentication. The following is responding to the a change password request
