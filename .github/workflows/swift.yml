@@ -1,0 +1,22 @@
+name: Swift
+
+on: [push]
+
+jobs:
+  macOS:
+    runs-on: macOS-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: Build
+      run: swift build
+    - name: Run tests
+      run: swift test
+      
+  linux:
+    runs-on: ubuntu-18.04
+    steps:
+    - uses: actions/checkout@v1
+    - name: Install
+      run: docker pull swift:5.1.1
+    - name: Build & Test
+      run: docker run -v "$(pwd):/root/" swift:5.1.1 /bin/sh -c "apt-get -qq update && apt-get -q -y install tzdata libssl-dev zlib1g-dev && cd /root/ && swift build && swift test --parallel"
