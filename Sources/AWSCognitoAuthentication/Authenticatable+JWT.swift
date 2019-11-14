@@ -15,6 +15,7 @@ public struct AWSCognitoAccessToken: Codable {
     }
 }
 
+/// Public interface functions for authenticating with CognitoIdentityProvider access and id tokens
 public extension AWSCognitoAuthenticatable {
     /// Verify id Token JWT and return contents
     ///

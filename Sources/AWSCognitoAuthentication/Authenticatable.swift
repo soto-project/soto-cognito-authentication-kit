@@ -39,7 +39,10 @@ public struct AWSCognitoAuthenticateResponse: Content {
 }
 
 
-/// Protocol for AWS Cognito authentication class
+/// Protocol for AWS Cognito authentication class.
+///
+/// See [Cognito Userpool](https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-identity-pools.html)
+/// documention for more information.
 public protocol AWSCognitoAuthenticatable {
     /// user pool id
     static var userPoolId: String { get }
@@ -55,7 +58,7 @@ public protocol AWSCognitoAuthenticatable {
     static var jwtSigners: JWTSigners? { get set }
 }
 
-/// public interface functions for user and token authentication
+/// Public interface functions for authenticating with CognitoIdentityProvider and generating access and id tokens.
 public extension AWSCognitoAuthenticatable {
 
     /// Sign up as AWS Cognito user.
@@ -64,7 +67,7 @@ public extension AWSCognitoAuthenticatable {
     /// - parameters:
     ///     - username: user name for new user
     ///     - attributes: user attributes. These should be from the list of standard claims detailed in the [OpenID spec](https://openid.net/specs/openid-connect-core-1_0.html#StandardClaims). You can include custom attiibutes by prepending them with "custom:".
-    ///     - on: The event loop run aws requests on.
+    ///     - on: Event loop request is running on.
     /// - returns:
     ///     EventLoopFuture holding the sign up response
     static func signUp(username: String, password: String, attributes: [String:String], on eventLoop: EventLoop) -> EventLoopFuture<CognitoIdentityProvider.SignUpResponse> {
@@ -85,7 +88,7 @@ public extension AWSCognitoAuthenticatable {
     /// - parameters:
     ///     - username: user name for user
     ///     - confirmationCode: Confirmation code in email
-    ///     - on: The event loop to run  aws requests on.
+    ///     - on: Event loop request is running on.
     /// - returns:
     ///     Empty EventLoopFuture
     static func confirmSignUp(username: String, confirmationCode: String, on eventLoop: EventLoop) -> EventLoopFuture<Void> {
@@ -107,7 +110,7 @@ public extension AWSCognitoAuthenticatable {
     ///     - username: user name for new user
     ///     - attributes: user attributes. These should be from the list of standard claims detailed in the [OpenID spec](https://openid.net/specs/openid-connect-core-1_0.html#StandardClaims) . You can include custom attiibutes by prepending them with "custom:".
     ///     - messageAction: If this is set to `.resend` this will resend the message for an existing user. If this is set to `.suppress` the message sending is suppressed.
-    ///     - on: The event loop run aws requests on.
+    ///     - on: Event loop request is running on.
     /// - returns:
     ///     EventLoopFuture holding the create user response
     static func createUser(username: String, attributes: [String:String], messageAction: CognitoIdentityProvider.MessageActionType? = nil, on eventLoop: EventLoop) -> EventLoopFuture<AWSCognitoCreateUserResponse> {
@@ -132,7 +135,7 @@ public extension AWSCognitoAuthenticatable {
     /// - parameters:
     ///     - username: user name for user
     ///     - password: password for user
-    ///     - on: Vapor Request structure
+    ///     - on: Vapor Request calling this
     /// - returns:
     ///     An authentication response. This can contain a challenge which the user has to fulfill before being allowed to login, or authentication access, id and refresh keys
     static func authenticate(username: String, password: String, on req: Request) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
@@ -152,6 +155,7 @@ public extension AWSCognitoAuthenticatable {
     /// - parameters:
     ///     - username: user name of user
     ///     - refreshToken: refresh token required to generate new access and id tokens
+    ///     - on: Vapor Request calling this
     /// - returns:
     ///     - An authentication result which should include an id and status token
     static func refresh(username: String, refreshToken: String, on req: Request) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
@@ -175,6 +179,7 @@ public extension AWSCognitoAuthenticatable {
     ///     - name: Name of challenge
     ///     - responses: Challenge responses
     ///     - session: Session id returned with challenge
+    ///     - on: Vapor Request calling this
     /// - returns:
     ///     An authentication response. This can contain another challenge which the user has to fulfill before being allowed to login, or authentication access, id and refresh keys
     static func respondToChallenge(username: String, name: AWSCognitoChallengeName, responses: [String: String], session: String, on req: Request) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
@@ -218,6 +223,10 @@ public extension AWSCognitoAuthenticatable {
     }
 
     /// update the users attributes
+    /// - parameters:
+    ///     - username: user name of user
+    ///     - attributes: list of updated attributes for user
+    ///     - on: Event loop request is running on.
     static func updateUserAttributes(username: String, attributes: [String: String], on eventLoop: EventLoop) -> EventLoopFuture<Void> {
         let attributes = attributes.map { CognitoIdentityProvider.AttributeType(name: $0.key, value:  $0.value) }
         let request = CognitoIdentityProvider.AdminUpdateUserAttributesRequest(userAttributes: attributes, username: username, userPoolId: Self.userPoolId)
