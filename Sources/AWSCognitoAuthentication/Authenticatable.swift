@@ -191,10 +191,16 @@ public extension AWSCognitoAuthenticatable {
             var challengeResponses = responses
             challengeResponses["USERNAME"] = username
             challengeResponses["SECRET_HASH"] = secretHash
+            let context: CognitoIdentityProvider.ContextDataType
+            do {
+                context = try contextData(from: req)
+            } catch {
+                return req.eventLoop.makeFailedFuture(error)
+            }
             let request = CognitoIdentityProvider.AdminRespondToAuthChallengeRequest(challengeName: name,
                                                                                      challengeResponses: challengeResponses,
                                                                                      clientId: Self.clientId,
-                                                                                     contextData: contextData(from: req),
+                                                                                     contextData: context,
                                                                                      session: session,
                                                                                      userPoolId: Self.userPoolId)
             return cognitoIDP.adminRespondToAuthChallenge(request)
@@ -258,11 +264,17 @@ extension AWSCognitoAuthenticatable {
 
     /// return an authorization request future
     static func initiateAuthRequest(authFlow: CognitoIdentityProvider.AuthFlowType, authParameters: [String: String], on req: Request) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
+        let context: CognitoIdentityProvider.ContextDataType
+        do {
+            context = try contextData(from: req)
+        } catch {
+            return req.eventLoop.makeFailedFuture(error)
+        }
         let request = CognitoIdentityProvider.AdminInitiateAuthRequest(
             authFlow: authFlow,
             authParameters: authParameters,
             clientId: clientId,
-            contextData: contextData(from: req),
+            contextData: context,
             userPoolId: Self.userPoolId)
         return cognitoIDP.adminInitiateAuth(request)
             .flatMapErrorThrowing { error in
@@ -293,9 +305,9 @@ extension AWSCognitoAuthenticatable {
     }
 
     /// create context data from Vapor request
-    static func contextData(from req: Request) throws -> CognitoIdentityProvider.ContextDataType? {
+    static func contextData(from req: Request) throws -> CognitoIdentityProvider.ContextDataType {
         let host = req.headers["Host"].first ?? "localhost:8080"
-        guard let remoteAddress = req.remoteAddress else { return nil }
+        guard let remoteAddress = req.remoteAddress else { throw AWSCognitoError.failedToCreateContextData }
         let ipAddress: String
         switch remoteAddress {
         case .v4(let address):
