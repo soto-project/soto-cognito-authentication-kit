@@ -8,6 +8,10 @@ import Vapor
 public typealias AWSCognitoChallengeName = CognitoIdentityProvider.ChallengeNameType
 public typealias AWSCognitoUserStatusType = CognitoIdentityProvider.UserStatusType
 
+enum AWSCognitoError: Error {
+    case failedToCreateContextData
+}
+
 /// Response to create user
 public struct AWSCognitoCreateUserResponse: Content {
     public var userName: String
@@ -289,13 +293,24 @@ extension AWSCognitoAuthenticatable {
     }
 
     /// create context data from Vapor request
-    static func contextData(from req: Request) -> CognitoIdentityProvider.ContextDataType? {
+    static func contextData(from req: Request) throws -> CognitoIdentityProvider.ContextDataType? {
         let host = req.headers["Host"].first ?? "localhost:8080"
+        guard let remoteAddress = req.remoteAddress else { return nil }
+        let ipAddress: String
+        switch remoteAddress {
+        case .v4(let address):
+            ipAddress = address.host
+        case .v6(let address):
+            ipAddress = address.host
+        default:
+            throw AWSCognitoError.failedToCreateContextData
+        }
+
         //guard let ipAddress = req.http.remotePeer.hostname ?? req.http.channel?.remoteAddress?.description else { return nil }
         let headers = req.headers.map { CognitoIdentityProvider.HttpHeader(headerName: $0.name, headerValue: $0.value) }
         let contextData = CognitoIdentityProvider.ContextDataType(
             httpHeaders: headers,
-            ipAddress: "127.0.0.1",
+            ipAddress: ipAddress,
             serverName: host,
             serverPath: req.url.path)
         return contextData

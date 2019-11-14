@@ -2,11 +2,6 @@ import CognitoIdentity
 import NIO
 import Vapor
 
-enum AWSCognitoIdentityError: Error {
-    case noIdentityPoolId
-    case noIdentityClient
-}
-
 /// Protocol that include the configuration setup for AWS Cognito Identity.
 ///
 /// See [Cognito Identity Pools](https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-identity.html)
