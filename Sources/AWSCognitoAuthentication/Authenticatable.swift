@@ -105,13 +105,14 @@ public extension AWSCognitoAuthenticatable {
     /// This uses AdminCreateUser. An invitation email, with a password  is sent to the user. This password requires to be renewed as soon as it is used.
     /// - parameters:
     ///     - username: user name for new user
-    ///     - attributes: user attributes. These should be from the list of standard claims detailed in the [OpenID spec](https://openid.net/specs/openid-connect-core-1_0.html#StandardClaims). You can include custom attiibutes by prepending them with "custom:".
+    ///     - attributes: user attributes. These should be from the list of standard claims detailed in the [OpenID spec](https://openid.net/specs/openid-connect-core-1_0.html#StandardClaims) . You can include custom attiibutes by prepending them with "custom:".
+    ///     - messageAction: If this is set to `.resend` this will resend the message for an existing user. If this is set to `.suppress` the message sending is suppressed.
     ///     - on: The event loop run aws requests on.
     /// - returns:
     ///     EventLoopFuture holding the create user response
-    static func createUser(username: String, attributes: [String:String], on eventLoop: EventLoop) -> EventLoopFuture<AWSCognitoCreateUserResponse> {
+    static func createUser(username: String, attributes: [String:String], messageAction: CognitoIdentityProvider.MessageActionType? = nil, on eventLoop: EventLoop) -> EventLoopFuture<AWSCognitoCreateUserResponse> {
         let userAttributes = attributes.map { return CognitoIdentityProvider.AttributeType(name: $0.key, value: $0.value) }
-        let request = CognitoIdentityProvider.AdminCreateUserRequest(desiredDeliveryMediums:[.email], messageAction: .resend,userAttributes: userAttributes, username: username, userPoolId: Self.userPoolId)
+        let request = CognitoIdentityProvider.AdminCreateUserRequest(desiredDeliveryMediums:[.email], messageAction: messageAction, userAttributes: userAttributes, username: username, userPoolId: Self.userPoolId)
         return cognitoIDP.adminCreateUser(request)
             .flatMapErrorThrowing { error in
                 throw translateError(error: error)
@@ -165,6 +166,17 @@ public extension AWSCognitoAuthenticatable {
     }
 
     /// respond to authentication challenge
+    ///
+    /// In some situations when logging in Cognito will respond with a challenge before you are allowed to login. These could be supplying a new password for a new account,
+    /// supply an MFA code. This is used to respond to those challenges. You respond with the challenge name, the session id return in the challenge and the response values required.
+    /// If successful you will be returned an authenticated response which includes the access, id and refresh tokens.
+    /// - parameters:
+    ///     - username: User name of user
+    ///     - name: Name of challenge
+    ///     - responses: Challenge responses
+    ///     - session: Session id returned with challenge
+    /// - returns:
+    ///     An authentication response. This can contain another challenge which the user has to fulfill before being allowed to login, or authentication access, id and refresh keys
     static func respondToChallenge(username: String, name: AWSCognitoChallengeName, responses: [String: String], session: String, on req: Request) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
         return secretHashFuture(username: username, on: req.eventLoop).flatMap { secretHash in
             var challengeResponses = responses
