@@ -71,6 +71,8 @@ let response = Authentication.authenticate(accessToken: token, on: req.eventLoop
 ```
 If the access token has expired, was not issued by the user pool or not created for the app client this call will return a failed `Future` with a unauthorized error.
 
+There is also a Vapor 4 shortcut. Assuming your access token is sent in the "Authorization" header as a bearer token, ie "Bearer < token >", you can call `Authentication.authenticateAccessToken(_ req: Request)`.
+
 ## Verifying the contents of an id token
 Id tokens contain the attributes of a user. As this varies between projects you have to provide a custom class to be filled out with these. The class needs to inherit from `Codable` and the `CodingKeys` need to reflect the keys provided by Amazon Web Services. These are defined in [OIDC Standard Claims](https://openid.net/specs/openid-connect-core-1_0.html#Claims). If you have custom attributes attached to your user these will be prefixed by "custom:". The following will extract the username, email, name and gender from an id token.
 ```
@@ -98,6 +100,8 @@ let response = Authentication.authenticate(idToken: token, on: req.eventLoop)
 }
 ```
 NB The username tag in an ID Token is "cognito:username"
+
+As with the access tokens there is also a Vapor 4 shortcut for id tokens. Assuming your id token is sent in the "Authorization" header as a bearer token you can call `Authentication.authenticateIdToken<Payload>(_ req: Request)`.
 
 ## Responding to authentication challenges
 Sometimes when you try to authenticate a username and password or a refresh token you will be returned a challenge instead of the authentication challenges. An example of being when someone logs in for the first time they are required to change their password before they can continue. In this situation AWS Cognito returns a new password challenge. When you respond to this with a new password it provides you with the authentication tokens. Other situations would include Multi Factor Authentication. The following is responding to the a change password request
