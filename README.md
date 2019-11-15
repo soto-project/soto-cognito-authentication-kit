@@ -1,4 +1,6 @@
 # AWS Cognito Authentication
+[<img src="http://img.shields.io/badge/swift-5.1-brightgreen.svg" alt="Swift 5.1" />](https://swift.org)
+[<img src="https://github.com/adam-fowler/aws-cognito-authentication/workflows/Swift/badge.svg" />](https://github.com/adam-fowler/aws-cognito-authentication/actions)
 
 Amazon Cognito provides authentication, authorization, and user management for your web and mobile apps. This library provides access to this for Vapor server apps. 
 
