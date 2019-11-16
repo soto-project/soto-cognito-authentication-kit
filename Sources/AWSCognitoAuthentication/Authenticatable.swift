@@ -1,6 +1,6 @@
 import AWSSDKSwiftCore
-import CognitoIdentityProvider
-import JWTKit
+@_exported import CognitoIdentityProvider
+@_exported import JWTKit
 import NIO
 import OpenCrypto
 import Vapor
@@ -117,9 +117,9 @@ public extension AWSCognitoAuthenticatable {
     ///     - on: Event loop request is running on.
     /// - returns:
     ///     EventLoopFuture holding the create user response
-    static func createUser(username: String, attributes: [String:String], messageAction: CognitoIdentityProvider.MessageActionType? = nil, on eventLoop: EventLoop) -> EventLoopFuture<AWSCognitoCreateUserResponse> {
+    static func createUser(username: String, attributes: [String:String], temporaryPassword: String? = nil, messageAction: CognitoIdentityProvider.MessageActionType? = nil, on eventLoop: EventLoop) -> EventLoopFuture<AWSCognitoCreateUserResponse> {
         let userAttributes = attributes.map { return CognitoIdentityProvider.AttributeType(name: $0.key, value: $0.value) }
-        let request = CognitoIdentityProvider.AdminCreateUserRequest(desiredDeliveryMediums:[.email], messageAction: messageAction, userAttributes: userAttributes, username: username, userPoolId: Self.userPoolId)
+        let request = CognitoIdentityProvider.AdminCreateUserRequest(desiredDeliveryMediums:[.email], messageAction: messageAction, temporaryPassword: temporaryPassword, userAttributes: userAttributes, username: username, userPoolId: Self.userPoolId)
         return cognitoIDP.adminCreateUser(request)
             .flatMapErrorThrowing { error in
                 throw translateError(error: error)
@@ -139,17 +139,17 @@ public extension AWSCognitoAuthenticatable {
     /// - parameters:
     ///     - username: user name for user
     ///     - password: password for user
-    ///     - on: Vapor Request calling this
+    ///     - with: Eventloop and authenticate context
     /// - returns:
     ///     An authentication response. This can contain a challenge which the user has to fulfill before being allowed to login, or authentication access, id and refresh keys
-    static func authenticate(username: String, password: String, on req: Request) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
-        return secretHashFuture(username: username, on: req.eventLoop).flatMap { secretHash in
+    static func authenticate(username: String, password: String, with eventLoopWithContext: AWSCognitoEventLoopWithContext) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
+        return secretHashFuture(username: username, on: eventLoopWithContext.eventLoop).flatMap { secretHash in
             let authParameters : [String: String] = ["USERNAME":username,
                                                      "PASSWORD": password,
                                                      "SECRET_HASH":secretHash]
             return initiateAuthRequest(authFlow: .adminNoSrpAuth,
                                        authParameters: authParameters,
-                                       on: req)
+                                       with: eventLoopWithContext)
         }
     }
 
@@ -159,17 +159,17 @@ public extension AWSCognitoAuthenticatable {
     /// - parameters:
     ///     - username: user name of user
     ///     - refreshToken: refresh token required to generate new access and id tokens
-    ///     - on: Vapor Request calling this
+    ///     - with: Eventloop and authenticate context
     /// - returns:
     ///     - An authentication result which should include an id and status token
-    static func refresh(username: String, refreshToken: String, on req: Request) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
-        return secretHashFuture(username: username, on: req.eventLoop).flatMap { secretHash in
+    static func refresh(username: String, refreshToken: String, with eventLoopWithContext: AWSCognitoEventLoopWithContext) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
+        return secretHashFuture(username: username, on: eventLoopWithContext.eventLoop).flatMap { secretHash in
             let authParameters : [String: String] = ["USERNAME":username,
                                                      "REFRESH_TOKEN":refreshToken,
                                                      "SECRET_HASH":secretHash]
             return initiateAuthRequest(authFlow: .refreshTokenAuth,
                                            authParameters: authParameters,
-                                           on: req)
+                                           with: eventLoopWithContext)
         }
     }
 
@@ -183,20 +183,15 @@ public extension AWSCognitoAuthenticatable {
     ///     - name: Name of challenge
     ///     - responses: Challenge responses
     ///     - session: Session id returned with challenge
-    ///     - on: Vapor Request calling this
+    ///     - with: EventLoop and authenticate context
     /// - returns:
     ///     An authentication response. This can contain another challenge which the user has to fulfill before being allowed to login, or authentication access, id and refresh keys
-    static func respondToChallenge(username: String, name: AWSCognitoChallengeName, responses: [String: String], session: String, on req: Request) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
-        return secretHashFuture(username: username, on: req.eventLoop).flatMap { secretHash in
+    static func respondToChallenge(username: String, name: AWSCognitoChallengeName, responses: [String: String], session: String, with eventLoopWithContext: AWSCognitoEventLoopWithContext) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
+        return secretHashFuture(username: username, on: eventLoopWithContext.eventLoop).flatMap { secretHash in
             var challengeResponses = responses
             challengeResponses["USERNAME"] = username
             challengeResponses["SECRET_HASH"] = secretHash
-            let context: CognitoIdentityProvider.ContextDataType
-            do {
-                context = try contextData(from: req)
-            } catch {
-                return req.eventLoop.makeFailedFuture(error)
-            }
+            guard let context = eventLoopWithContext.cognitoContextData else { return eventLoopWithContext.eventLoop.makeFailedFuture(AWSCognitoError.failedToCreateContextData) }
             let request = CognitoIdentityProvider.AdminRespondToAuthChallengeRequest(challengeName: name,
                                                                                      challengeResponses: challengeResponses,
                                                                                      clientId: Self.clientId,
@@ -228,7 +223,7 @@ public extension AWSCognitoAuthenticatable {
                         refreshToken: authenticationResult.refreshToken,
                         expiresIn: authenticationResult.expiresIn != nil ? Date(timeIntervalSinceNow: TimeInterval(authenticationResult.expiresIn!)) : nil))
             }
-            .hop(to: req.eventLoop)
+            .hop(to: eventLoopWithContext.eventLoop)
         }
     }
 
@@ -263,13 +258,8 @@ extension AWSCognitoAuthenticatable {
     }
 
     /// return an authorization request future
-    static func initiateAuthRequest(authFlow: CognitoIdentityProvider.AuthFlowType, authParameters: [String: String], on req: Request) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
-        let context: CognitoIdentityProvider.ContextDataType
-        do {
-            context = try contextData(from: req)
-        } catch {
-            return req.eventLoop.makeFailedFuture(error)
-        }
+    static func initiateAuthRequest(authFlow: CognitoIdentityProvider.AuthFlowType, authParameters: [String: String], with eventLoopWithContext: AWSCognitoEventLoopWithContext) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
+        guard let context = eventLoopWithContext.cognitoContextData else {return eventLoopWithContext.eventLoop.makeFailedFuture(AWSCognitoError.failedToCreateContextData)}
         let request = CognitoIdentityProvider.AdminInitiateAuthRequest(
             authFlow: authFlow,
             authParameters: authParameters,
@@ -301,7 +291,7 @@ extension AWSCognitoAuthenticatable {
                     refreshToken: authenticationResult.refreshToken,
                     expiresIn: authenticationResult.expiresIn != nil ? Date(timeIntervalSinceNow: TimeInterval(authenticationResult.expiresIn!)) : nil))
         }
-        .hop(to: req.eventLoop)
+        .hop(to: eventLoopWithContext.eventLoop)
     }
 
     /// create context data from Vapor request
