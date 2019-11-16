@@ -139,7 +139,7 @@ public extension AWSCognitoAuthenticatable {
     /// - parameters:
     ///     - username: user name for user
     ///     - password: password for user
-    ///     - with: Eventloop and authenticate context
+    ///     - with: Eventloop and authenticate context. You can use a Vapor request here.
     /// - returns:
     ///     An authentication response. This can contain a challenge which the user has to fulfill before being allowed to login, or authentication access, id and refresh keys
     static func authenticate(username: String, password: String, with eventLoopWithContext: AWSCognitoEventLoopWithContext) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
@@ -159,7 +159,7 @@ public extension AWSCognitoAuthenticatable {
     /// - parameters:
     ///     - username: user name of user
     ///     - refreshToken: refresh token required to generate new access and id tokens
-    ///     - with: Eventloop and authenticate context
+    ///     - with: Eventloop and authenticate context. You can use a Vapor request here.
     /// - returns:
     ///     - An authentication result which should include an id and status token
     static func refresh(username: String, refreshToken: String, with eventLoopWithContext: AWSCognitoEventLoopWithContext) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
@@ -183,7 +183,7 @@ public extension AWSCognitoAuthenticatable {
     ///     - name: Name of challenge
     ///     - responses: Challenge responses
     ///     - session: Session id returned with challenge
-    ///     - with: EventLoop and authenticate context
+    ///     - with: EventLoop and authenticate context. You can use a Vapor request here.
     /// - returns:
     ///     An authentication response. This can contain another challenge which the user has to fulfill before being allowed to login, or authentication access, id and refresh keys
     static func respondToChallenge(username: String, name: AWSCognitoChallengeName, responses: [String: String], session: String, with eventLoopWithContext: AWSCognitoEventLoopWithContext) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
