@@ -2,6 +2,10 @@ name: Swift
 
 on: [push, pull_request, release]
 
+env:
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
 jobs:
   macOS:
     runs-on: macOS-latest
@@ -19,4 +23,9 @@ jobs:
     - name: Install
       run: docker pull swift:5.1.1
     - name: Build & Test
-      run: docker run -v "$(pwd):/root/" swift:5.1.1 /bin/sh -c "apt-get -qq update && apt-get -q -y install tzdata libssl-dev zlib1g-dev && cd /root/ && swift build && swift test --parallel"
+      run: docker run 
+        -e AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" 
+        -e AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" 
+        -v "$(pwd):/root/" 
+        swift:5.1.1 
+        /bin/sh -c "apt-get -qq update && apt-get -q -y install tzdata libssl-dev zlib1g-dev && cd /root/ && swift build && swift test --parallel"

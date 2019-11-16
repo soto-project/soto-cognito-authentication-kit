@@ -8,6 +8,8 @@ import Vapor
 func attempt(function : () throws -> ()) {
     do {
         try function()
+    } catch let error as AWSErrorType {
+        XCTFail(error.description)
     } catch {
         XCTFail(error.localizedDescription)
     }
@@ -43,6 +45,7 @@ final class AWSCognitoAuthenticationTests: XCTestCase, AWSCognitoAuthenticatable
     static var region: Region = .useast1
     static var jwtSigners: JWTSigners? = nil
     
+    static var setUpFailure: String? = nil
     
     class override func setUp() {
         do {
@@ -79,8 +82,10 @@ final class AWSCognitoAuthenticationTests: XCTestCase, AWSCognitoAuthenticatable
                 self.clientId = createClientResponse.userPoolClient!.clientId!
                 self.clientSecret = createClientResponse.userPoolClient!.clientSecret!
             }
+        } catch let error as AWSErrorType {
+            setUpFailure = error.description
         } catch {
-            print(error.localizedDescription)
+            setUpFailure = error.localizedDescription
         }
     }
     
@@ -133,6 +138,7 @@ final class AWSCognitoAuthenticationTests: XCTestCase, AWSCognitoAuthenticatable
     }
     
     func testAccessToken() {
+        XCTAssertNil(Self.setUpFailure)
         attempt {
             let eventLoop = Self.cognitoIDP.client.eventLoopGroup.next()
             let testData = try TestData(#function, on: eventLoop)
@@ -149,6 +155,7 @@ final class AWSCognitoAuthenticationTests: XCTestCase, AWSCognitoAuthenticatable
     }
 
     func testIdToken() {
+        XCTAssertNil(Self.setUpFailure)
         struct User: Codable {
             let email: String
             let givenName: String
@@ -181,6 +188,7 @@ final class AWSCognitoAuthenticationTests: XCTestCase, AWSCognitoAuthenticatable
     }
 
     func testRefreshToken() {
+        XCTAssertNil(Self.setUpFailure)
         attempt {
             let eventLoop = Self.cognitoIDP.client.eventLoopGroup.next()
             let testData = try TestData(#function, on: eventLoop)
@@ -205,5 +213,7 @@ final class AWSCognitoAuthenticationTests: XCTestCase, AWSCognitoAuthenticatable
     
     static var allTests = [
         ("testAccessToken", testAccessToken),
+        ("testIdToken", testIdToken),
+        ("testRefreshToken", testRefreshToken),
     ]
 }
