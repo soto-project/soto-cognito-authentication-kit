@@ -8,10 +8,12 @@ import Vapor
 public struct AWSCognitoAccessToken: Codable {
     public let username: String
     public let subject: UUID
+    public let expirationTime: Date
 
     private enum CodingKeys: String, CodingKey {
         case username = "username"
         case subject = "sub"
+        case expirationTime = "exp"
     }
 }
 
@@ -31,7 +33,7 @@ public extension AWSCognitoAuthenticatable {
     /// - returns:
     ///     An event loop future containing the payload structure.
     static func authenticate<Payload: Codable>(idToken: String, on eventLoopGroup: EventLoopGroup) -> EventLoopFuture<Payload> {
-        return loadSigners(region: .euwest1, on: eventLoopGroup)
+        return loadSigners(region: Self.region, on: eventLoopGroup)
             .flatMapThrowing { signers in
                 guard let tokenData = idToken.data(using: .utf8) else { throw Abort(.unauthorized) }
                 let jwt = try JWT<VerifiedToken<IdTokenVerifier<Self>, Payload>>(from: tokenData, verifiedBy: signers)
@@ -48,7 +50,7 @@ public extension AWSCognitoAuthenticatable {
     /// - returns:
     ///     An event loop future returning a structure with the username and UUID for the user.
     static func authenticate(accessToken: String, on eventLoopGroup: EventLoopGroup) -> EventLoopFuture<AWSCognitoAccessToken> {
-        return loadSigners(region: .euwest1, on: eventLoopGroup)
+        return loadSigners(region: Self.region, on: eventLoopGroup)
             .flatMapThrowing { signers in
                 guard let tokenData = accessToken.data(using: .utf8) else { throw Abort(.unauthorized) }
                 do {
