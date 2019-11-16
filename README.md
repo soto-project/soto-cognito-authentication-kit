@@ -25,7 +25,7 @@ Assuming we have the `Authentication` class above the following can be used to c
 ```
 let username = "johndoe"
 let attributes: [String: String] = ["email": "user@email.com", "name": "John Doe", "gender": "male"]
-return Authentication.createUser(username: username, attributes: attributes, on: req.eventLoop)
+return Authentication.createUser(username: username, attributes: attributes, on: request.eventLoop)
 ```
 The attributes you provide should match the attributes you selected when creating the user pool in the AWS Cognito console. Once you've created a user an email is sent to them detailing their username and randomly generated password. The `on:` parameter is a Vapor Worker object. You can use the Request class here.
 
@@ -37,7 +37,7 @@ Once your user is created and confirmed in the signUp case. The following will g
 let response = Authentication.authenticate(
     username: username, 
     password: password, 
-    on: req)
+    with: request)
     .then { response in
         let accessToken = response.authenticated?.accessToken
         let idToken = response.authenticated?.idToken
@@ -50,7 +50,7 @@ The access token is used just to indicate a user has been granted access. It con
 ## Verifying an access token is valid
 The following will verify whether a token gives access.
 ```
-let response = Authentication.authenticate(accessToken: token, on: req.eventLoop)
+let response = Authentication.authenticate(accessToken: token, on: request.eventLoop)
     .then { response in
         let username = response.username
         let subject = response.subject
@@ -97,7 +97,7 @@ To avoid having to ask the user for their username and password every 60 minutes
 let response = Authentication.authenticate(
     username: username, 
     refreshToken: refreshToken, 
-    on: req)
+    with: request)
     .then { response in
         let accessToken = response.authenticated?.accessToken
         let idToken = response.authenticated?.idToken
@@ -115,7 +115,7 @@ let response = Authentication.respondToChallenge(
     name: challengeName, 
     responses: challengeResponse, 
     session: session, 
-    on: req)
+    with: request)
     .then { response in
         let accessToken = response.authenticated?.accessToken
         let idToken = response.authenticated?.idToken
