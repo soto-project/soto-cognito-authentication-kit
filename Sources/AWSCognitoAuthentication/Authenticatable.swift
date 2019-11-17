@@ -10,6 +10,8 @@ public typealias AWSCognitoUserStatusType = CognitoIdentityProvider.UserStatusTy
 
 enum AWSCognitoError: Error {
     case failedToCreateContextData
+    case unexpectedResult
+    case invalidPublicKey
 }
 
 /// Response to create user

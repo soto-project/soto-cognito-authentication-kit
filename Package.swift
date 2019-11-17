@@ -12,11 +12,14 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/swift-aws/aws-sdk-swift.git", .upToNextMajor(from: "4.0.0-rc2")),
         .package(url: "https://github.com/vapor/vapor.git", .upToNextMajor(from: "4.0.0-beta")),
-        .package(url: "https://github.com/vapor/jwt-kit.git", .branch("master"))
+        .package(url: "https://github.com/vapor/jwt-kit.git", .branch("master")),
+        // for SRP
+        .package(url: "https://github.com/attaswift/BigInt.git", from: "5.0.0"),
     ],
     targets: [
         .target(name: "AWSCognitoAuthentication",
                 dependencies: [
+                    "BigInt",
                     "CognitoIdentity",
                     "CognitoIdentityProvider",
                     "Vapor",

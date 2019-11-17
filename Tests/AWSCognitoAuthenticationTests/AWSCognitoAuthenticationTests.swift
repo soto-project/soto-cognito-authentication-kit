@@ -211,6 +211,18 @@ final class AWSCognitoAuthenticationTests: XCTestCase, AWSCognitoAuthenticatable
         }
     }
     
+    func testAuthenticateSRP() {
+        XCTAssertNil(Self.setUpFailure)
+        attempt {
+            let eventLoop = Self.cognitoIDP.client.eventLoopGroup.next()
+            let context = AWSCognitoEventLoopWithContextTest(eventLoop)
+            let testData = try TestData(#function, on: eventLoop)
+            
+            let response = try AWSCognitoAuthenticationTests.authenticateSRP(username: testData.username, password: testData.password, with: context).wait()
+            print(response)
+        }
+    }
+    
     static var allTests = [
         ("testAccessToken", testAccessToken),
         ("testIdToken", testIdToken),
