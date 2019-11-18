@@ -12,7 +12,7 @@ extension AWSCognitoAuthenticatable {
     ///     - with: Eventloop and authenticate context. You can use a Vapor request here.
     /// - returns:
     ///     An authentication response. This can contain a challenge which the user has to fulfill before being allowed to login, or authentication access, id and refresh keys
-    static func authenticateSRP(username: String, password: String, userPoolName: String, with eventLoopWithContext: AWSCognitoEventLoopWithContext) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
+    static func authenticateSRP(username: String, password: String, with eventLoopWithContext: AWSCognitoEventLoopWithContext) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
         let eventLoop = eventLoopWithContext.eventLoop
         return secretHashFuture(username: username, on: eventLoop).flatMap { secretHash in
             let srp = SRP<SHA256>()
@@ -25,18 +25,19 @@ extension AWSCognitoAuthenticatable {
                     print("Response \(response)")
                     guard let challenge = response.challenged,
                         let parameters = challenge.parameters,
-                        let saltString = parameters["SALT"],
-                        let salt = BigUInt(saltString, radix:16),
+                        let salt = parameters["SALT"],
                         let secretBlockBase64 = parameters["SECRET_BLOCK"],
                         let secretBlock = Data(base64Encoded: secretBlockBase64),
-                        let dataB = parameters["SRP_B"]?.data(using:.utf8) else { return eventLoop.makeFailedFuture(AWSCognitoError.unexpectedResult) }
+                        let dataB = parameters["SRP_B"] else { return eventLoop.makeFailedFuture(AWSCognitoError.unexpectedResult) }
                     
                     let srpUsername = parameters["USER_ID_FOR_SRP"] ?? username
+                    let userPoolName = userPoolId.split(separator: "_")[1]
                     
-                    let B = BigUInt(dataB)
+                    print("userpoolName: \(userPoolName)")
+                    let B = BigUInt(dataB, radix: 16)!
 
                     // get key
-                    guard let key = srp.getPasswordAuthenticationKey(username: "\(userPoolName)\(srpUsername)", password: password, B: B, salt: salt) else {
+                    guard let key = srp.getPasswordAuthenticationKey(username: "\(userPoolName)\(srpUsername)", password: password, B: B, salt: Data(salt.utf8)) else {
                         return eventLoop.makeFailedFuture(AWSCognitoError.invalidPublicKey)
                     }
 
@@ -47,8 +48,9 @@ extension AWSCognitoAuthenticatable {
                     let timestamp = dateFormatter.string(from: Date())
                     
                     // construct claim
-                    let claim = SRP<SHA256>.HMAC("\(userPoolId.split(separator: "_")[1])\(username)".data(using: .utf8)! + secretBlock + timestamp.data(using: .utf8)!, key: key)
-                                        
+                    let claim = SRP<SHA256>.HMAC(Data("\(userPoolName)\(srpUsername)".utf8) + secretBlock + Data(timestamp.utf8), key: key)
+                                       
+                    print("claim \(claim.hexdigest())")
                     let authResponse : [String: String] = ["USERNAME":username,
                                                              "SECRET_HASH":secretHash,
                                                              "PASSWORD_CLAIM_SECRET_BLOCK": secretBlockBase64,
@@ -62,7 +64,15 @@ extension AWSCognitoAuthenticatable {
 }
 
 class SRP<H: HashFunction> {
-    let N = BigUInt(
+    let N: BigUInt
+    let g : BigUInt
+    let k : BigInt
+    let a : BigUInt
+    let A : BigUInt
+    let infoKey: Data
+
+    init(N: BigUInt? = nil, g: BigUInt? = nil, a: BigUInt? = nil) {
+        self.N = N ?? BigUInt(
         "FFFFFFFFFFFFFFFFC90FDAA22168C234C4C6628B80DC1CD1"
         + "29024E088A67CC74020BBEA63B139B22514A08798E3404DD"
         + "EF9519B3CD3A431B302B0A6DF25F14374FE1356D6D51C245"
@@ -80,38 +90,62 @@ class SRP<H: HashFunction> {
         + "BBE117577A615D6C770988C0BAD946E208E24FA074E5AB31"
         + "43DB5BFCE0FD108E4B82D120A93AD2CAFFFFFFFFFFFFFFFF",
         radix: 16)!
-    let g = BigUInt(2)
-    let k : BigUInt
-    let a : BigUInt
-    let A : BigUInt
+        self.g = g ?? BigUInt(2)
+        // k = H(N,g)
+        self.k = BigUInt(Self.Hash(self.N.serialize() + self.g.serialize()))
+        self.infoKey = Data("Caldera Derived Key".utf8)
 
-    init() {
-        k = BigUInt(Self.Hash(N.serialize() + g.serialize()))
-        var a = BigUInt()
-        var A = BigUInt()
-        repeat {
-            a = BigUInt(Self.HKDF(seed: Data([UInt8].random(count: 128)), info: "Caldera Derived Key".data(using: .utf8)!, salt: Data(), count: 128))
-            A = g.power(a, modulus: N)
-        } while A % N == 0
+        if let a = a {
+            self.a = a
+            self.A = self.g.power(a, modulus: self.N)
+        } else {
+            var a = BigUInt()
+            var A = BigUInt()
+            repeat {
+                a = BigUInt(Self.HKDF(seed: Data([UInt8].random(count: 128)), info: infoKey, salt: Data(), count: 128))
+                A = self.g.power(a, modulus: self.N)
+            } while A % self.N == 0
+            
+            self.a = a
+            print(a.serialize().hexdigest())
+            self.A = A
+        }
         
-        self.a = a
-        self.A = A
+        print("g: \(self.g.serialize().hexdigest())")
+        //print("k: \(k.serialize().hexdigest())")
+        print("a: \(self.a.serialize().hexdigest())")
+        print("N: \(self.N.serialize().hexdigest())")
+        print("A: \(A.serialize().hexdigest())")
     }
     
-    func getPasswordAuthenticationKey(username: String, password: String, B: BigUInt, salt: BigUInt) -> Data? {
+    func getPasswordAuthenticationKey(username: String, password: String, B: BigUInt, salt: Data) -> Data? {
+        print("Username: \(username)")
+        print("Password: \(password)")
+        print("B: \(B.serialize().hexdigest())")
+        print("salt: \(salt)")
+        
         guard B % N != 0 else { return nil }
 
         // calculate u = H(A,B)
         let u = BigUInt(Self.Hash(A.serialize() + B.serialize()))
         
+       // print("u: \(u.serialize().hexdigest())")
+        
         // calculate x = H(salt | H(poolName | userId | ":" | password))
-        let message = "\(username):\(password)".data(using: .utf8)!
-        let x = BigUInt(Self.Hash(salt.serialize() + Self.Hash(message)))
+        let message = Data("\(username):\(password)".utf8)
+        let x = BigUInt(Self.Hash(salt + Self.Hash(message)))
         
+       // print("x: \(x.serialize().hexdigest())")
+
         // calculate S
-        let S = (B - k * g.power(x, modulus: N)).power(a + u * x, modulus: N) % N
-        
-        let key = Self.HKDF(seed: S.serialize(), info: "Caldera Derived Key".data(using: .utf8)!, salt: u.serialize(), count: 16)
+        let sS = ((BigInt(B) - BigInt(k) * BigInt(g).power(BigInt(x), modulus: BigInt(N))).power(BigInt(a) + BigInt(u) * BigInt(x), modulus: BigInt(N)) % BigInt(N))
+        let S = sS.magnitude
+
+        print("S: \(S.serialize().hexdigest())")
+
+        let key = Self.HKDF(seed: S.serialize(), info: infoKey, salt: u.magnitude.serialize(), count: 16)
+
+        print("key: \(key.hexdigest())")
 
         return key
     }    
@@ -149,3 +183,4 @@ func + (lhs: Data, rhs: Data) -> Data {
     result.append(rhs)
     return result
 }
+

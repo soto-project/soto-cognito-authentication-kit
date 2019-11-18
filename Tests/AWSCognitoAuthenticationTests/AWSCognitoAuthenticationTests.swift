@@ -1,5 +1,6 @@
 import XCTest
 import AWSSDKSwiftCore
+import BigInt
 import OpenCrypto
 import NIO
 import Vapor
@@ -96,7 +97,7 @@ final class AWSCognitoAuthenticationTests: XCTestCase, AWSCognitoAuthenticatable
         init(_ testName: String, attributes: [String: String] = [:], on eventloop: EventLoop) throws {
             self.username = testName
             let messageHmac: HashedAuthenticationCode<SHA256> = HMAC.authenticationCode(for: Data(testName.utf8), using: SymmetricKey(data: Data(AWSCognitoAuthenticationTests.clientSecret.utf8)))
-            self.password = messageHmac.description + "1%A"
+            self.password = messageHmac.description + "1!A"
             
             let create = AWSCognitoAuthenticationTests.createUser(username: self.username, attributes: attributes, temporaryPassword: password, messageAction:.suppress, on: eventloop)
                 .map { _ in return }
@@ -218,11 +219,63 @@ final class AWSCognitoAuthenticationTests: XCTestCase, AWSCognitoAuthenticatable
             let context = AWSCognitoEventLoopWithContextTest(eventLoop)
             let testData = try TestData(#function, on: eventLoop)
             
-            let response = try AWSCognitoAuthenticationTests.authenticateSRP(username: testData.username, password: testData.password, userPoolName: Self.userPoolName, with: context).wait()
+            let response = try AWSCognitoAuthenticationTests.authenticateSRP(username: testData.username, password: testData.password, with: context).wait()
             print(response)
         }
     }
+    
+    let N = BigUInt(
+    "FFFFFFFFFFFFFFFFC90FDAA22168C234C4C6628B80DC1CD1"
+    + "29024E088A67CC74020BBEA63B139B22514A08798E3404DD"
+    + "EF9519B3CD3A431B302B0A6DF25F14374FE1356D6D51C245"
+    + "E485B576625E7EC6F44C42E9A637ED6B0BFF5CB6F406B7ED"
+    + "EE386BFB5A899FA5AE9F24117C4B1FE649286651ECE45B3D"
+    + "C2007CB8A163BF0598DA48361C55D39A69163FA8FD24CF5F"
+    + "83655D23DCA3AD961C62F356208552BB9ED529077096966D"
+    + "670C354E4ABC9804F1746C08CA18217C32905E462E36CE3B"
+    + "E39E772C180E86039B2783A2EC07A28FB5C55DF06F4C52C9"
+    + "DE2BCBF6955817183995497CEA956AE515D2261898FA0510"
+    + "15728E5A8AAAC42DAD33170D04507A33A85521ABDF1CBA64"
+    + "ECFB850458DBEF0A8AEA71575D060C7DB3970F85A6E1E4C7"
+    + "ABF5AE8CDB0933D71E8C94E04A25619DCEE3D2261AD2EE6B"
+    + "F12FFA06D98A0864D87602733EC86A64521F2B18177B200C"
+    + "BBE117577A615D6C770988C0BAD946E208E24FA074E5AB31"
+    + "43DB5BFCE0FD108E4B82D120A93AD2CAFFFFFFFFFFFFFFFF",
+    radix: 16)!
+    
+    let g = BigUInt(2)
+    
+    let a = BigUInt(
+        "37981750af33fdf93fc6dce831fe794aba312572e7c33472528" +
+        "54e5ce7c7f40343f5ad82f9ad3585c8cb1184c54c562f8317fc" +
+        "2924c6c7ade72f1e8d964f606e040c8f9f0b12e3fe6b6828202" +
+        "a5e40ca0103e880531921e56de3acc410331b8e5ddcd0dbf249" +
+        "bfa104f6b797719613aa50eabcdb40fd5457f64861dd71890eba",
+        radix: 16)!
+
+    func testSRP() {
+        let B = BigUInt(
+            "a0812a0ee3fa8484a73addeb6a9afa145cff1eca2a6b86537a5d15132d" +
+            "5811dd088d16e7d581b2798229350e6e473503cebddf19cabd3f14fb34" +
+            "50a6858bafc972a29702d8772a22b000a160812a7fe29bcac2c36d43b9" +
+            "1c118224626c2f0782d70f79c82ac5183e0d7d8c7b23ad0bda1f4fba94" +
+            "1998bfc82e46415e49026bb33f8271cb9a56e69f518e90bc2f4c42c7bb" +
+            "27720e25a14dcfbb5176effb3069a2bc627f18ec07a3e4118f61402dda" +
+            "56a6da3f331d8c2cf78513d767b2bf040809e5a334c7bb98cb720ef565" +
+            "4100cfa57d21155fc7630654964370fd512b30febc6c61bfa3415c7266" +
+            "0c5dad3444881d272c3abd7ecec0e483493b1491391bef4348d1c27be7" +
+            "00e443301fc856a9d1b6ca36fdc46eec9f3c51f0ea566f5a85c87d395d" +
+            "3d9fc2a594945a860841d5b328f1910058b2bb822ac976d961736fac42" +
+            "e84b46074762de8b254f37260e3b1da88529dd1060ca52b2dc9de5d773" +
+            "72b1d74ea111de406aac964993133a6f172e8fae54eb885e6a3cd774f1" +
+            "ca6be98b6ddc35",
+            radix: 16)!
+        let salt = BigUInt("8dbcb21f18ae3216", radix: 16)!.serialize()
         
+        let srp = SRP<SHA256>(N: N, g: g, a: a)
+        _ = srp.getPasswordAuthenticationKey(username: "person", password: "password1234", B: B, salt: salt)
+    }
+    
     func testHKDF() {
         let password = "password".data(using: .utf8)!
         let salt = "salt".data(using: .utf8)!
