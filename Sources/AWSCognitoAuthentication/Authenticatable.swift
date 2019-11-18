@@ -188,7 +188,7 @@ public extension AWSCognitoAuthenticatable {
     ///     - with: EventLoop and authenticate context. You can use a Vapor request here.
     /// - returns:
     ///     An authentication response. This can contain another challenge which the user has to fulfill before being allowed to login, or authentication access, id and refresh keys
-    static func respondToChallenge(username: String, name: AWSCognitoChallengeName, responses: [String: String], session: String, with eventLoopWithContext: AWSCognitoEventLoopWithContext) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
+    static func respondToChallenge(username: String, name: AWSCognitoChallengeName, responses: [String: String], session: String?, with eventLoopWithContext: AWSCognitoEventLoopWithContext) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
         return secretHashFuture(username: username, on: eventLoopWithContext.eventLoop).flatMap { secretHash in
             var challengeResponses = responses
             challengeResponses["USERNAME"] = username

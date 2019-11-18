@@ -218,10 +218,22 @@ final class AWSCognitoAuthenticationTests: XCTestCase, AWSCognitoAuthenticatable
             let context = AWSCognitoEventLoopWithContextTest(eventLoop)
             let testData = try TestData(#function, on: eventLoop)
             
-            let response = try AWSCognitoAuthenticationTests.authenticateSRP(username: testData.username, password: testData.password, with: context).wait()
+            let response = try AWSCognitoAuthenticationTests.authenticateSRP(username: testData.username, password: testData.password, userPoolName: Self.userPoolName, with: context).wait()
             print(response)
         }
     }
+        
+    func testHKDF() {
+        let password = "password".data(using: .utf8)!
+        let salt = "salt".data(using: .utf8)!
+        let info = "HKDF key derivation".data(using: .utf8)!
+        
+        let sha1Result = SRP<Insecure.SHA1>.HKDF(seed: password, info: info, salt: salt, count: Insecure.SHA1.Digest.byteCount)
+        XCTAssertEqual(sha1Result.hexdigest().uppercased(), "9912F20853DFF1AFA944E9B88CA63C410CBB1938")
+        let sha256Result = SRP<SHA256>.HKDF(seed: password, info: info, salt: salt, count: 16)
+        XCTAssertEqual(sha256Result.hexdigest().uppercased(), "398F838A6019FC27D99D90009A1FE0BF")
+    }
+    
     
     static var allTests = [
         ("testAccessToken", testAccessToken),
