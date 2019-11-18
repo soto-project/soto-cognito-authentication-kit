@@ -66,7 +66,7 @@ extension AWSCognitoAuthenticatable {
 class SRP<H: HashFunction> {
     let N: BigUInt
     let g : BigUInt
-    let k : BigInt
+    let k : BigUInt
     let a : BigUInt
     let A : BigUInt
     let infoKey: Data
@@ -111,18 +111,18 @@ class SRP<H: HashFunction> {
             self.A = A
         }
         
-        print("g: \(self.g.serialize().hexdigest())")
+        //print("g: \(self.g.serialize().hexdigest())")
         //print("k: \(k.serialize().hexdigest())")
-        print("a: \(self.a.serialize().hexdigest())")
-        print("N: \(self.N.serialize().hexdigest())")
-        print("A: \(A.serialize().hexdigest())")
+        //print("a: \(self.a.serialize().hexdigest())")
+        //print("N: \(self.N.serialize().hexdigest())")
+        //print("A: \(A.serialize().hexdigest())")
     }
     
     func getPasswordAuthenticationKey(username: String, password: String, B: BigUInt, salt: Data) -> Data? {
-        print("Username: \(username)")
-        print("Password: \(password)")
-        print("B: \(B.serialize().hexdigest())")
-        print("salt: \(salt)")
+        //print("Username: \(username)")
+        //print("Password: \(password)")
+        //print("B: \(B.serialize().hexdigest())")
+        //print("salt: \(salt)")
         
         guard B % N != 0 else { return nil }
 
@@ -141,11 +141,11 @@ class SRP<H: HashFunction> {
         let sS = ((BigInt(B) - BigInt(k) * BigInt(g).power(BigInt(x), modulus: BigInt(N))).power(BigInt(a) + BigInt(u) * BigInt(x), modulus: BigInt(N)) % BigInt(N))
         let S = sS.magnitude
 
-        print("S: \(S.serialize().hexdigest())")
+        //print("S: \(S.serialize().hexdigest())")
 
         let key = Self.HKDF(seed: S.serialize(), info: infoKey, salt: u.magnitude.serialize(), count: 16)
 
-        print("key: \(key.hexdigest())")
+        //print("key: \(key.hexdigest())")
 
         return key
     }    
