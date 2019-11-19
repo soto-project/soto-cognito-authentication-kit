@@ -1,4 +1,4 @@
-import BigInt
+import BigNum
 import Foundation
 import NIO
 import OpenCrypto
@@ -18,7 +18,7 @@ extension AWSCognitoAuthenticatable {
             let srp = SRP<SHA256>()
             let authParameters : [String: String] = ["USERNAME":username,
                                                      "SECRET_HASH":secretHash,
-                                                     "SRP_A": srp.A.serialize().hexdigest()]
+                                                     "SRP_A": srp.A.hex]
             print("Parameters \(authParameters)")
             return initiateAuthRequest(authFlow: .userSrpAuth, authParameters: authParameters, with: eventLoopWithContext)
                 .flatMap { response in
@@ -32,8 +32,8 @@ extension AWSCognitoAuthenticatable {
                     
                     let srpUsername = parameters["USER_ID_FOR_SRP"] ?? username
                     let userPoolName = userPoolId.split(separator: "_")[1]
-                    let B = BigUInt(dataB, radix: 16)!
-                    let salt = BigUInt(saltHex, radix: 16)!.serialize()
+                    let B = BigNum(hex: dataB)
+                    let salt = BigNum(hex: saltHex).data
 
                     // get key
                     guard let key = srp.getPasswordAuthenticationKey(username: "\(userPoolName)\(srpUsername)", password: password, B: B, salt: salt) else {
@@ -68,15 +68,15 @@ extension AWSCognitoAuthenticatable {
 }
 
 class SRP<H: HashFunction> {
-    let N: BigUInt
-    let g : BigUInt
-    let k : BigUInt
-    let a : BigUInt
-    let A : BigUInt
+    let N: BigNum
+    let g : BigNum
+    let k : BigNum
+    let a : BigNum
+    let A : BigNum
     let infoKey: Data
 
-    init(N: BigUInt? = nil, g: BigUInt? = nil, a: BigUInt? = nil) {
-        self.N = N ?? BigUInt(
+    init(N: BigNum? = nil, g: BigNum? = nil, a: BigNum? = nil) {
+        self.N = N ?? BigNum(hex:
         "FFFFFFFFFFFFFFFFC90FDAA22168C234C4C6628B80DC1CD1"
         + "29024E088A67CC74020BBEA63B139B22514A08798E3404DD"
         + "EF9519B3CD3A431B302B0A6DF25F14374FE1356D6D51C245"
@@ -92,26 +92,25 @@ class SRP<H: HashFunction> {
         + "ABF5AE8CDB0933D71E8C94E04A25619DCEE3D2261AD2EE6B"
         + "F12FFA06D98A0864D87602733EC86A64521F2B18177B200C"
         + "BBE117577A615D6C770988C0BAD946E208E24FA074E5AB31"
-        + "43DB5BFCE0FD108E4B82D120A93AD2CAFFFFFFFFFFFFFFFF",
-        radix: 16)!
-        self.g = g ?? BigUInt(2)
+        + "43DB5BFCE0FD108E4B82D120A93AD2CAFFFFFFFFFFFFFFFF")
+        self.g = g ?? BigNum(2)
         // k = H(N,g)
-        self.k = BigUInt(Self.Hash(Self.pad(self.N.serialize()) + self.g.serialize()))
+        self.k = BigNum(data: Self.Hash(Self.pad(self.N.data) + self.g.data))
         self.infoKey = Data("Caldera Derived Key".utf8)
 
         if let a = a {
             self.a = a
             self.A = self.g.power(a, modulus: self.N)
         } else {
-            var a = BigUInt()
-            var A = BigUInt()
+            var a = BigNum()
+            var A = BigNum()
             repeat {
-                a = BigUInt(Self.HKDF(seed: Data([UInt8].random(count: 128)), info: infoKey, salt: Data(), count: 128))
+                a = BigNum(data: Self.HKDF(seed: Data([UInt8].random(count: 128)), info: infoKey, salt: Data(), count: 128))
                 A = self.g.power(a, modulus: self.N)
-            } while A % self.N == 0
+            } while A % self.N == BigNum(0)
             
             self.a = a
-            print(a.serialize().hexdigest())
+            print(a.hex)
             self.A = A
         }
         
@@ -122,26 +121,25 @@ class SRP<H: HashFunction> {
         //print("A: \(A.serialize().hexdigest())")
     }
     
-    func getPasswordAuthenticationKey(username: String, password: String, B: BigUInt, salt: Data) -> Data? {
+    func getPasswordAuthenticationKey(username: String, password: String, B: BigNum, salt: Data) -> Data? {
         //print("Username: \(username)")
         //print("Password: \(password)")
         //print("B: \(B.serialize().hexdigest())")
         //print("salt: \(salt)")
         
-        guard B % N != 0 else { return nil }
+        guard B % N != BigNum(0) else { return nil }
 
         // calculate u = H(A,B)
-        let u = BigUInt(Self.Hash(Self.pad(A.serialize()) + Self.pad(B.serialize())))
+        let u = BigNum(data: Self.Hash(Self.pad(A.data) + Self.pad(B.data)))
         
         // calculate x = H(salt | H(poolName | userId | ":" | password))
         let message = Data("\(username):\(password)".utf8)
-        let x = BigUInt(Self.Hash(Self.pad(salt) + Self.Hash(message)))
+        let x = BigNum(data: Self.Hash(Self.pad(salt) + Self.Hash(message)))
         
         // calculate S
-        let sS = (BigInt(B) - BigInt(k) * BigInt(g).power(BigInt(x), modulus: BigInt(N))).power(BigInt(a) + BigInt(u) * BigInt(x), modulus: BigInt(N))
-        let S = sS.magnitude
-
-        let key = Self.HKDF(seed: Self.pad(S.serialize()), info: infoKey, salt: Self.pad(u.serialize()), count: 16)
+        let S = (B - k * g.power(x, modulus: N)).power(a + u * x, modulus: N)
+        
+        let key = Self.HKDF(seed: Self.pad(S.data), info: infoKey, salt: Self.pad(u.data), count: 16)
 
         return key
     }    
