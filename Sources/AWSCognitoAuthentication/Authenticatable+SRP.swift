@@ -92,7 +92,7 @@ class SRP<H: HashFunction> {
         radix: 16)!
         self.g = g ?? BigUInt(2)
         // k = H(N,g)
-        self.k = BigUInt(Self.Hash(self.N.serialize() + self.g.serialize()))
+        self.k = BigUInt(Self.Hash(Self.pad(self.N.serialize()) + self.g.serialize()))
         self.infoKey = Data("Caldera Derived Key".utf8)
 
         if let a = a {
@@ -127,28 +127,27 @@ class SRP<H: HashFunction> {
         guard B % N != 0 else { return nil }
 
         // calculate u = H(A,B)
-        let u = BigUInt(Self.Hash(A.serialize() + B.serialize()))
-        
-       // print("u: \(u.serialize().hexdigest())")
+        let u = BigUInt(Self.Hash(Self.pad(A.serialize()) + Self.pad(B.serialize())))
         
         // calculate x = H(salt | H(poolName | userId | ":" | password))
         let message = Data("\(username):\(password)".utf8)
-        let x = BigUInt(Self.Hash(salt + Self.Hash(message)))
+        let x = BigUInt(Self.Hash(Self.pad(salt) + Self.Hash(message)))
         
-       // print("x: \(x.serialize().hexdigest())")
-
         // calculate S
-        let sS = ((BigInt(B) - BigInt(k) * BigInt(g).power(BigInt(x), modulus: BigInt(N))).power(BigInt(a) + BigInt(u) * BigInt(x), modulus: BigInt(N)) % BigInt(N))
+        let sS = (BigInt(B) - BigInt(k) * BigInt(g).power(BigInt(x), modulus: BigInt(N))).power(BigInt(a) + BigInt(u) * BigInt(x), modulus: BigInt(N))
         let S = sS.magnitude
 
-        //print("S: \(S.serialize().hexdigest())")
-
-        let key = Self.HKDF(seed: S.serialize(), info: infoKey, salt: u.magnitude.serialize(), count: 16)
-
-        //print("key: \(key.hexdigest())")
+        let key = Self.HKDF(seed: Self.pad(S.serialize()), info: infoKey, salt: Self.pad(u.serialize()), count: 16)
 
         return key
     }    
+    
+    static func pad(_ data: Data) -> Data {
+        if data[0] > 0x7f {
+            return Data([0]) + data
+        }
+        return data
+    }
     
     static func Hash<D>(_ data: D) -> Data where D: DataProtocol {
         return Data(H.hash(data: data))
