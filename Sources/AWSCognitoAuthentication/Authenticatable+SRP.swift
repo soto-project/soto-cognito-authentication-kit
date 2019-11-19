@@ -41,14 +41,13 @@ extension AWSCognitoAuthenticatable {
                     }
 
                     let dateFormatter = DateFormatter()
-                    dateFormatter.locale = Locale(identifier: "en_US_POSIX")
-                    dateFormatter.dateFormat = "EEE MMM d HH:mm:ss z yyyy"
-                    dateFormatter.timeZone = TimeZone(secondsFromGMT: 0)
+                    // cognito expects the dateformat to have the timezone as UTC
+                    dateFormatter.dateFormat = "EEE MMM d HH:mm:ss 'UTC' yyyy"
+                    dateFormatter.timeZone = TimeZone(identifier: "UTC")
                     let timestamp = dateFormatter.string(from: Date())
                     
                     // construct claim
-                    let claim = constructClaim(username: "\(userPoolName)\(srpUsername)", secretBlock: secretBlock, timestamp: timestamp, key: key)
-//                    let claim = SRP<SHA256>.HMAC(Data("\(userPoolName)\(srpUsername)".utf8) + secretBlock + Data(timestamp.utf8), key: key)
+                    let claim = SRP<SHA256>.HMAC(Data("\(userPoolName)\(srpUsername)".utf8) + secretBlock + Data(timestamp.utf8), key: key)
                                        
                     print("claim \(claim.hexdigest())")
                     let authResponse : [String: String] = ["USERNAME":srpUsername,
@@ -61,12 +60,9 @@ extension AWSCognitoAuthenticatable {
             }
         }
     }
-    
-    static func constructClaim(username: String, secretBlock: Data, timestamp: String, key: Data) -> Data {
-        return SRP<SHA256>.HMAC(Data("\(username)".utf8) + secretBlock + Data(timestamp.utf8), key: key)
-    }
 }
 
+/// Class to generate SRP password authentication key
 class SRP<H: HashFunction> {
     let N: BigNum
     let g : BigNum
@@ -75,8 +71,8 @@ class SRP<H: HashFunction> {
     let A : BigNum
     let infoKey: Data
 
-    init(N: BigNum? = nil, g: BigNum? = nil, a: BigNum? = nil) {
-        self.N = N ?? BigNum(hex:
+    init(a: BigNum? = nil) {
+        self.N = BigNum(hex:
         "FFFFFFFFFFFFFFFFC90FDAA22168C234C4C6628B80DC1CD1"
         + "29024E088A67CC74020BBEA63B139B22514A08798E3404DD"
         + "EF9519B3CD3A431B302B0A6DF25F14374FE1356D6D51C245"
@@ -93,7 +89,7 @@ class SRP<H: HashFunction> {
         + "F12FFA06D98A0864D87602733EC86A64521F2B18177B200C"
         + "BBE117577A615D6C770988C0BAD946E208E24FA074E5AB31"
         + "43DB5BFCE0FD108E4B82D120A93AD2CAFFFFFFFFFFFFFFFF")
-        self.g = g ?? BigNum(2)
+        self.g = BigNum(2)
         // k = H(N,g)
         self.k = BigNum(data: Self.Hash(Self.pad(self.N.data) + self.g.data))
         self.infoKey = Data("Caldera Derived Key".utf8)
@@ -113,20 +109,11 @@ class SRP<H: HashFunction> {
             print(a.hex)
             self.A = A
         }
-        
-        //print("g: \(self.g.serialize().hexdigest())")
-        //print("k: \(k.serialize().hexdigest())")
-        //print("a: \(self.a.serialize().hexdigest())")
-        //print("N: \(self.N.serialize().hexdigest())")
-        //print("A: \(A.serialize().hexdigest())")
     }
     
+    /// return password authenticatino key given the username, password, B value and salt from the server
     func getPasswordAuthenticationKey(username: String, password: String, B: BigNum, salt: Data) -> Data? {
-        //print("Username: \(username)")
-        //print("Password: \(password)")
-        //print("B: \(B.serialize().hexdigest())")
-        //print("salt: \(salt)")
-        
+
         guard B % N != BigNum(0) else { return nil }
 
         // calculate u = H(A,B)
@@ -144,6 +131,7 @@ class SRP<H: HashFunction> {
         return key
     }    
     
+    /// pad buffer before hashing
     static func pad(_ data: Data) -> Data {
         if data[0] > 0x7f {
             return Data([0]) + data
