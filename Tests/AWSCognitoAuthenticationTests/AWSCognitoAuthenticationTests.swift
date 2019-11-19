@@ -1,5 +1,6 @@
 import XCTest
 import AWSSDKSwiftCore
+import CognitoIdentityProvider
 import BigInt
 import OpenCrypto
 import NIO
@@ -42,7 +43,7 @@ final class AWSCognitoAuthenticationTests: XCTestCase, AWSCognitoAuthenticatable
     static var userPoolId: String = ""
     static var clientId: String = ""
     static var clientSecret: String = ""
-    static let cognitoIDP = CognitoIdentityProvider(region: .useast1, eventLoopGroupProvider: .shared(MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)))
+    static let cognitoIDP = CognitoIdentityProvider(region: .useast1, middlewares: [AWSLoggingMiddleware()], eventLoopGroupProvider: .shared(MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)))
     static var region: Region = .useast1
     static var jwtSigners: JWTSigners? = nil
     
@@ -107,6 +108,9 @@ final class AWSCognitoAuthenticationTests: XCTestCase, AWSCognitoAuthenticatable
                         if error.status == .conflict && error.reason == "Username already exists" {
                             return
                         }
+                    }
+                    if case CognitoIdentityProviderErrorType.usernameExistsException(_) = error {
+                        return
                     }
                     throw error
             }
@@ -217,9 +221,9 @@ final class AWSCognitoAuthenticationTests: XCTestCase, AWSCognitoAuthenticatable
         attempt {
             let eventLoop = Self.cognitoIDP.client.eventLoopGroup.next()
             let context = AWSCognitoEventLoopWithContextTest(eventLoop)
-            let testData = try TestData(#function, on: eventLoop)
+            //let testData = try TestData(#function, on: eventLoop)
             
-            let response = try AWSCognitoAuthenticationTests.authenticateSRP(username: testData.username, password: testData.password, with: context).wait()
+            let response = try AWSCognitoAuthenticationTests.authenticateSRP(username: "adamfowler", password: "Password1!", with: context).wait()
             print(response)
         }
     }
@@ -295,14 +299,59 @@ final class AWSCognitoAuthenticationTests: XCTestCase, AWSCognitoAuthenticatable
             "ca6be98b6ddc35",
             radix: 16)!
         let salt = BigUInt("8dbcb21f18ae3216", radix: 16)!.serialize()
-        let expectedKey = BigUInt("f186bb78f6f07363ea7daeef895436e4", radix: 16)!.serialize()
+        let expectedKey = BigUInt("b70fad71e9658b24b0ec678774ecca30", radix: 16)!.serialize()
         
         let srp = createTestSRP()
         let key = srp.getPasswordAuthenticationKey(username: "poolidtestuser", password: "testpassword", B: B, salt: salt)
-        print(key?.hexdigest())
-//        XCTAssertEqual(key, expectedKey)
+        
+        XCTAssertEqual(key, expectedKey)
     }
     
+    func testClaimConstruction() {
+        let username = "eiXF5hZ2vadamfowler"
+        let secretblock = Data(base64Encoded: "Q5Vyu6s/DJYc4S+jdSbF1FuSiVmbaZzywVSZWmopvyRA4QzWiowM3K3uIqvlqHGLKCT2vGaA5e3nSuW1v7bL72Eg0FkRWDuESUudIa7qkiMWfNOI3s6E6yVUb2u9c2Tfv/y/+qNWRpoEHndpi9QaxWk55nI+2qI4E8/PbSOmvASTfBTrxhIEYefwLu76nWaA8L/Ri1yBYpDbFVCGZbeH7ZGHfHd7MtH6vRzfcobjM17gQSiw0FsV5qiBCBZ7e0NYG7Fp9rmkWqj+VzMs61OlZNS8Lr2Ng7FEbjFRmzBbrbXH/ARQdGH5ncVqh+m0nsN5351wamtzEDjJgSgah//IImKO4er1IZWgHMA2k+ZVacPTu6LV5Nol2GKP6bj3P6yKZ2tBOPSPkqmdZkTW+tx/wBm8m5aitMtiynm29CZLbkEDEpyA3brc6o/Sn5lohU6vmvaUOcMhO3Ctxsp0E+xFENvJq7UVQa5mTQLKr8prULiaWbmvgLdLGxmS+OKHrdpTz1FSpU2sUzVJDGrtL5SAMicZvt+PXO80Nf/i9iG2XCkCn4WbxqHlglor9MhKuDI+OIlBS44BUdJPSwmbU3O/4WI/Nce9GD9gPH5uEtCeEWsoTz0ZC4AFFu2xe/DODNcYlJyGrOm+lPef0MwPzimpJpaioR695DNDGuV8jJw/tkxwmqq6Moto6enuk3Z9tHC/8f8q62K1WSyDGZWR0pqyk+6ssWT2CpKcbqDTy+5Mw1Q4rLd/w7cBSv0gCQbSxKqaOMq1z/YFT9klm2Y061qMKfdrdxpEgHqQhr1OEERyTaZYUllLj4mRI2kHxdHf1RG95yijbYXRDgeVW7hwJuzVCAYlB0ENsbvtXsJ2TZ8zbz+CUMfnDjvqGmsyBE9oSksnaLi/X2/dpC6vm1ONA2P+D+sZ0pJe9YHTvZefATD6WBkx1BMvH3CoLcauaY+7oDqTlFqlgQ2T3I3rk2zMSoeyJE5H3qM1cuIHygbuySvM+gDUpv0XY0Nf7XNapLg2IxTo/8omTN1NpEWtuOERT8NOsD6Dg0FIK5nzMEsSGLC7Z3ifeH8rt3I8HDLEgXDuWZFSUYxnnxXQnDq9rYyJVh1m9mqvZkYkHWAbnqvTKroScifK7NlheyaH5XmCzvYSfDHF6VgahawtQFG5MrX/W9Cl5MOpYhdk3nUFs5lfvr60hmKZPubP6p5+vD6rD8b7X7BHczvS/UCs2rydjoAhGyS2OzMJ04Cza6pkjjyjApGuGjq/IPcsVNlB+M35FsUCicqW/x193JfM75CAwGITVmKPI0TGrPm48qbuVJFdTuEe99Ze5doJzDizpSHrsfcmye4YOC132HpT2DcNNgXZfbQd/TaciwhoRsJ1r4pjV4zsjCsMAGEsw3QfXjMomOIQsPDf4WkwlhwU3zfoJX9TxvycyMxtwEe1rjDQxsYyI8QnvyeplLNPeR5RJg2XA3kqsiO+qQ5F5y+3YZ3eEna++kz3t9dgQdrzXWmNdprS7ZL1mm0U01nda1ama46oKG9IV98yAfvO3ytp6hmuB3rG9eEVeP8npPDWpt04WThbSGLD6L9//Nzm7piWarNz/EQghul00tmmnGELGJgtjywMGD43K1M2av4QctEU0AA5x3giNK/lrtK9YEUcHje5ZH63e9nqh1MN2Vl1392jQ3U+HEc0ItwWhvH2EiAbbS7h2ytBB0i529h8HTaW4RlHMw==")!
+        let timestamp = "Tue Nov 19 12:01:09 UTC 2019"
+        let key = BigUInt("717cd3fc38bcfd3dc5b8dd553bc9e7ba", radix: 16)!.serialize()
+        let claim = Self.constructClaim(username: username, secretBlock: secretblock, timestamp: timestamp, key: key)
+        XCTAssertEqual(claim.base64EncodedString(), "6/T/wT0pcMySO6nsgsjWkgpAEs7pVyjYqrMRLirlRhI=")
+    }
+    
+    func testSRPFixedValues() {
+        let B = BigUInt("951048ec6aa62d9741c4a9708b64eefecdece43dcfd158fa9b789cfe5415c5cc28717686f79c3d099ed36b2e7ae0dc15b28e41fa438ab6e774a5fe72e65acaa15fc73807a084aca162dc6beaa6c1e0af43a69c4e305a08276c7d39373a83ea5c3ef7b6075b376612a93ad1b7685a2c3316d0294a246ca21fc0c10b1742ea8f65f2f34b858b797af6289c7302b455eecfbb5e85fdbbe0749fede363b1fe66e549f9d9db8d6ff818eeb433fb9943ce7a6eb11aaa0aea5967d6df9b2a96bcbad1b11f0d9caf46c36208e6a23ae693ca33d95dd3bab3205000c330a0b6dfe82bc54f5db140d42edad02becefe3803f379ec702c3df90c460d37e6e694cfc6b5fe24304b165f75eefc0a542b10a8a93e9d44318c38bafe3452ebba8a9d8ced42ec15ded6a355b6ab76adf516468e0eda99ffbf7bc6d0852b3a28765ac7f6fe9ac96889b105e50480bd8b3003db559db898dbfe22dc049c559481c387edd4aca7819877dfe0a2e15ab7487ee120e7608b40617f8351ef16f89b0f19381bb62609ff18b", radix: 16)!
+        let salt = BigUInt("9636ac739fefdf69aab566937739ed17", radix: 16)!.serialize()
+        let username = "eiXF5hZ2vadamfowler"
+        let password = "Password1!"
+        let secretblock = Data(base64Encoded: "m9moCzTyZJHYcAWOarOcg6tAVx2gL16nKJjKeeqiUDrRm7rE9duteLc8hf1BoWg6CeeQVtGNg0tKhf7h44Urq20lLfsD5WhGXO4dR1UxzoVTV8y/pKM3OabdLZ9OsTdcq83V7YFbGHGPmUKfRgModHcU3mPwzJcTB4HOdoBllLin2ojPXyjmw4mujMkJUgmYgibXlT848YRaLPmG1lgWotiU2X6lPSLbZR/Mz7upIfbLB4fcNtrpN+As+VwMWtc+e3k5G3k9bjv6ryzsQkNo9ZI8vE/jgTuXDlYbFUSHIIaxjk98YgRE0k6CUYuwibGj/JnA3WfdDXkEHlGO8LISL+1YeWHOS30yO+skuag6i96wde0Ut2lMvAz99o2OItFkbZLY92eCjaiaub26MHbW58bOe2scKp3IHjDhTu5PCt6Gziretw525TNHxKRuPO3brVyZPGSg1b8nYYMMTLmew+mdSGOP1F7GnVh4uBVeP6A9jTWRcvziC/i6mj5EiUed+jRw1Vss/65JOvu/HBkZyQ7gxeMfjJdRv65kbD1ig00rIWcAriuEbSEcNVgH+IqNL3s5E3zSt0NeRHKI8csqIRLKGKb1EdIrNJ+pRaSNIUTmFWsejDj5GGht0FriWfADp8Gg78W5mNGEYzyjUynvgV7A7sMhMMpMTJd6mh+EL97f5xX2XeEl6jBAeIfVdqMrqZSjU7DZ6he5C/SGav8jUappG2r4UpngMvuPT4dnkrCc51sh2oT8gBaSrgQLSsOhaXvUZ8LKVKCs7awr1/pljWrKqOwI1U2ezmIdMnvrjgZhV076HD87cRU+Ex34IvyCfTzMksQY2xAOJnoW4YATgKV9M1ol/z40d4fJ9Vku5elwX1LBUdCp6Re1TL21O+3T+WtmsfPT2a8QcrCZw9hot37+RLB8FKQlUt0wmCdBws/lmgZUZqiUK+2vG2Xb/XnYklA/q/z9pOovk6COwGNbn06+686pggU5f2Lq61CajpV3zvVsDJrhxVE/5ZUt1J2QfPsYH8N1XGeYpYbf9nScsDdADeeZn4RsnYaaJaRpP1weVppnGZKInamYCUO7j3lf3WR9ySHDqyuV5x/SaTGpjmUbc2l/6Wh+jbx8zI3x34+3TbdSzPZphwCu79tFA5v1DDZu1lpO3LSCTDbEWgHDDb2LmzhHdpmiF5wFne+OVl60AIdUCGqtzSpApCmtG9npq5x615UlazU6y9r/10O0jewU+wQQuE6zmdO3YaypJf4nr3efhxfcnJfyTdXy751gmGWYDnv5e68PaUnqHQKW1O/neSFGcjzuM0ghTrQMbfBmjFrkKZbvkAWKEuDtwS+3N4fOvT/ZlwZnnvapaA+k/OY5YFXJPFCxT3witcFloXPNCump/iC8sLqiv31IPQv5E31Fbl6eE1Zk9/SFTmq+sjOcoMq+4kuselu0wq502m613Qg/qU0Mia+YL1hS3GDQDVygDin+ZQlWGg5bcaM7Q4p1K1ohIgUDmZlx9czcfxbiNDeeMnCocKuKwfkblJYGJxWQKHio9i0jU2yW5xjlp+n3TRBCuMg4NAhetQetVJ5VrAbs7nA49aUsri7/qOgQyh8T3D1lIdqopZ0MySTx5X74BBlgpwtkDLsHTvQnpGp7iR0R8T2ukKe8CkZbKPro5nY4+TuYJF0TDfHmeUIjYtc67W7A+8ltE/5IdUgZpy6AmfvOsDzz39ns4aU=")!
+        let timestamp = "Tue Nov 19 12:38:13 UTC 2019"
+
+        let srp = createTestSRP()
+        let key = srp.getPasswordAuthenticationKey(username: username, password: password, B: B, salt: salt)!
+        print(key.hexdigest())
+        let claim = Self.constructClaim(username: username, secretBlock: secretblock, timestamp: timestamp, key: key)
+        print(claim.base64EncodedString())
+    }
+    
+    func testRespond() {
+        let authResponse : [String: String] = ["USERNAME":"adamfowler",
+                                                 "SECRET_HASH":"r3Y8SKNDld6hDgdvuwr6gLA+k2Tvl4pl5nPEGiMyxGQ=",
+                                                 "PASSWORD_CLAIM_SECRET_BLOCK": "3R+88IHVAaOJfOEP4q7cO0oLlM0sB1pRczGTfW0yMi0dYxiB6w4ME754lv+QHetb7pVHzEy6EiPb/iNz1Y/G0aLePLcMY3fk6sVkc+xbcDB4GVwgtiSOKo2bUwiK5Rpn/HEEHMdeymg/Fs6ijdWIEo8q2rrWvPZxKoJxgCphirlkPkcN5plFZDrO3zejMXVsbyUjxJ7MwoYQ1BBhXu2WFdjaRSoQwWnDZAsM/SiaqoErhCakF/uRFAKQQSoJjZ4DICG5Ykw6cg2ZvE3IUmnnzge+yblp2bIPAYJt6I4g8N+xrLP9cGTdyqIFEbgLQ+JKivuZvolFry+nDpDpcoVGxiPj1NfHlfdXuUl0lvCMABulFjLS5y83Rs8FpUVob3ESeRO3PNnt3B9ZDomu8piWvh0XDj7U9lmb0QrStICTmph0DQxR/w/LOuQC7FFA3us0EaceAm1tzwM3iSfY5OLgNQ/LGqEquajsLK0xLcbLBucz0ZXCTerasZTxDwp8WEtqMIU9dTfBtUyERdWwfH502B4NaoTuV+apYJfhkbe/tVkZ4GgQ4ivnslCeiTOG82dLc3txVU7FwwQNQOh53kFzvQxAooUDjh9mzC7SbheFbtLnTthrfYCzj9wRDd/3aleX7AdkQkvb9KS09ClL8kmyeuhIJHLR9ilXaV/lWvgk2SYO2lexcvpP4J6FXTFJyaQpJBLgS+eb+8PEltD0bLrkEwbq8pO+ETvj64yfxKp3M3BXFPDJCsFIuYeqkfx76p7vSE3l1ELRsCV79mH3iqIEHPhMM7ytmd6mK79AiAXhgzBXOiDK83eMj+m5o/xt/tBhFdNMZfFZ8HH5HyFOW7+yOhrEsXDB//g0ft4IXmQRFzr2DuZgp27nvfDC+vQropt+bXa/sNlEPsQ77tc+mP9Kc9nXcK2pOh4zvIF0m2eDZ8Lko2ph2/HBCen8I+20KW35qcNaygLA/ImOXGJ7lbT0Mv6OwWdu4xyEAa7QaSxj2ECSyVAbehXukP0BNaD8+a2lSU5C0uHPTss21z8F+TmVjIs4DUmhGtGiQIEzj122VKwgSoKHr7q8CDmwtGZTfZRj2ay9wPSq4/b0Wq4qqeWyozLsilznc+LlTRRqnP5Gc8k8DHrcK8Z4MBdVKR8fbeP2z/cICYiHXZEBv+Eaqrf34FtAqXLDSFTB+Amk+qoR4jS9uVLmX3FEVBEbsEOv9Sa8zgXTEa9PgHIXOAOuQ/UmTAp4IDlfyCcV9YLN7hInSlTcTtlaAe+srElWKre7wuIvG9ZzRGYhwCD0K3KzlbfDBUmiBM6y7LULGBmThTNj2uoMgmXefZvXpaxBLj8GoxvfNuG4ham91efF2rWOIwosZ9BKJTy8/BQ/DctlFSLjqtD9j27WIBmTqiny5xb5wAXOV4o35tEY8iSrcIro93phG5/vQatixoxoHLH+SyBRyywrV8MXelVq7I3zWbhnBDovnZzz716UV8StlFJRXBg4R3Cfyvnw9gtTPw8TZksh4iD9d83JNZfszbjGmhjDjvWR4MRp+rYFHDxpoOj9hp2r2g77dY23kan64uHr9zzcM+Gtq8Pb0MJGEqVizhHTSTjGF7Uur3nNzdHs18MQ+9zIzC2UGMbuYG+Lkoa/51iWC7kJv6OpHl8+/OoVbzpCvLl0DRf4EZjMiMRubiTkfxEe5SMeQp7omLF55kfPurBiKFEKcJeGgqwq9Qc4mQ==",
+                                                 "PASSWORD_CLAIM_SIGNATURE": "qS0CHIIX/OSb1AzanFsufw9J0Q2dtGn3dzam/27DjFI=",
+                                                 "TIMESTAMP": "Tue Nov 19 13:44:39 UTC 2019"
+        ]
+        attempt {
+            //let eventLoop = Self.cognitoIDP.client.eventLoopGroup.next()
+            //let context = AWSCognitoEventLoopWithContextTest(eventLoop)
+            let request = CognitoIdentityProvider.AdminRespondToAuthChallengeRequest(challengeName: .passwordVerifier,
+                                                                                     challengeResponses: authResponse,
+                                                                                     clientId: Self.clientId,
+                                                                                     userPoolId: Self.userPoolId)
+            let result = try Self.cognitoIDP.adminRespondToAuthChallenge(request).wait()
+
+            //let result = try Self.respondToChallenge(username: "adamfowler", name: .passwordVerifier, responses: authResponse, session: nil, with: context).wait()
+            print(result)
+        }
+
+    }
     func testHKDF() {
         let password = "password".data(using: .utf8)!
         let salt = "salt".data(using: .utf8)!

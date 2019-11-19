@@ -322,7 +322,8 @@ extension AWSCognitoAuthenticatable {
 
     /// translate error from one thrown by aws-sdk-swift to vapor error
     static func translateError(error: Error) -> Error {
-        switch error {
+        return error
+/*        switch error {
         case CognitoIdentityProviderErrorType.codeMismatchException(let message):
             return Abort(.badRequest, reason: message)
 
@@ -348,6 +349,6 @@ extension AWSCognitoAuthenticatable {
 
         default:
             return error
-        }
+        }*/
     }
 }
