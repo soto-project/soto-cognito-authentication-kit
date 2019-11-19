@@ -25,19 +25,18 @@ extension AWSCognitoAuthenticatable {
                     print("Response \(response)")
                     guard let challenge = response.challenged,
                         let parameters = challenge.parameters,
-                        let salt = parameters["SALT"],
+                        let saltHex = parameters["SALT"],
                         let secretBlockBase64 = parameters["SECRET_BLOCK"],
                         let secretBlock = Data(base64Encoded: secretBlockBase64),
                         let dataB = parameters["SRP_B"] else { return eventLoop.makeFailedFuture(AWSCognitoError.unexpectedResult) }
                     
                     let srpUsername = parameters["USER_ID_FOR_SRP"] ?? username
                     let userPoolName = userPoolId.split(separator: "_")[1]
-                    
-                    print("userpoolName: \(userPoolName)")
                     let B = BigUInt(dataB, radix: 16)!
+                    let salt = BigUInt(saltHex, radix: 16)!.serialize()
 
                     // get key
-                    guard let key = srp.getPasswordAuthenticationKey(username: "\(userPoolName)\(srpUsername)", password: password, B: B, salt: Data(salt.utf8)) else {
+                    guard let key = srp.getPasswordAuthenticationKey(username: "\(userPoolName)\(srpUsername)", password: password, B: B, salt: salt) else {
                         return eventLoop.makeFailedFuture(AWSCognitoError.invalidPublicKey)
                     }
 
@@ -48,10 +47,11 @@ extension AWSCognitoAuthenticatable {
                     let timestamp = dateFormatter.string(from: Date())
                     
                     // construct claim
-                    let claim = SRP<SHA256>.HMAC(Data("\(userPoolName)\(srpUsername)".utf8) + secretBlock + Data(timestamp.utf8), key: key)
+                    let claim = constructClaim(username: "\(userPoolName)\(srpUsername)", secretBlock: secretBlock, timestamp: timestamp, key: key)
+//                    let claim = SRP<SHA256>.HMAC(Data("\(userPoolName)\(srpUsername)".utf8) + secretBlock + Data(timestamp.utf8), key: key)
                                        
                     print("claim \(claim.hexdigest())")
-                    let authResponse : [String: String] = ["USERNAME":username,
+                    let authResponse : [String: String] = ["USERNAME":srpUsername,
                                                              "SECRET_HASH":secretHash,
                                                              "PASSWORD_CLAIM_SECRET_BLOCK": secretBlockBase64,
                                                              "PASSWORD_CLAIM_SIGNATURE": claim.base64EncodedString(),
@@ -60,6 +60,10 @@ extension AWSCognitoAuthenticatable {
                     return respondToChallenge(username: username, name: .passwordVerifier, responses: authResponse, session: challenge.session, with: eventLoopWithContext)
             }
         }
+    }
+    
+    static func constructClaim(username: String, secretBlock: Data, timestamp: String, key: Data) -> Data {
+        return SRP<SHA256>.HMAC(Data("\(username)".utf8) + secretBlock + Data(timestamp.utf8), key: key)
     }
 }
 
