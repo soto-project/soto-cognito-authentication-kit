@@ -29,7 +29,7 @@ extension AWSCognitoAuthenticatable {
                         let salt = BigNum(hex: saltHex)?.data,
                         let secretBlockBase64 = parameters["SECRET_BLOCK"],
                         let secretBlock = Data(base64Encoded: secretBlockBase64),
-                        let dataB = parameters["SRP_B"] else { return eventLoop.makeFailedFuture(AWSCognitoError.unexpectedResult) }
+                        let dataB = parameters["SRP_B"] else { return eventLoop.makeFailedFuture(AWSCognitoError.unexpectedResult(reason: "AWS did not provide all the data required to do SRP authentication")) }
                     
                     let srpUsername = parameters["USER_ID_FOR_SRP"] ?? username
                     let userPoolName = userPoolId.split(separator: "_")[1]
@@ -164,12 +164,5 @@ class SRP<H: HashFunction> {
         }
         return Data(result[0..<count])
     }
-}
-
-// Removed in Xcode 8 beta 3
-func + (lhs: Data, rhs: Data) -> Data {
-    var result = lhs
-    result.append(rhs)
-    return result
 }
 

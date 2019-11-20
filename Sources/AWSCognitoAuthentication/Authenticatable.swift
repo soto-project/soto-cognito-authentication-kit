@@ -1,21 +1,23 @@
-import AWSSDKSwiftCore
 @_exported import CognitoIdentityProvider
 @_exported import JWTKit
+
+import AWSSDKSwiftCore
+import Foundation
 import NIO
 import OpenCrypto
-import Vapor
 
 public typealias AWSCognitoChallengeName = CognitoIdentityProvider.ChallengeNameType
 public typealias AWSCognitoUserStatusType = CognitoIdentityProvider.UserStatusType
 
 enum AWSCognitoError: Error {
     case failedToCreateContextData
-    case unexpectedResult
+    case unexpectedResult(reason: String?)
+    case unauthorized(reason: String?)
     case invalidPublicKey
 }
 
 /// Response to create user
-public struct AWSCognitoCreateUserResponse: Content {
+public struct AWSCognitoCreateUserResponse: Codable {
     public var userName: String
     public var userStatus: AWSCognitoUserStatusType
 }
@@ -34,7 +36,7 @@ public struct ChallengedResponse: Codable {
     public let session: String?
 }
 
-public struct AWSCognitoAuthenticateResponse: Content {
+public struct AWSCognitoAuthenticateResponse: Codable {
     public let authenticated: AuthenticatedResponse?
     public let challenged: ChallengedResponse?
 
@@ -130,7 +132,7 @@ public extension AWSCognitoAuthenticatable {
                 guard let user = response.user,
                     let username = user.username,
                     let userStatus = user.userStatus
-                    else { throw Abort(.internalServerError) }
+                    else { throw AWSCognitoError.unexpectedResult(reason: "AWS did not supply all the user information expected") }
                 return AWSCognitoCreateUserResponse(userName: username, userStatus: userStatus)
         }
         .hop(to: eventLoop)
@@ -216,7 +218,7 @@ public extension AWSCognitoAuthenticatable {
                                     parameters: response.challengeParameters,
                                     session: response.session))
                             }
-                            throw Abort(.unauthorized)
+                            throw AWSCognitoError.unexpectedResult(reason: "Authenticated response does not authentication tokens or challenge information") // should have either an authenticated result or a challenge
                     }
 
                     return AWSCognitoAuthenticateResponse(authenticated: AuthenticatedResponse(
@@ -284,7 +286,7 @@ extension AWSCognitoAuthenticatable {
                                 parameters: response.challengeParameters,
                                 session: response.session))
                         }
-                        throw Abort(.unauthorized)
+                        throw AWSCognitoError.unexpectedResult(reason: "Authenticated response does not authentication tokens or challenge information") // should have either an authenticated result or a challenge
                 }
 
                 return AWSCognitoAuthenticateResponse(authenticated: AuthenticatedResponse(
@@ -296,59 +298,14 @@ extension AWSCognitoAuthenticatable {
         .hop(to: eventLoopWithContext.eventLoop)
     }
 
-    /// create context data from Vapor request
-    static func contextData(from req: Request) throws -> CognitoIdentityProvider.ContextDataType {
-        let host = req.headers["Host"].first ?? "localhost:8080"
-        guard let remoteAddress = req.remoteAddress else { throw AWSCognitoError.failedToCreateContextData }
-        let ipAddress: String
-        switch remoteAddress {
-        case .v4(let address):
-            ipAddress = address.host
-        case .v6(let address):
-            ipAddress = address.host
-        default:
-            throw AWSCognitoError.failedToCreateContextData
-        }
-
-        //guard let ipAddress = req.http.remotePeer.hostname ?? req.http.channel?.remoteAddress?.description else { return nil }
-        let headers = req.headers.map { CognitoIdentityProvider.HttpHeader(headerName: $0.name, headerValue: $0.value) }
-        let contextData = CognitoIdentityProvider.ContextDataType(
-            httpHeaders: headers,
-            ipAddress: ipAddress,
-            serverName: host,
-            serverPath: req.url.path)
-        return contextData
-    }
-
     /// translate error from one thrown by aws-sdk-swift to vapor error
     static func translateError(error: Error) -> Error {
-        return error
-/*        switch error {
-        case CognitoIdentityProviderErrorType.codeMismatchException(let message):
-            return Abort(.badRequest, reason: message)
-
-        case CognitoIdentityProviderErrorType.invalidPasswordException(let message),
-             CognitoIdentityProviderErrorType.invalidParameterException(let message):
-            return Abort(.badRequest, reason: message)
-
-        case CognitoIdentityProviderErrorType.resourceNotFoundException(let message):
-            return Abort(.notFound, reason: message)
-
-        case CognitoIdentityProviderErrorType.notAuthorizedException(_),
-             CognitoIdentityProviderErrorType.userNotFoundException(_):
-            return Abort(.unauthorized)
-
-        case CognitoIdentityProviderErrorType.usernameExistsException(_):
-            return Abort(.conflict, reason:"Username already exists")
-
-        case CognitoIdentityProviderErrorType.unsupportedUserStateException(_):
-            return Abort(.conflict, reason:"Username already exists")
-
-        case CognitoIdentityProviderErrorType.userNotConfirmedException(_):
-            return Abort(.notAcceptable, reason:"User is not confirmed")
+        switch error {
+        case CognitoIdentityProviderErrorType.notAuthorizedException(let message):
+            return AWSCognitoError.unauthorized(reason: message)
 
         default:
             return error
-        }*/
+        }
     }
 }
