@@ -1,5 +1,6 @@
 import AsyncHTTPClient
 import AWSSDKSwiftCore
+import Foundation
 import JWTKit
 import NIO
 import Vapor
@@ -35,7 +36,7 @@ public extension AWSCognitoAuthenticatable {
     static func authenticate<Payload: Codable>(idToken: String, on eventLoopGroup: EventLoopGroup) -> EventLoopFuture<Payload> {
         return loadSigners(region: Self.region, on: eventLoopGroup)
             .flatMapThrowing { signers in
-                guard let tokenData = idToken.data(using: .utf8) else { throw Abort(.unauthorized) }
+                guard let tokenData = idToken.data(using: .utf8) else { throw AWSCognitoError.unauthorized(reason: "Id Token string failed to convert to Data") }
                 let jwt = try JWT<VerifiedToken<IdTokenVerifier<Self>, Payload>>(from: tokenData, verifiedBy: signers)
                 return jwt.payload.payload
         }
@@ -52,13 +53,13 @@ public extension AWSCognitoAuthenticatable {
     static func authenticate(accessToken: String, on eventLoopGroup: EventLoopGroup) -> EventLoopFuture<AWSCognitoAccessToken> {
         return loadSigners(region: Self.region, on: eventLoopGroup)
             .flatMapThrowing { signers in
-                guard let tokenData = accessToken.data(using: .utf8) else { throw Abort(.unauthorized) }
-                do {
+                guard let tokenData = accessToken.data(using: .utf8) else { throw AWSCognitoError.unauthorized(reason: "Access Token string failed to convert to Data") }
+//                do {
                     let jwt = try JWT<VerifiedToken<AccessTokenVerifier<Self>, AWSCognitoAccessToken>>(from: tokenData, verifiedBy: signers)
                     return jwt.payload.payload
-                } catch DecodingError.keyNotFound(let key, _) {
+/*                } catch DecodingError.keyNotFound(let key, _) {
                     throw Abort(.unauthorized, reason: "This is not an access Token. Field '\(key.stringValue)' is missing")
-                }
+                }*/
         }
     }
     
@@ -69,7 +70,7 @@ public extension AWSCognitoAuthenticatable {
     ///     An access token object that contains the user name and id
     static func authenticateAccessToken(_ req: Request) -> EventLoopFuture<AWSCognitoAccessToken> {
         guard let bearer = req.headers.bearerAuthorization else {
-            return req.eventLoop.makeFailedFuture(Abort(.unauthorized))
+            return req.eventLoop.makeFailedFuture(AWSCognitoError.unauthorized(reason: "No bearer token"))
         }
         return authenticate(accessToken: bearer.token, on: req.eventLoop)
     }
@@ -81,7 +82,7 @@ public extension AWSCognitoAuthenticatable {
     ///     The payload contained in the token. See `authenticate<Payload: Codable>(idToken:on:)` for more details
     static func authenticateIdToken<Payload: Codable>(_ req: Request) -> EventLoopFuture<Payload> {
         guard let bearer = req.headers.bearerAuthorization else {
-            return req.eventLoop.makeFailedFuture(Abort(.unauthorized))
+            return req.eventLoop.makeFailedFuture(AWSCognitoError.unauthorized(reason: "No bearer token"))
         }
         return authenticate(idToken: bearer.token, on: req.eventLoop)
     }

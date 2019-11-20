@@ -1,6 +1,5 @@
 import CognitoIdentity
 import NIO
-import Vapor
 
 /// Protocol that include the configuration setup for AWS Cognito Identity.
 ///
@@ -39,7 +38,7 @@ public extension AWSCognitoIdentifiable {
                 throw translateError(error: error)
             }
             .flatMapThrowing { response in
-                guard let identityId = response.identityId else { throw Abort(.internalServerError) }
+                guard let identityId = response.identityId else { throw AWSCognitoError.unexpectedResult(reason: "AWS did not return an identity id") }
                 return identityId
             }
             .hop(to: eventLoop)
@@ -59,7 +58,7 @@ public extension AWSCognitoIdentifiable {
                 throw translateError(error: error)
             }
             .flatMapThrowing { response in
-                guard let credentials = response.credentials else { throw Abort(.internalServerError) }
+                guard let credentials = response.credentials else { throw AWSCognitoError.unexpectedResult(reason: "AWS did not supply any credentials") }
                 return credentials
             }
         .hop(to: eventLoop)
@@ -71,7 +70,7 @@ extension AWSCognitoIdentifiable {
     static func translateError(error: Error) -> Error {
         switch error {
         case CognitoIdentityErrorType.notAuthorizedException(let message):
-            return Abort(.unauthorized, reason: message)
+            return AWSCognitoError.unauthorized(reason: message)
 
         default:
             return error
