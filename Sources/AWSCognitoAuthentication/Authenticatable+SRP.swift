@@ -26,15 +26,15 @@ extension AWSCognitoAuthenticatable {
                     guard let challenge = response.challenged,
                         let parameters = challenge.parameters,
                         let saltHex = parameters["SALT"],
+                        let salt = BigNum(hex: saltHex)?.data,
                         let secretBlockBase64 = parameters["SECRET_BLOCK"],
                         let secretBlock = Data(base64Encoded: secretBlockBase64),
                         let dataB = parameters["SRP_B"] else { return eventLoop.makeFailedFuture(AWSCognitoError.unexpectedResult) }
                     
                     let srpUsername = parameters["USER_ID_FOR_SRP"] ?? username
                     let userPoolName = userPoolId.split(separator: "_")[1]
-                    let B = BigNum(hex: dataB)
-                    let salt = BigNum(hex: saltHex).data
-
+                    guard let B = BigNum(hex: dataB) else { return eventLoop.makeFailedFuture(AWSCognitoError.invalidPublicKey) }
+                    
                     // get key
                     guard let key = srp.getPasswordAuthenticationKey(username: "\(userPoolName)\(srpUsername)", password: password, B: B, salt: salt) else {
                         return eventLoop.makeFailedFuture(AWSCognitoError.invalidPublicKey)
@@ -88,7 +88,7 @@ class SRP<H: HashFunction> {
         + "ABF5AE8CDB0933D71E8C94E04A25619DCEE3D2261AD2EE6B"
         + "F12FFA06D98A0864D87602733EC86A64521F2B18177B200C"
         + "BBE117577A615D6C770988C0BAD946E208E24FA074E5AB31"
-        + "43DB5BFCE0FD108E4B82D120A93AD2CAFFFFFFFFFFFFFFFF")
+        + "43DB5BFCE0FD108E4B82D120A93AD2CAFFFFFFFFFFFFFFFF")!
         self.g = BigNum(2)
         // k = H(N,g)
         self.k = BigNum(data: Self.Hash(Self.pad(self.N.data) + self.g.data))

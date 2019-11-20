@@ -273,9 +273,9 @@ final class AWSCognitoAuthenticationTests: XCTestCase, AWSCognitoAuthenticatable
             "3d9fc2a594945a860841d5b328f1910058b2bb822ac976d961736fac42" +
             "e84b46074762de8b254f37260e3b1da88529dd1060ca52b2dc9de5d773" +
             "72b1d74ea111de406aac964993133a6f172e8fae54eb885e6a3cd774f1" +
-            "ca6be98b6ddc35")
-        let salt = BigNum(hex: "8dbcb21f18ae3216").data
-        let expectedKey = BigNum(hex: "b70fad71e9658b24b0ec678774ecca30").data
+            "ca6be98b6ddc35")!
+        let salt = BigNum(hex: "8dbcb21f18ae3216")!.data
+        let expectedKey = BigNum(hex: "b70fad71e9658b24b0ec678774ecca30")!.data
         
         let srp = createTestSRP()
         let key = srp.getPasswordAuthenticationKey(username: "poolidtestuser", password: "testpassword", B: B, salt: salt)
