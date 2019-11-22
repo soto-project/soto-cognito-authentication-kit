@@ -10,7 +10,7 @@ let package = Package(
         .library(name: "AWSCognitoAuthentication", targets: ["AWSCognitoAuthentication"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/swift-aws/aws-sdk-swift.git", .upToNextMajor(from: "4.0.0-rc2")),
+        .package(url: "https://github.com/swift-aws/aws-sdk-swift.git", .upToNextMajor(from: "4.0.0")),
         .package(url: "https://github.com/vapor/vapor.git", .upToNextMajor(from: "4.0.0-beta")),
         .package(url: "https://github.com/vapor/jwt-kit.git", .branch("master")),
         // for SRP
