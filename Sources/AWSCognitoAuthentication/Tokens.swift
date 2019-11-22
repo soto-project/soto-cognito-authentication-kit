@@ -1,5 +1,4 @@
 import JWTKit
-import Vapor
 
 /// JWT Access token
 struct AccessTokenVerifier<Config: AWSCognitoAuthenticatable>: JWTPayload {
@@ -8,9 +7,11 @@ struct AccessTokenVerifier<Config: AWSCognitoAuthenticatable>: JWTPayload {
     let tokenUse: String
 
     func verify(using signer: JWTSigner) throws {
-        guard expirationTime > Date() else {throw Abort(.unauthorized, reason:"token expired")}
-        guard issuer == "https://cognito-idp.\(Config.region.rawValue).amazonaws.com/\(Config.userPoolId)" else {throw Abort(.unauthorized)}
-        guard tokenUse == "access" else {throw Abort(.unauthorized)}
+        guard expirationTime > Date() else {throw AWSCognitoError.unauthorized(reason:"token expired")}
+        guard issuer == "https://cognito-idp.\(Config.region.rawValue).amazonaws.com/\(Config.userPoolId)" else {
+            throw AWSCognitoError.unauthorized(reason:"invalid token")
+        }
+        guard tokenUse == "access" else {throw AWSCognitoError.unauthorized(reason:"invalid token")}
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -28,10 +29,12 @@ struct IdTokenVerifier<Config: AWSCognitoAuthenticatable>: JWTPayload {
     let tokenUse: String
 
     func verify(using signer: JWTSigner) throws {
-        guard audience == Config.clientId else {throw Abort(.unauthorized)}
-        guard expirationTime > Date() else {throw Abort(.unauthorized, reason:"token expired")}
-        guard issuer == "https://cognito-idp.\(Config.region.rawValue).amazonaws.com/\(Config.userPoolId)" else {throw Abort(.unauthorized)}
-        guard tokenUse == "id" else {throw Abort(.unauthorized)}
+        guard audience == Config.clientId else {throw AWSCognitoError.unauthorized(reason:"invalid token")}
+        guard expirationTime > Date() else {throw AWSCognitoError.unauthorized(reason:"token expired")}
+        guard issuer == "https://cognito-idp.\(Config.region.rawValue).amazonaws.com/\(Config.userPoolId)" else {
+            throw AWSCognitoError.unauthorized(reason:"invalid token")
+        }
+        guard tokenUse == "id" else {throw AWSCognitoError.unauthorized(reason:"invalid token")}
     }
 
     private enum CodingKeys: String, CodingKey {
