@@ -21,11 +21,8 @@ jobs:
       
   linux:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        tag: ['5.0', '5.1']
     container:
-      image: swift:${{ matrix.tag }}
+      image: swift:5.1.2
       volumes:
       - $GITHUB_WORKSPACE:/src
       options: --workdir /src
