@@ -10,22 +10,35 @@ jobs:
   macOS:
     runs-on: macOS-latest
     steps:
-    - uses: actions/checkout@v1
+    - name: Checkout
+      uses: actions/checkout@v1
+      with:
+        fetch-depth: 1
     - name: Build
       run: swift build
-    - name: Run tests
+    - name: Test
       run: swift test
       
   linux:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        tag: ['5.0', '5.1']
+    container:
+      image: swift:${{ matrix.tag }}
+      volumes:
+      - $GITHUB_WORKSPACE:/src
+      options: --workdir /src
     steps:
-    - uses: actions/checkout@v1
-    - name: Install
-      run: docker pull swift:5.1.1
-    - name: Build & Test
-      run: docker run 
-        -e AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" 
-        -e AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" 
-        -v "$(pwd):/root/" 
-        swift:5.1.1 
-        /bin/sh -c "apt-get -qq update && apt-get -q -y install tzdata libssl-dev zlib1g-dev && cd /root/ && swift build && swift test --parallel"
+    - name: Checkout
+      uses: actions/checkout@v1
+      with:
+        fetch-depth: 1
+    - name: Install dependencies
+      run: |
+        apt-get update -qq
+        apt-get install -q -y tzdata libssl-dev zlib1g-dev
+    - name: Build
+      run: swift build
+    - name: Test
+      run: swift test
