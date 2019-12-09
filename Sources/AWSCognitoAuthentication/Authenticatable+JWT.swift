@@ -36,9 +36,8 @@ public extension AWSCognitoAuthenticatable {
     static func authenticate<Payload: Codable>(idToken: String, on eventLoopGroup: EventLoopGroup) -> EventLoopFuture<Payload> {
         return loadSigners(region: Self.region, on: eventLoopGroup)
             .flatMapThrowing { signers in
-                guard let tokenData = idToken.data(using: .utf8) else { throw AWSCognitoError.unauthorized(reason: "Id Token string failed to convert to Data") }
-                let jwt = try JWT<VerifiedToken<IdTokenVerifier<Self>, Payload>>(from: tokenData, verifiedBy: signers)
-                return jwt.payload.payload
+                let jwtPayload = try signers.verify(idToken, as: VerifiedToken<IdTokenVerifier<Self>, Payload>.self)
+                return jwtPayload.payload
         }
     }
 
@@ -53,13 +52,8 @@ public extension AWSCognitoAuthenticatable {
     static func authenticate(accessToken: String, on eventLoopGroup: EventLoopGroup) -> EventLoopFuture<AWSCognitoAccessToken> {
         return loadSigners(region: Self.region, on: eventLoopGroup)
             .flatMapThrowing { signers in
-                guard let tokenData = accessToken.data(using: .utf8) else { throw AWSCognitoError.unauthorized(reason: "Access Token string failed to convert to Data") }
-//                do {
-                    let jwt = try JWT<VerifiedToken<AccessTokenVerifier<Self>, AWSCognitoAccessToken>>(from: tokenData, verifiedBy: signers)
-                    return jwt.payload.payload
-/*                } catch DecodingError.keyNotFound(let key, _) {
-                    throw Abort(.unauthorized, reason: "This is not an access Token. Field '\(key.stringValue)' is missing")
-                }*/
+                let jwtPayload = try signers.verify(accessToken, as: VerifiedToken<AccessTokenVerifier<Self>, AWSCognitoAccessToken>.self)
+                return jwtPayload.payload
         }
     }
     

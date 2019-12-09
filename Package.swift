@@ -11,8 +11,8 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/swift-aws/aws-sdk-swift.git", .upToNextMajor(from: "4.0.0")),
-        .package(url: "https://github.com/vapor/vapor.git", .upToNextMajor(from: "4.0.0-beta")),
-        .package(url: "https://github.com/vapor/jwt-kit.git", .branch("master")),
+        .package(url: "https://github.com/vapor/vapor.git", .upToNextMajor(from: "4.0.0-beta.2")),
+        .package(url: "https://github.com/vapor/jwt-kit.git", .branch("4.0.0-beta.2")),
         // for SRP
         .package(url: "https://github.com/adam-fowler/big-num.git", .upToNextMajor(from: "1.0.0")),
     ],
