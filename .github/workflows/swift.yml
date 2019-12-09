@@ -20,7 +20,10 @@ jobs:
       run: swift test
       
   linux:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-16.04, ubuntu-18.04]
+    runs-on: ${{ matrix.os }}
     container:
       image: swift:5.1.2
       volumes:
