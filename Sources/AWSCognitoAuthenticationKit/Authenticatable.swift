@@ -9,7 +9,7 @@ import OpenCrypto
 public typealias AWSCognitoChallengeName = CognitoIdentityProvider.ChallengeNameType
 public typealias AWSCognitoUserStatusType = CognitoIdentityProvider.UserStatusType
 
-enum AWSCognitoError: Error {
+public enum AWSCognitoError: Error {
     case failedToCreateContextData
     case unexpectedResult(reason: String?)
     case unauthorized(reason: String?)
@@ -106,8 +106,10 @@ public extension AWSCognitoAuthenticatable {
                 .flatMapErrorThrowing { error in
                     throw translateError(error: error)
                 }
-                .transform(to: Void())
-                .hop(to: eventLoop)
+                .map { _ in
+                    return
+            }
+            .hop(to: eventLoop)
         }
     }
 
@@ -243,7 +245,8 @@ public extension AWSCognitoAuthenticatable {
             .flatMapErrorThrowing { error in
                 throw translateError(error: error)
             }
-        .transform(to: Void()).hop(to: eventLoop)
+        .map { _ in return }
+        .hop(to: eventLoop)
     }
 }
 

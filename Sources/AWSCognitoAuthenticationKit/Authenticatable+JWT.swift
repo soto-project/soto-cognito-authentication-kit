@@ -3,7 +3,6 @@ import AWSSDKSwiftCore
 import Foundation
 import JWTKit
 import NIO
-import Vapor
 
 /// struct returned when authenticating an access token
 public struct AWSCognitoAccessToken: Codable {
@@ -56,37 +55,13 @@ public extension AWSCognitoAuthenticatable {
                 return jwtPayload.payload
         }
     }
-    
-    /// helper function that returns if request with bearer token is cognito access authenticated
-    /// - parameters:
-    ///     - req: Vapor Request structure
-    /// - returns:
-    ///     An access token object that contains the user name and id
-    static func authenticateAccessToken(_ req: Request) -> EventLoopFuture<AWSCognitoAccessToken> {
-        guard let bearer = req.headers.bearerAuthorization else {
-            return req.eventLoop.makeFailedFuture(AWSCognitoError.unauthorized(reason: "No bearer token"))
-        }
-        return authenticate(accessToken: bearer.token, on: req.eventLoop)
-    }
-    
-    /// helper function that returns if request with bearer token is cognito id authenticated and returns contents in the payload type
-    /// - parameters:
-    ///     - req: Vapor Request structure
-    /// - returns:
-    ///     The payload contained in the token. See `authenticate<Payload: Codable>(idToken:on:)` for more details
-    static func authenticateIdToken<Payload: Codable>(_ req: Request) -> EventLoopFuture<Payload> {
-        guard let bearer = req.headers.bearerAuthorization else {
-            return req.eventLoop.makeFailedFuture(AWSCognitoError.unauthorized(reason: "No bearer token"))
-        }
-        return authenticate(idToken: bearer.token, on: req.eventLoop)
-    }
 }
 
 extension AWSCognitoAuthenticatable {
     /// load JSON web keys and create JWT signers from them
     static func loadSigners(region: Region, on eventLoopGroup: EventLoopGroup) -> EventLoopFuture<JWTSigners> {
         // check we haven't already loaded the jwt signing key set
-        guard Self.jwtSigners == nil else { return eventLoopGroup.future(Self.jwtSigners!)}
+        guard Self.jwtSigners == nil else { return eventLoopGroup.next().makeSucceededFuture(Self.jwtSigners!)}
 
         let JWTSignersURL = "https://cognito-idp.\(region.rawValue).amazonaws.com/\(Self.userPoolId)/.well-known/jwks.json"
         let httpClient = AsyncHTTPClient.HTTPClient(eventLoopGroupProvider:.shared(eventLoopGroup))
