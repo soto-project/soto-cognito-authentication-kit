@@ -101,10 +101,10 @@ final class AWSCognitoAuthenticationKitTests: XCTestCase {
         
         init(_ testName: String, attributes: [String: String] = [:], on eventloop: EventLoop) throws {
             self.username = testName
-            let messageHmac: HashedAuthenticationCode<SHA256> = HMAC.authenticationCode(for: Data(testName.utf8), using: SymmetricKey(data: Data(AWSCognitoAuthenticationTests.authenticatable.configuration.clientSecret.utf8)))
+            let messageHmac: HashedAuthenticationCode<SHA256> = HMAC.authenticationCode(for: Data(testName.utf8), using: SymmetricKey(data: Data(AWSCognitoAuthenticationKitTests.authenticatable.configuration.clientSecret.utf8)))
             self.password = messageHmac.description + "1!A"
             
-            let create = AWSCognitoAuthenticationTests.authenticatable.createUser(username: self.username, attributes: attributes, temporaryPassword: password, messageAction:.suppress, on: eventloop)
+            let create = AWSCognitoAuthenticationKitTests.authenticatable.createUser(username: self.username, attributes: attributes, temporaryPassword: password, messageAction:.suppress, on: eventloop)
                 .map { _ in return }
                 // deal with user already existing
                 .flatMapErrorThrowing { error in
@@ -123,11 +123,11 @@ final class AWSCognitoAuthenticationKitTests: XCTestCase {
     
     func login(_ testData: TestData, on eventLoop: EventLoop) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
         let context = AWSCognitoEventLoopWithContextTest(eventLoop)
-        return AWSCognitoAuthenticationTests.authenticatable.authenticate(username: testData.username, password: testData.password, with: context)
+        return Self.authenticatable.authenticate(username: testData.username, password: testData.password, with: context)
             .flatMap { response in
                 if let challenged = response.challenged, let session = challenged.session {
                     if challenged.name == "NEW_PASSWORD_REQUIRED" {
-                        return AWSCognitoAuthenticationTests.authenticatable.respondToChallenge(
+                        return Self.authenticatable.respondToChallenge(
                             username: testData.username,
                             name: .newPasswordRequired,
                             responses: ["NEW_PASSWORD": testData.password],
@@ -152,7 +152,7 @@ final class AWSCognitoAuthenticationKitTests: XCTestCase {
                     guard let authenticated = response.authenticated else { return eventLoop.makeFailedFuture(AWSCognitoTestError.notAuthenticated) }
                     guard let accessToken = authenticated.accessToken else { return eventLoop.makeFailedFuture(AWSCognitoTestError.missingToken) }
                     
-                    return AWSCognitoAuthenticationTests.authenticatable.authenticate(accessToken: accessToken, on: eventLoop)
+                    return Self.authenticatable.authenticate(accessToken: accessToken, on: eventLoop)
             }.wait()
             XCTAssertEqual(result.username, testData.username)
         }
@@ -182,7 +182,7 @@ final class AWSCognitoAuthenticationKitTests: XCTestCase {
                     guard let authenticated = response.authenticated else { return eventLoop.makeFailedFuture(AWSCognitoTestError.notAuthenticated) }
                     guard let idToken = authenticated.idToken else { return eventLoop.makeFailedFuture(AWSCognitoTestError.missingToken) }
                     
-                    return AWSCognitoAuthenticationTests.authenticatable.authenticate(idToken: idToken, on: eventLoop)
+                    return Self.authenticatable.authenticate(idToken: idToken, on: eventLoop)
             }.wait()
             XCTAssertEqual(result.email, attributes["email"])
             XCTAssertEqual(result.givenName, attributes["given_name"])
@@ -203,13 +203,13 @@ final class AWSCognitoAuthenticationKitTests: XCTestCase {
                     guard let refreshToken = authenticated.refreshToken else { return eventLoop.makeFailedFuture(AWSCognitoTestError.missingToken) }
                     let context = AWSCognitoEventLoopWithContextTest(eventLoop)
                     
-                    return AWSCognitoAuthenticationTests.authenticatable.refresh(username: testData.username, refreshToken: refreshToken, with: context)
+                    return Self.authenticatable.refresh(username: testData.username, refreshToken: refreshToken, with: context)
                 }
                 .flatMap { (response)->EventLoopFuture<AWSCognitoAccessToken> in
                     guard let authenticated = response.authenticated else { return eventLoop.makeFailedFuture(AWSCognitoTestError.notAuthenticated) }
                     guard let accessToken = authenticated.accessToken else { return eventLoop.makeFailedFuture(AWSCognitoTestError.missingToken) }
                     
-                    return AWSCognitoAuthenticationTests.authenticatable.authenticate(accessToken: accessToken, on: eventLoop)
+                    return Self.authenticatable.authenticate(accessToken: accessToken, on: eventLoop)
             }.wait()
             print(result)
         }
@@ -222,7 +222,7 @@ final class AWSCognitoAuthenticationKitTests: XCTestCase {
             let context = AWSCognitoEventLoopWithContextTest(eventLoop)
             let testData = try TestData(#function, on: eventLoop)
             
-            let response = try AWSCognitoAuthenticationTests.authenticatable.authenticateSRP(username: testData.username, password: testData.password, with: context).wait()
+            let response = try Self.authenticatable.authenticateSRP(username: testData.username, password: testData.password, with: context).wait()
             print(response)
         }
     }
