@@ -7,25 +7,25 @@ Amazon Cognito provides authentication, authorization, and user management for y
 # Using with Cognito User Pools
 
 ## Configuration
-First you need to create an `Authentication` object that stores all your configuration information
+First you need to create an `AWSCognitoConfiguration` instance that stores all your configuration information and create your `AWSCognitoAuthenticatable` instance
 ```
-class Authentication : AWSCognitoAuthenticatable {
-    static var userPoolId: String = "eu-west-1_userpoolid"
-    static var clientId: String = "23432clientId234234"
-    static var clientSecret: String = "1q9ln4m892j2cnsdapa0dalh9a3aakmpeugiaag8k3cacijlbkrp"
-    static var cognitoIDP: CognitoIdentityProvider = CognitoIdentityProvider(region: .euwest1)
-    static var region: Region = .euwest1
-    static var jwtSigners: JWTSigners? = nil
-}
+let configuration = AWSCognitoConfiguration(
+    userPoolId: String = "eu-west-1_userpoolid",
+    clientId: String = "23432clientId234234",
+    clientSecret: String = "1q9ln4m892j2cnsdapa0dalh9a3aakmpeugiaag8k3cacijlbkrp",
+    cognitoIDP: CognitoIdentityProvider = CognitoIdentityProvider(region: .euwest1),
+    region: Region = .euwest1
+)
+let authenticatable = AWSCognitoAuthenticatable(configuration: configuration)
 ```
 The values `userPoolId`, `clientId` and `clientSecret` can all be find on the Amazon Cognito user pool console. `cognitoIDP` is the client used to communicate with Amazon Web Services. It is provided by the [aws-sdk-swift](https://github.com/swift-aws/aws-sdk-swift.git) library. `region` is the AWS server region your user pool is in. `jwtSigners` is used to store the Json Web Token signer objects created from the user pool Json Web Keys.
 
 ## Creating a AWS Cognito user
-Assuming we have the `Authentication` class above the following can be used to create a user. 
+Assuming we have the `AWSCognitoAuthenticatable` instance from above the following can be used to create a user. 
 ```
 let username = "johndoe"
 let attributes: [String: String] = ["email": "user@email.com", "name": "John Doe", "gender": "male"]
-return Authentication.createUser(username: username, attributes: attributes, on: request.eventLoop)
+return authenticatable.createUser(username: username, attributes: attributes, on: request.eventLoop)
 ```
 The attributes you provide should match the attributes you selected when creating the user pool in the AWS Cognito console. Once you've created a user an email is sent to them detailing their username and randomly generated password. The `on:` parameter is a Vapor Worker object. You can use the Request class here.
 
@@ -34,7 +34,7 @@ As an alternative you can use the `signUp` function which takes a `username` and
 ## Authenticating with a username and a password
 Once your user is created and confirmed in the signUp case. The following will generate JWT authentication tokens from a username and password. 
 ```
-let response = Authentication.authenticate(
+let response = authenticatable.authenticate(
     username: username, 
     password: password, 
     with: request)
@@ -50,7 +50,7 @@ The access token is used just to indicate a user has been granted access. It con
 ## Verifying an access token is valid
 The following will verify whether a token gives access.
 ```
-let response = Authentication.authenticate(accessToken: token, on: request.eventLoop)
+let response = authenticatable.authenticate(accessToken: token, on: request.eventLoop)
     .then { response in
         let username = response.username
         let subject = response.subject
@@ -58,8 +58,6 @@ let response = Authentication.authenticate(accessToken: token, on: request.event
 }
 ```
 If the access token has expired, was not issued by the user pool or not created for the app client this call will return a failed `Future` with a unauthorized error.
-
-There is also a Vapor 4 shortcut. Assuming your access token is sent in the "Authorization" header as a bearer token, ie "Bearer < token >", you can call `Authentication.authenticateAccessToken(_ req: Request)`.
 
 ## Verifying the contents of an id token
 Id tokens contain the attributes of a user. As this varies between projects you have to provide a custom class to be filled out with these. The class needs to inherit from `Codable` and the `CodingKeys` need to reflect the keys provided by Amazon Web Services. These are defined in [OIDC Standard Claims](https://openid.net/specs/openid-connect-core-1_0.html#Claims). If you have custom attributes attached to your user these will be prefixed by "custom:". The following will extract the username, email, name and gender from an id token.
@@ -77,7 +75,7 @@ struct IdResponse: Codable {
         case gender = "gender"
     }
 }
-let response = Authentication.authenticate(idToken: token, on: req.eventLoop)
+let response = authenticatable.authenticate(idToken: token, on: req.eventLoop)
     .map { (response: IdResponse)->IdResponse in
         let email = response.email
         let username = response.username
@@ -89,12 +87,10 @@ let response = Authentication.authenticate(idToken: token, on: req.eventLoop)
 ```
 NB The username tag in an ID Token is "cognito:username"
 
-As with the access tokens there is also a Vapor 4 shortcut for id tokens. Assuming your id token is sent in the "Authorization" header as a bearer token you can call `Authentication.authenticateIdToken<Payload>(_ req: Request)`.
-
 ## Refreshing id and access tokens
 To avoid having to ask the user for their username and password every 60 minutes a refresh token is also provided. You can use this to generate new id and access tokens whenever they have expired or are about to expire. The refresh token is valid for 30 days. Although you can edit the length of this in the Cognito console. 
 ```
-let response = Authentication.authenticate(
+let response = authenticatable.authenticate(
     username: username, 
     refreshToken: refreshToken, 
     with: request)
@@ -110,7 +106,7 @@ Sometimes when you try to authenticate a username and password or a refresh toke
 ```
 let challengeName: AWSCognitoChallengeName = .newPasswordRequired 
 let challengeResponse: [String: String] = ["NEW_PASSWORD":"MyNewPassword1"]
-let response = Authentication.respondToChallenge(
+let response = authenticatable.respondToChallenge(
     username: username, 
     name: challengeName, 
     responses: challengeResponse, 
@@ -136,22 +132,23 @@ For more details on AWS Cognito User Pools you can find Amazon's documentation [
 AWS Cognito Authentication can be used to interface with Amazon Cognito Federated Identities, allowing you to create temporary credentials for accessing AWS services.
 
 ## Configuration
-First you need to create an `Identifiable` object that stores all your configuration information for interfacing with Amazon Cognito Federated Identities. 
+First you need to create an `AWSCognitoIdentityConfiguration` instance that stores all your configuration information for interfacing with Amazon Cognito Federated Identities and a `AWSCognitoIdentifiable` instance. 
 ```
-class Identifiable : AWSCognitoIdentifiable {
-    static var identityPoolId: String = "eu-west-1_identitypoolid"
-    static var identityProvider: String = "provider"
-    static var cognitoIdentity: CognitoIdentity = CognitoIdentity(region: .euwest1)
-}
+let configuration = AWSCognitoIdentityConfiguration(
+    identityPoolId: String = "eu-west-1_identitypoolid"
+    identityProvider: String = "provider"
+    cognitoIdentity: CognitoIdentity = CognitoIdentity(region: .euwest1)
+)
+let identifiable = AWSCognitoIdentifiable(configuration: configuration)
 ```
 The `identityPoolId` you can get from "Edit Identity Pool" section of the AWS console. `cognitoIdentity` is the client used to communicate with Amazon Web Services. It is provided by the [aws-sdk-swift](https://github.com/swift-aws/aws-sdk-swift.git) library. The `identityProvider` is whatever you setup in the AWS Cognito Identity Pool for providing authentication details. If you are using this in conjunction with Cognito User Pools you can use the protocol `AWSCognitoUserPoolIdentifiable` which sets up the `identityProvider` for you. This conforms with the `AWSCognitoAuthenticatable` protocol so can be used for user pool actions as well.
 
 ## Accessing credentials
 There are two steps to accessing AWS credentials. First you need to get an identity id and then with that identity id you can get your AWS credentials. This can be done with the following.
 ```
-return Authentication.getIdentityId(idToken: idToken, on: req.eventLoop)
+return identifiable.getIdentityId(idToken: idToken, on: req.eventLoop)
     .flatMap { identity in
-        return Authentication.getCredentialForIdentity(identityId: identity, idToken: token, on: req.eventLoop)
+        return identifiable.getCredentialForIdentity(identityId: identity, idToken: token, on: req.eventLoop)
 }
 ```
 In the situation you are using Cognito user pools the `idToken` is the `idToken` returned when you authenticate a user.
