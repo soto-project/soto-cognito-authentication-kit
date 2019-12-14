@@ -32,10 +32,14 @@ public extension AWSCognitoAuthenticatable {
     ///     - on: Event loop to run on
     /// - returns:
     ///     An event loop future containing the payload structure.
-    static func authenticate<Payload: Codable>(idToken: String, on eventLoopGroup: EventLoopGroup) -> EventLoopFuture<Payload> {
-        return loadSigners(region: Self.region, on: eventLoopGroup)
+    func authenticate<Payload: Codable>(idToken: String, on eventLoopGroup: EventLoopGroup) -> EventLoopFuture<Payload> {
+        return loadSigners(region: configuration.region, on: eventLoopGroup)
             .flatMapThrowing { signers in
-                let jwtPayload = try signers.verify(idToken, as: VerifiedToken<IdTokenVerifier<Self>, Payload>.self)
+                let jwtPayload = try signers.verify(idToken, as: VerifiedToken<IdTokenVerifier, Payload>.self)
+                guard jwtPayload.token.audience == self.configuration.clientId else {throw AWSCognitoError.unauthorized(reason:"invalid token")}
+                guard jwtPayload.token.issuer == "https://cognito-idp.\(self.configuration.region.rawValue).amazonaws.com/\(self.configuration.userPoolId)" else {
+                    throw AWSCognitoError.unauthorized(reason:"invalid token")
+                }
                 return jwtPayload.payload
         }
     }
@@ -48,10 +52,13 @@ public extension AWSCognitoAuthenticatable {
     ///     - on: Event loop to run on
     /// - returns:
     ///     An event loop future returning a structure with the username and UUID for the user.
-    static func authenticate(accessToken: String, on eventLoopGroup: EventLoopGroup) -> EventLoopFuture<AWSCognitoAccessToken> {
-        return loadSigners(region: Self.region, on: eventLoopGroup)
+    func authenticate(accessToken: String, on eventLoopGroup: EventLoopGroup) -> EventLoopFuture<AWSCognitoAccessToken> {
+        return loadSigners(region: configuration.region, on: eventLoopGroup)
             .flatMapThrowing { signers in
-                let jwtPayload = try signers.verify(accessToken, as: VerifiedToken<AccessTokenVerifier<Self>, AWSCognitoAccessToken>.self)
+                let jwtPayload = try signers.verify(accessToken, as: VerifiedToken<AccessTokenVerifier, AWSCognitoAccessToken>.self)
+                guard jwtPayload.token.issuer == "https://cognito-idp.\(self.configuration.region.rawValue).amazonaws.com/\(self.configuration.userPoolId)" else {
+                    throw AWSCognitoError.unauthorized(reason:"invalid token")
+                }
                 return jwtPayload.payload
         }
     }
@@ -59,11 +66,11 @@ public extension AWSCognitoAuthenticatable {
 
 extension AWSCognitoAuthenticatable {
     /// load JSON web keys and create JWT signers from them
-    static func loadSigners(region: Region, on eventLoopGroup: EventLoopGroup) -> EventLoopFuture<JWTSigners> {
+    func loadSigners(region: Region, on eventLoopGroup: EventLoopGroup) -> EventLoopFuture<JWTSigners> {
         // check we haven't already loaded the jwt signing key set
-        guard Self.jwtSigners == nil else { return eventLoopGroup.next().makeSucceededFuture(Self.jwtSigners!)}
+        guard jwtSigners == nil else { return eventLoopGroup.next().makeSucceededFuture(jwtSigners!)}
 
-        let JWTSignersURL = "https://cognito-idp.\(region.rawValue).amazonaws.com/\(Self.userPoolId)/.well-known/jwks.json"
+        let JWTSignersURL = "https://cognito-idp.\(configuration.region.rawValue).amazonaws.com/\(configuration.userPoolId)/.well-known/jwks.json"
         let httpClient = AsyncHTTPClient.HTTPClient(eventLoopGroupProvider:.shared(eventLoopGroup))
         return httpClient
             .get(url: JWTSignersURL, deadline: .now() + TimeAmount.seconds(10))
