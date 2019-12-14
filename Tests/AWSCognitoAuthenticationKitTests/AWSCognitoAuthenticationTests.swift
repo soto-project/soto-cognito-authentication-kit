@@ -34,7 +34,7 @@ class AWSCognitoEventLoopWithContextTest: AWSCognitoEventLoopWithContext {
     }
 }
 
-final class AWSCognitoAuthenticationTests: XCTestCase {
+final class AWSCognitoAuthenticationKitTests: XCTestCase {
     
     static let cognitoIDP = CognitoIdentityProvider(region: .useast1, middlewares: [AWSLoggingMiddleware()], eventLoopGroupProvider: .shared(MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)))
     static let userPoolName: String = "aws-cognito-authentication-tests"
