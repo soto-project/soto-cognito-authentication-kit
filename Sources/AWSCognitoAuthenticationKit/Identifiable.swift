@@ -16,7 +16,7 @@ public class AWSCognitoIdentifiable {
     ///     - on: Event loop request is running on.
     /// - returns:
     ///     Event Loop Future returning the identity id as a String
-    func getIdentityId(idToken: String, on eventLoop: EventLoop) -> EventLoopFuture<String> {
+    public func getIdentityId(idToken: String, on eventLoop: EventLoop) -> EventLoopFuture<String> {
         let request = CognitoIdentity.GetIdInput(identityPoolId: configuration.identityPoolId, logins: [configuration.identityProvider : idToken])
         return configuration.cognitoIdentity.getId(request)
             .flatMapErrorThrowing { error in
@@ -36,7 +36,7 @@ public class AWSCognitoIdentifiable {
     ///     - on: Event loop request is running on.
     /// - returns:
     ///     Event loop future returning AWS credentials
-    func getCredentialForIdentity(identityId: String, idToken: String, on eventLoop: EventLoop) -> EventLoopFuture<CognitoIdentity.Credentials> {
+    public func getCredentialForIdentity(identityId: String, idToken: String, on eventLoop: EventLoop) -> EventLoopFuture<CognitoIdentity.Credentials> {
         let request = CognitoIdentity.GetCredentialsForIdentityInput(identityId: identityId, logins: [configuration.identityProvider : idToken])
         return configuration.cognitoIdentity.getCredentialsForIdentity(request)
             .flatMapErrorThrowing { error in

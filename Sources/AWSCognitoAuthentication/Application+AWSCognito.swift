@@ -27,7 +27,7 @@ extension Application {
             typealias Value = AWSCognitoIdentifiable
         }
 
-        public var identifiable: AWSCognitoIdentifiable? {
+        public var identifiable: AWSCognitoIdentifiable {
             get {
                 guard let identifiable = self.application.storage[IdentifiableKey.self] else {
                     fatalError("AWSCognito identifiable not setup. Use application.awsCognito.identifiable = ...")

@@ -70,7 +70,7 @@ public class AWSCognitoAuthenticatable {
     ///     - on: Event loop request is running on.
     /// - returns:
     ///     EventLoopFuture holding the sign up response
-    func signUp(username: String, password: String, attributes: [String:String], on eventLoop: EventLoop) -> EventLoopFuture<CognitoIdentityProvider.SignUpResponse> {
+    public func signUp(username: String, password: String, attributes: [String:String], on eventLoop: EventLoop) -> EventLoopFuture<CognitoIdentityProvider.SignUpResponse> {
         return secretHashFuture(username: username, on: eventLoop).flatMap { secretHash in
             let userAttributes = attributes.map { return CognitoIdentityProvider.AttributeType(name: $0.key, value: $0.value) }
             let request = CognitoIdentityProvider.SignUpRequest(clientId: self.configuration.clientId, password: password, secretHash: secretHash, userAttributes: userAttributes, username: username)
@@ -91,7 +91,7 @@ public class AWSCognitoAuthenticatable {
     ///     - on: Event loop request is running on.
     /// - returns:
     ///     Empty EventLoopFuture
-    func confirmSignUp(username: String, confirmationCode: String, on eventLoop: EventLoop) -> EventLoopFuture<Void> {
+    public func confirmSignUp(username: String, confirmationCode: String, on eventLoop: EventLoop) -> EventLoopFuture<Void> {
         return secretHashFuture(username: username, on: eventLoop).flatMap { secretHash in
             let request = CognitoIdentityProvider.ConfirmSignUpRequest(clientId: self.configuration.clientId, confirmationCode: confirmationCode, forceAliasCreation: false, secretHash: secretHash, username: username)
             return self.configuration.cognitoIDP.confirmSignUp(request)
@@ -115,7 +115,7 @@ public class AWSCognitoAuthenticatable {
     ///     - on: Event loop request is running on.
     /// - returns:
     ///     EventLoopFuture holding the create user response
-    func createUser(username: String, attributes: [String:String], temporaryPassword: String? = nil, messageAction: CognitoIdentityProvider.MessageActionType? = nil, on eventLoop: EventLoop) -> EventLoopFuture<AWSCognitoCreateUserResponse> {
+    public func createUser(username: String, attributes: [String:String], temporaryPassword: String? = nil, messageAction: CognitoIdentityProvider.MessageActionType? = nil, on eventLoop: EventLoop) -> EventLoopFuture<AWSCognitoCreateUserResponse> {
         let userAttributes = attributes.map { return CognitoIdentityProvider.AttributeType(name: $0.key, value: $0.value) }
         let request = CognitoIdentityProvider.AdminCreateUserRequest(desiredDeliveryMediums:[.email], messageAction: messageAction, temporaryPassword: temporaryPassword, userAttributes: userAttributes, username: username, userPoolId: configuration.userPoolId)
         return configuration.cognitoIDP.adminCreateUser(request)
@@ -140,7 +140,7 @@ public class AWSCognitoAuthenticatable {
     ///     - with: Eventloop and authenticate context. You can use a Vapor request here.
     /// - returns:
     ///     An authentication response. This can contain a challenge which the user has to fulfill before being allowed to login, or authentication access, id and refresh keys
-    func authenticate(username: String, password: String, with eventLoopWithContext: AWSCognitoEventLoopWithContext) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
+    public func authenticate(username: String, password: String, with eventLoopWithContext: AWSCognitoEventLoopWithContext) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
         return secretHashFuture(username: username, on: eventLoopWithContext.eventLoop).flatMap { secretHash in
             let authParameters : [String: String] = ["USERNAME":username,
                                                      "PASSWORD": password,
@@ -160,7 +160,7 @@ public class AWSCognitoAuthenticatable {
     ///     - with: Eventloop and authenticate context. You can use a Vapor request here.
     /// - returns:
     ///     - An authentication result which should include an id and status token
-    func refresh(username: String, refreshToken: String, with eventLoopWithContext: AWSCognitoEventLoopWithContext) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
+    public func refresh(username: String, refreshToken: String, with eventLoopWithContext: AWSCognitoEventLoopWithContext) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
         return secretHashFuture(username: username, on: eventLoopWithContext.eventLoop).flatMap { secretHash in
             let authParameters : [String: String] = ["USERNAME":username,
                                                      "REFRESH_TOKEN":refreshToken,
@@ -184,7 +184,7 @@ public class AWSCognitoAuthenticatable {
     ///     - with: EventLoop and authenticate context. You can use a Vapor request here.
     /// - returns:
     ///     An authentication response. This can contain another challenge which the user has to fulfill before being allowed to login, or authentication access, id and refresh keys
-    func respondToChallenge(username: String, name: AWSCognitoChallengeName, responses: [String: String], session: String?, with eventLoopWithContext: AWSCognitoEventLoopWithContext) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
+    public func respondToChallenge(username: String, name: AWSCognitoChallengeName, responses: [String: String], session: String?, with eventLoopWithContext: AWSCognitoEventLoopWithContext) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
         return secretHashFuture(username: username, on: eventLoopWithContext.eventLoop).flatMap { secretHash in
             var challengeResponses = responses
             challengeResponses["USERNAME"] = username
@@ -230,7 +230,7 @@ public class AWSCognitoAuthenticatable {
     ///     - username: user name of user
     ///     - attributes: list of updated attributes for user
     ///     - on: Event loop request is running on.
-    func updateUserAttributes(username: String, attributes: [String: String], on eventLoop: EventLoop) -> EventLoopFuture<Void> {
+    public func updateUserAttributes(username: String, attributes: [String: String], on eventLoop: EventLoop) -> EventLoopFuture<Void> {
         let attributes = attributes.map { CognitoIdentityProvider.AttributeType(name: $0.key, value:  $0.value) }
         let request = CognitoIdentityProvider.AdminUpdateUserAttributesRequest(userAttributes: attributes, username: username, userPoolId: configuration.userPoolId)
         return configuration.cognitoIDP.adminUpdateUserAttributes(request)

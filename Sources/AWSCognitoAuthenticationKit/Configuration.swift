@@ -18,6 +18,15 @@ public struct AWSCognitoConfiguration {
     public let cognitoIDP: CognitoIdentityProvider
     /// region userpool is in
     public let region: Region
+    
+    /// initializer
+    public init(userPoolId: String, clientId: String, clientSecret: String, cognitoIDP: CognitoIdentityProvider, region: Region) {
+        self.userPoolId = userPoolId
+        self.clientId = clientId
+        self.clientSecret = clientSecret
+        self.cognitoIDP = cognitoIDP
+        self.region = region
+    }
 }
 
 /// Structs that include the configuration setup for AWS Cognito Identity.
@@ -32,6 +41,7 @@ public struct AWSCognitoIdentityConfiguration {
     /// Cognito Identity client
     public let cognitoIdentity: CognitoIdentity
 
+    /// initializer
     public init(identityPoolId: String, identityProvider: String, cognitoIdentity: CognitoIdentity) {
         self.identityPoolId = identityPoolId
         self.identityProvider = identityProvider

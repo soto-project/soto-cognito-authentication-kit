@@ -3,7 +3,7 @@ import Foundation
 import NIO
 import OpenCrypto
 
-extension AWSCognitoAuthenticatable {
+public extension AWSCognitoAuthenticatable {
     /// authenticate using SRP
     ///
     /// - parameters:
