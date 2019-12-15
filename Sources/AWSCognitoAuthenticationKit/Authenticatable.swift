@@ -140,14 +140,15 @@ public class AWSCognitoAuthenticatable {
     ///     - with: Eventloop and authenticate context. You can use a Vapor request here.
     /// - returns:
     ///     An authentication response. This can contain a challenge which the user has to fulfill before being allowed to login, or authentication access, id and refresh keys
-    public func authenticate(username: String, password: String, with eventLoopWithContext: AWSCognitoEventLoopWithContext) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
-        return secretHashFuture(username: username, on: eventLoopWithContext.eventLoop).flatMap { secretHash in
+    public func authenticate(username: String, password: String, context: AWSCognitoContextData, on eventLoop: EventLoop) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
+        return secretHashFuture(username: username, on: eventLoop).flatMap { secretHash in
             let authParameters : [String: String] = ["USERNAME":username,
                                                      "PASSWORD": password,
                                                      "SECRET_HASH":secretHash]
             return self.initiateAuthRequest(authFlow: .adminNoSrpAuth,
-                                       authParameters: authParameters,
-                                       with: eventLoopWithContext)
+                                            authParameters: authParameters,
+                                            context: context,
+                                            on: eventLoop)
         }
     }
 
@@ -160,14 +161,15 @@ public class AWSCognitoAuthenticatable {
     ///     - with: Eventloop and authenticate context. You can use a Vapor request here.
     /// - returns:
     ///     - An authentication result which should include an id and status token
-    public func refresh(username: String, refreshToken: String, with eventLoopWithContext: AWSCognitoEventLoopWithContext) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
-        return secretHashFuture(username: username, on: eventLoopWithContext.eventLoop).flatMap { secretHash in
+    public func refresh(username: String, refreshToken: String, context: AWSCognitoContextData, on eventLoop: EventLoop) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
+        return secretHashFuture(username: username, on: eventLoop).flatMap { secretHash in
             let authParameters : [String: String] = ["USERNAME":username,
                                                      "REFRESH_TOKEN":refreshToken,
                                                      "SECRET_HASH":secretHash]
             return self.initiateAuthRequest(authFlow: .refreshTokenAuth,
                                            authParameters: authParameters,
-                                           with: eventLoopWithContext)
+                                           context: context,
+                                           on: eventLoop)
         }
     }
 
@@ -184,12 +186,12 @@ public class AWSCognitoAuthenticatable {
     ///     - with: EventLoop and authenticate context. You can use a Vapor request here.
     /// - returns:
     ///     An authentication response. This can contain another challenge which the user has to fulfill before being allowed to login, or authentication access, id and refresh keys
-    public func respondToChallenge(username: String, name: AWSCognitoChallengeName, responses: [String: String], session: String?, with eventLoopWithContext: AWSCognitoEventLoopWithContext) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
-        return secretHashFuture(username: username, on: eventLoopWithContext.eventLoop).flatMap { secretHash in
+    public func respondToChallenge(username: String, name: AWSCognitoChallengeName, responses: [String: String], session: String?, context: AWSCognitoContextData, on eventLoop: EventLoop) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
+        return secretHashFuture(username: username, on: eventLoop).flatMap { secretHash in
             var challengeResponses = responses
             challengeResponses["USERNAME"] = username
             challengeResponses["SECRET_HASH"] = secretHash
-            guard let context = eventLoopWithContext.cognitoContextData else { return eventLoopWithContext.eventLoop.makeFailedFuture(AWSCognitoError.failedToCreateContextData) }
+            guard let context = context.contextData else { return eventLoop.makeFailedFuture(AWSCognitoError.failedToCreateContextData) }
             let request = CognitoIdentityProvider.AdminRespondToAuthChallengeRequest(challengeName: name,
                                                                                      challengeResponses: challengeResponses,
                                                                                      clientId: self.configuration.clientId,
@@ -221,7 +223,7 @@ public class AWSCognitoAuthenticatable {
                         refreshToken: authenticationResult.refreshToken,
                         expiresIn: authenticationResult.expiresIn != nil ? Date(timeIntervalSinceNow: TimeInterval(authenticationResult.expiresIn!)) : nil))
             }
-            .hop(to: eventLoopWithContext.eventLoop)
+            .hop(to: eventLoop)
         }
     }
 
@@ -234,8 +236,8 @@ public class AWSCognitoAuthenticatable {
     ///     - with: EventLoop and authenticate context. You can use a Vapor request here.
     /// - returns:
     ///     An authentication response. This can contain another challenge which the user has to fulfill before being allowed to login, or authentication access, id and refresh keys
-    public func respondToNewPasswordChallenge(username: String, password: String, session: String?, with eventLoopWithContext: AWSCognitoEventLoopWithContext) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
-        return respondToChallenge(username: username, name: .newPasswordRequired, responses: ["NEW_PASSWORD":password], session: session, with: eventLoopWithContext)
+    public func respondToNewPasswordChallenge(username: String, password: String, session: String?, context: AWSCognitoContextData, on eventLoop: EventLoop) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
+        return respondToChallenge(username: username, name: .newPasswordRequired, responses: ["NEW_PASSWORD":password], session: session, context: context, on: eventLoop)
     }
     
     /// respond to MFA token challenge
@@ -247,8 +249,8 @@ public class AWSCognitoAuthenticatable {
     ///     - with: EventLoop and authenticate context. You can use a Vapor request here.
     /// - returns:
     ///     An authentication response. This can contain another challenge which the user has to fulfill before being allowed to login, or authentication access, id and refresh keys
-    public func respondToMFAChallenge(username: String, token: String, session: String?, with eventLoopWithContext: AWSCognitoEventLoopWithContext) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
-        return respondToChallenge(username: username, name: .smsMfa, responses: ["SMS_MFA_CODE":token], session: session, with: eventLoopWithContext)
+    public func respondToMFAChallenge(username: String, token: String, session: String?, context: AWSCognitoContextData, on eventLoop: EventLoop) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
+        return respondToChallenge(username: username, name: .smsMfa, responses: ["SMS_MFA_CODE":token], session: session, context: context, on: eventLoop)
     }
     
     /// update the users attributes
@@ -283,8 +285,8 @@ extension AWSCognitoAuthenticatable {
     }
 
     /// return an authorization request future
-    func initiateAuthRequest(authFlow: CognitoIdentityProvider.AuthFlowType, authParameters: [String: String], with eventLoopWithContext: AWSCognitoEventLoopWithContext) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
-        guard let context = eventLoopWithContext.cognitoContextData else {return eventLoopWithContext.eventLoop.makeFailedFuture(AWSCognitoError.failedToCreateContextData)}
+    func initiateAuthRequest(authFlow: CognitoIdentityProvider.AuthFlowType, authParameters: [String: String], context: AWSCognitoContextData, on eventLoop: EventLoop) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
+        guard let context = context.contextData else {return eventLoop.makeFailedFuture(AWSCognitoError.failedToCreateContextData)}
         let request = CognitoIdentityProvider.AdminInitiateAuthRequest(
             authFlow: authFlow,
             authParameters: authParameters,
@@ -316,7 +318,7 @@ extension AWSCognitoAuthenticatable {
                     refreshToken: authenticationResult.refreshToken,
                     expiresIn: authenticationResult.expiresIn != nil ? Date(timeIntervalSinceNow: TimeInterval(authenticationResult.expiresIn!)) : nil))
         }
-        .hop(to: eventLoopWithContext.eventLoop)
+        .hop(to: eventLoop)
     }
 
     /// translate error from one thrown by aws-sdk-swift to vapor error

@@ -23,14 +23,9 @@ enum AWSCognitoTestError: Error {
 }
 
 /// eventLoop with context object used for tests
-class AWSCognitoEventLoopWithContextTest: AWSCognitoEventLoopWithContext {
-    let eventLoop: EventLoop
-    var cognitoContextData: CognitoIdentityProvider.ContextDataType? {
+class AWSCognitoContextTest: AWSCognitoContextData {
+    var contextData: CognitoIdentityProvider.ContextDataType? {
         return CognitoIdentityProvider.ContextDataType(httpHeaders: [], ipAddress: "127.0.0.1", serverName: "127.0.0.1", serverPath: "/")
-    }
-    
-    init(_ eventLoop: EventLoop) {
-        self.eventLoop = eventLoop
     }
 }
 
@@ -122,8 +117,8 @@ final class AWSCognitoAuthenticationKitTests: XCTestCase {
     }
     
     func login(_ testData: TestData, on eventLoop: EventLoop) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
-        let context = AWSCognitoEventLoopWithContextTest(eventLoop)
-        return Self.authenticatable.authenticate(username: testData.username, password: testData.password, with: context)
+        let context = AWSCognitoContextTest()
+        return Self.authenticatable.authenticate(username: testData.username, password: testData.password, context: context, on: eventLoop)
             .flatMap { response in
                 if let challenged = response.challenged, let session = challenged.session {
                     if challenged.name == "NEW_PASSWORD_REQUIRED" {
@@ -132,7 +127,8 @@ final class AWSCognitoAuthenticationKitTests: XCTestCase {
                             name: .newPasswordRequired,
                             responses: ["NEW_PASSWORD": testData.password],
                             session: session,
-                            with: context)
+                            context: context,
+                            on: eventLoop)
                     } else {
                         return eventLoop.makeFailedFuture(AWSCognitoTestError.unrecognisedChallenge)
                     }
@@ -201,9 +197,9 @@ final class AWSCognitoAuthenticationKitTests: XCTestCase {
                 .flatMap { (response)->EventLoopFuture<AWSCognitoAuthenticateResponse> in
                     guard let authenticated = response.authenticated else { return eventLoop.makeFailedFuture(AWSCognitoTestError.notAuthenticated) }
                     guard let refreshToken = authenticated.refreshToken else { return eventLoop.makeFailedFuture(AWSCognitoTestError.missingToken) }
-                    let context = AWSCognitoEventLoopWithContextTest(eventLoop)
+                    let context = AWSCognitoContextTest()
                     
-                    return Self.authenticatable.refresh(username: testData.username, refreshToken: refreshToken, with: context)
+                    return Self.authenticatable.refresh(username: testData.username, refreshToken: refreshToken, context: context, on: eventLoop)
                 }
                 .flatMap { (response)->EventLoopFuture<AWSCognitoAccessToken> in
                     guard let authenticated = response.authenticated else { return eventLoop.makeFailedFuture(AWSCognitoTestError.notAuthenticated) }
@@ -219,10 +215,10 @@ final class AWSCognitoAuthenticationKitTests: XCTestCase {
         XCTAssertNil(Self.setUpFailure)
         attempt {
             let eventLoop = Self.cognitoIDP.client.eventLoopGroup.next()
-            let context = AWSCognitoEventLoopWithContextTest(eventLoop)
+            let context = AWSCognitoContextTest()
             let testData = try TestData(#function, on: eventLoop)
             
-            let response = try Self.authenticatable.authenticateSRP(username: testData.username, password: testData.password, with: context).wait()
+            let response = try Self.authenticatable.authenticateSRP(username: testData.username, password: testData.password, context: context, on: eventLoop).wait()
             print(response)
         }
     }

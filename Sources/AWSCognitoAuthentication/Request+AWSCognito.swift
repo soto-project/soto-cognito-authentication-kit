@@ -36,7 +36,7 @@ public extension Request {
             guard let bearer = request.headers.bearerAuthorization else {
                 return request.eventLoop.makeFailedFuture(Abort(.unauthorized))
             }
-            return request.application.awsCognito.authenticatable.refresh(username: username, refreshToken: bearer.token, with: request)
+            return request.application.awsCognito.authenticatable.refresh(username: username, refreshToken: bearer.token, context: request, on: request.eventLoop)
         }
         
         /// helper function that returns AWS credentials for a provided identity. The idToken is provided as a bearer token.
@@ -59,8 +59,8 @@ public extension Request {
 }
 
 /// extend Vapor Request to provide Cognito context
-extension Request: AWSCognitoEventLoopWithContext {
-    public var cognitoContextData: CognitoIdentityProvider.ContextDataType? {
+extension Request: AWSCognitoContextData {
+    public var contextData: CognitoIdentityProvider.ContextDataType? {
         let host = headers["Host"].first ?? "localhost:8080"
         guard let remoteAddress = remoteAddress else { return nil }
         let ipAddress: String

@@ -12,15 +12,14 @@ public extension AWSCognitoAuthenticatable {
     ///     - with: Eventloop and authenticate context. You can use a Vapor request here.
     /// - returns:
     ///     An authentication response. This can contain a challenge which the user has to fulfill before being allowed to login, or authentication access, id and refresh keys
-    func authenticateSRP(username: String, password: String, with eventLoopWithContext: AWSCognitoEventLoopWithContext) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
-        let eventLoop = eventLoopWithContext.eventLoop
+    func authenticateSRP(username: String, password: String, context: AWSCognitoContextData, on eventLoop: EventLoop) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
         return secretHashFuture(username: username, on: eventLoop).flatMap { secretHash in
             let srp = SRP<SHA256>()
             let authParameters : [String: String] = ["USERNAME":username,
                                                      "SECRET_HASH":secretHash,
                                                      "SRP_A": srp.A.hex]
             print("Parameters \(authParameters)")
-            return self.initiateAuthRequest(authFlow: .userSrpAuth, authParameters: authParameters, with: eventLoopWithContext)
+            return self.initiateAuthRequest(authFlow: .userSrpAuth, authParameters: authParameters, context: context, on: eventLoop)
                 .flatMap { response in
                     print("Response \(response)")
                     guard let challenge = response.challenged,
@@ -56,7 +55,7 @@ public extension AWSCognitoAuthenticatable {
                                                              "PASSWORD_CLAIM_SIGNATURE": claim.base64EncodedString(),
                                                              "TIMESTAMP": timestamp
                     ]
-                    return self.respondToChallenge(username: username, name: .passwordVerifier, responses: authResponse, session: challenge.session, with: eventLoopWithContext)
+                    return self.respondToChallenge(username: username, name: .passwordVerifier, responses: authResponse, session: challenge.session, context: context, on: eventLoop)
             }
         }
     }
