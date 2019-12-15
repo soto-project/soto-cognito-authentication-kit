@@ -14,7 +14,7 @@ public extension Request {
         ///     An access token object that contains the user name and id
         public func authenticateAccess() -> EventLoopFuture<AWSCognitoAccessToken> {
             guard let bearer = request.headers.bearerAuthorization else {
-                return request.eventLoop.makeFailedFuture(AWSCognitoError.unauthorized(reason: "No bearer token"))
+                return request.eventLoop.makeFailedFuture(Abort(.unauthorized))
             }
             return request.application.awsCognito.authenticatable.authenticate(accessToken: bearer.token, on: request.eventLoop)
         }
@@ -24,7 +24,7 @@ public extension Request {
         ///     The payload contained in the token. See `authenticate<Payload: Codable>(idToken:on:)` for more details
         public func authenticateId<Payload: Codable>() -> EventLoopFuture<Payload> {
             guard let bearer = request.headers.bearerAuthorization else {
-                return request.eventLoop.makeFailedFuture(AWSCognitoError.unauthorized(reason: "No bearer token"))
+                return request.eventLoop.makeFailedFuture(Abort(.unauthorized))
             }
             return request.application.awsCognito.authenticatable.authenticate(idToken: bearer.token, on: request.eventLoop)
         }
@@ -34,7 +34,7 @@ public extension Request {
         ///     The payload contained in the token. See `authenticate<Payload: Codable>(idToken:on:)` for more details
         public func refresh(username: String) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
             guard let bearer = request.headers.bearerAuthorization else {
-                return request.eventLoop.makeFailedFuture(AWSCognitoError.unauthorized(reason: "No bearer token"))
+                return request.eventLoop.makeFailedFuture(Abort(.unauthorized))
             }
             return request.application.awsCognito.authenticatable.refresh(username: username, refreshToken: bearer.token, with: request)
         }
@@ -45,7 +45,7 @@ public extension Request {
         ///     AWS credentials for signing request to AWS
         public func awsCredentials() -> EventLoopFuture<CognitoIdentity.Credentials> {
             guard let bearer = request.headers.bearerAuthorization else {
-                return request.eventLoop.makeFailedFuture(AWSCognitoError.unauthorized(reason: "No bearer token"))
+                return request.eventLoop.makeFailedFuture(Abort(.unauthorized))
             }
             let identifiable = request.application.awsCognito.identifiable
             return identifiable.getIdentityId(idToken: bearer.token, on: request.eventLoop)
