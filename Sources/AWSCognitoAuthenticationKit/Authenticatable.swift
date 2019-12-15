@@ -225,6 +225,32 @@ public class AWSCognitoAuthenticatable {
         }
     }
 
+    /// respond to new password authentication challenge
+    ///
+    /// - parameters:
+    ///     - username: User name of user
+    ///     - password: new password
+    ///     - session: Session id returned with challenge
+    ///     - with: EventLoop and authenticate context. You can use a Vapor request here.
+    /// - returns:
+    ///     An authentication response. This can contain another challenge which the user has to fulfill before being allowed to login, or authentication access, id and refresh keys
+    public func respondToNewPasswordChallenge(username: String, password: String, session: String?, with eventLoopWithContext: AWSCognitoEventLoopWithContext) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
+        return respondToChallenge(username: username, name: .newPasswordRequired, responses: ["NEW_PASSWORD":password], session: session, with: eventLoopWithContext)
+    }
+    
+    /// respond to MFA token challenge
+    ///
+    /// - parameters:
+    ///     - username: User name of user
+    ///     - password: new password
+    ///     - session: Session id returned with challenge
+    ///     - with: EventLoop and authenticate context. You can use a Vapor request here.
+    /// - returns:
+    ///     An authentication response. This can contain another challenge which the user has to fulfill before being allowed to login, or authentication access, id and refresh keys
+    public func respondToMFAChallenge(username: String, token: String, session: String?, with eventLoopWithContext: AWSCognitoEventLoopWithContext) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
+        return respondToChallenge(username: username, name: .smsMfa, responses: ["SMS_MFA_CODE":token], session: session, with: eventLoopWithContext)
+    }
+    
     /// update the users attributes
     /// - parameters:
     ///     - username: user name of user
