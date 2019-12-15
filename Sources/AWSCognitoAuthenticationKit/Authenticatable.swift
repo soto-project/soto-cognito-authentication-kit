@@ -17,22 +17,22 @@ public enum AWSCognitoError: Error {
 }
 
 /// Response to create user
-public struct AWSCognitoCreateUserResponse {
+public struct AWSCognitoCreateUserResponse: Codable {
     public var userName: String
     public var userStatus: AWSCognitoUserStatusType
 }
 
 /// Response to initAuth
-public struct AWSCognitoAuthenticateResponse {
+public struct AWSCognitoAuthenticateResponse: Codable {
 
-    public struct AuthenticatedResponse {
+    public struct AuthenticatedResponse: Codable {
         public let accessToken : String?
         public let idToken : String?
         public let refreshToken : String?
         public let expiresIn: Date?
     }
 
-    public struct ChallengedResponse {
+    public struct ChallengedResponse: Codable {
         public let name: String?
         public let parameters: [String: String]?
         public let session: String?

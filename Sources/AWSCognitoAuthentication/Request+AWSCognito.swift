@@ -1,7 +1,7 @@
 import AWSCognitoAuthenticationKit
 import Vapor
 
-extension Request {
+public extension Request {
     
     var awsCognito: AWSCognito {
         .init(request: self)
@@ -12,7 +12,7 @@ extension Request {
         /// helper function that returns if request with bearer token is cognito access authenticated
         /// - returns:
         ///     An access token object that contains the user name and id
-        func authenticateAccess() -> EventLoopFuture<AWSCognitoAccessToken> {
+        public func authenticateAccess() -> EventLoopFuture<AWSCognitoAccessToken> {
             guard let bearer = request.headers.bearerAuthorization else {
                 return request.eventLoop.makeFailedFuture(AWSCognitoError.unauthorized(reason: "No bearer token"))
             }
@@ -22,24 +22,35 @@ extension Request {
         /// helper function that returns if request with bearer token is cognito id authenticated and returns contents in the payload type
         /// - returns:
         ///     The payload contained in the token. See `authenticate<Payload: Codable>(idToken:on:)` for more details
-        func authenticateId<Payload: Codable>() -> EventLoopFuture<Payload> {
+        public func authenticateId<Payload: Codable>() -> EventLoopFuture<Payload> {
             guard let bearer = request.headers.bearerAuthorization else {
                 return request.eventLoop.makeFailedFuture(AWSCognitoError.unauthorized(reason: "No bearer token"))
             }
             return request.application.awsCognito.authenticatable.authenticate(idToken: bearer.token, on: request.eventLoop)
         }
 
-        /// helper function that returns AWS credentials for a provided identity. If you have setup to use an AWSCognito User pool to identify
-        /// users then the idToken is the idToken returned from the `authenticate` function
-        /// - parameters:
-        ///     - idToken: token from your identity provider, used to authenticate the user
+        /// helper function that returns refreshed access and id tokens given a request containing the refresh token as a  bearer token
+        /// - returns:
+        ///     The payload contained in the token. See `authenticate<Payload: Codable>(idToken:on:)` for more details
+        public func refresh(username: String) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
+            guard let bearer = request.headers.bearerAuthorization else {
+                return request.eventLoop.makeFailedFuture(AWSCognitoError.unauthorized(reason: "No bearer token"))
+            }
+            return request.application.awsCognito.authenticatable.refresh(username: username, refreshToken: bearer.token, with: request)
+        }
+        
+        /// helper function that returns AWS credentials for a provided identity. The idToken is provided as a bearer token.
+        /// If you have setup to use an AWSCognito User pool to identify users then the idToken is the idToken returned from the `authenticate` function
         /// - returns:
         ///     AWS credentials for signing request to AWS
-        func awsCredentials(idToken: String) -> EventLoopFuture<CognitoIdentity.Credentials> {
+        public func awsCredentials() -> EventLoopFuture<CognitoIdentity.Credentials> {
+            guard let bearer = request.headers.bearerAuthorization else {
+                return request.eventLoop.makeFailedFuture(AWSCognitoError.unauthorized(reason: "No bearer token"))
+            }
             let identifiable = request.application.awsCognito.identifiable
-            return identifiable.getIdentityId(idToken: idToken, on: request.eventLoop)
+            return identifiable.getIdentityId(idToken: bearer.token, on: request.eventLoop)
                 .flatMap { identity in
-                    return identifiable.getCredentialForIdentity(identityId: identity, idToken: idToken, on: self.request.eventLoop)
+                    return identifiable.getCredentialForIdentity(identityId: identity, idToken: bearer.token, on: self.request.eventLoop)
             }
         }
         
