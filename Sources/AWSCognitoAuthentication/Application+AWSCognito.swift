@@ -1,12 +1,12 @@
 import Vapor
 
 
-extension Application {
-    public var awsCognito: AWSCognito {
+public extension Application {
+    var awsCognito: AWSCognito {
         .init(application: self)
     }
 
-    public struct AWSCognito {
+    struct AWSCognito {
         struct AuthenticatableKey: StorageKey {
             typealias Value = AWSCognitoAuthenticatable
         }
