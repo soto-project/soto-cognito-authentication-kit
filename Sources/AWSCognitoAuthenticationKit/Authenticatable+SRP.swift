@@ -9,17 +9,24 @@ public extension AWSCognitoAuthenticatable {
     /// - parameters:
     ///     - username: user name for user
     ///     - password: password for user
-    ///     - with: Eventloop and authenticate context. You can use a Vapor request here.
+    ///     - clientMetadata: A map of custom key-value pairs that you can provide as input for AWS Lambda custom workflows
+    ///     - context: Context data for this request
+    ///     - on: Eventloop request should run on.
     /// - returns:
     ///     An authentication response. This can contain a challenge which the user has to fulfill before being allowed to login, or authentication access, id and refresh keys
-    func authenticateSRP(username: String, password: String, context: AWSCognitoContextData, on eventLoop: EventLoop) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
+    func authenticateSRP(username: String, password: String, clientMetadata: [String: String]? = nil, context: AWSCognitoContextData, on eventLoop: EventLoop) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
         return secretHashFuture(username: username, on: eventLoop).flatMap { secretHash in
             let srp = SRP<SHA256>()
             let authParameters : [String: String] = ["USERNAME":username,
                                                      "SECRET_HASH":secretHash,
                                                      "SRP_A": srp.A.hex]
             print("Parameters \(authParameters)")
-            return self.initiateAuthRequest(authFlow: .userSrpAuth, authParameters: authParameters, context: context, on: eventLoop)
+            return self.initiateAuthRequest(
+                authFlow: .userSrpAuth,
+                authParameters: authParameters,
+                clientMetadata: clientMetadata,
+                context: context,
+                on: eventLoop)
                 .flatMap { response in
                     print("Response \(response)")
                     guard let challenge = response.challenged,

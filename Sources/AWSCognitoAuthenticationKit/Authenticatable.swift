@@ -67,13 +67,20 @@ public class AWSCognitoAuthenticatable {
     /// - parameters:
     ///     - username: user name for new user
     ///     - attributes: user attributes. These should be from the list of standard claims detailed in the [OpenID spec](https://openid.net/specs/openid-connect-core-1_0.html#StandardClaims). You can include custom attiibutes by prepending them with "custom:".
+    ///     - clientMetadata: A map of custom key-value pairs that you can provide as input for AWS Lambda custom workflows
     ///     - on: Event loop request is running on.
     /// - returns:
     ///     EventLoopFuture holding the sign up response
-    public func signUp(username: String, password: String, attributes: [String:String], on eventLoop: EventLoop) -> EventLoopFuture<CognitoIdentityProvider.SignUpResponse> {
+    public func signUp(username: String, password: String, attributes: [String:String], clientMetadata: [String: String]? = nil, on eventLoop: EventLoop) -> EventLoopFuture<CognitoIdentityProvider.SignUpResponse> {
         return secretHashFuture(username: username, on: eventLoop).flatMap { secretHash in
             let userAttributes = attributes.map { return CognitoIdentityProvider.AttributeType(name: $0.key, value: $0.value) }
-            let request = CognitoIdentityProvider.SignUpRequest(clientId: self.configuration.clientId, password: password, secretHash: secretHash, userAttributes: userAttributes, username: username)
+            let request = CognitoIdentityProvider.SignUpRequest(
+                clientId: self.configuration.clientId,
+                clientMetadata: clientMetadata,
+                password: password,
+                secretHash: secretHash,
+                userAttributes: userAttributes,
+                username: username)
             return self.configuration.cognitoIDP.signUp(request)
                 .flatMapErrorThrowing { error in
                     throw self.translateError(error: error)
@@ -88,12 +95,19 @@ public class AWSCognitoAuthenticatable {
     /// - parameters:
     ///     - username: user name for user
     ///     - confirmationCode: Confirmation code in email
+    ///     - clientMetadata: A map of custom key-value pairs that you can provide as input for AWS Lambda custom workflows
     ///     - on: Event loop request is running on.
     /// - returns:
     ///     Empty EventLoopFuture
-    public func confirmSignUp(username: String, confirmationCode: String, on eventLoop: EventLoop) -> EventLoopFuture<Void> {
+    public func confirmSignUp(username: String, confirmationCode: String, clientMetadata: [String: String]? = nil, on eventLoop: EventLoop) -> EventLoopFuture<Void> {
         return secretHashFuture(username: username, on: eventLoop).flatMap { secretHash in
-            let request = CognitoIdentityProvider.ConfirmSignUpRequest(clientId: self.configuration.clientId, confirmationCode: confirmationCode, forceAliasCreation: false, secretHash: secretHash, username: username)
+            let request = CognitoIdentityProvider.ConfirmSignUpRequest(
+                clientId: self.configuration.clientId,
+                clientMetadata: clientMetadata,
+                confirmationCode: confirmationCode,
+                forceAliasCreation: false,
+                secretHash: secretHash,
+                username: username)
             return self.configuration.cognitoIDP.confirmSignUp(request)
                 .flatMapErrorThrowing { error in
                     throw self.translateError(error: error)
@@ -112,12 +126,20 @@ public class AWSCognitoAuthenticatable {
     ///     - username: user name for new user
     ///     - attributes: user attributes. These should be from the list of standard claims detailed in the [OpenID spec](https://openid.net/specs/openid-connect-core-1_0.html#StandardClaims) . You can include custom attiibutes by prepending them with "custom:".
     ///     - messageAction: If this is set to `.resend` this will resend the message for an existing user. If this is set to `.suppress` the message sending is suppressed.
+    ///     - clientMetadata: A map of custom key-value pairs that you can provide as input for AWS Lambda custom workflows
     ///     - on: Event loop request is running on.
     /// - returns:
     ///     EventLoopFuture holding the create user response
-    public func createUser(username: String, attributes: [String:String], temporaryPassword: String? = nil, messageAction: CognitoIdentityProvider.MessageActionType? = nil, on eventLoop: EventLoop) -> EventLoopFuture<AWSCognitoCreateUserResponse> {
+    public func createUser(username: String, attributes: [String:String], temporaryPassword: String? = nil, messageAction: CognitoIdentityProvider.MessageActionType? = nil, clientMetadata: [String: String]? = nil, on eventLoop: EventLoop) -> EventLoopFuture<AWSCognitoCreateUserResponse> {
         let userAttributes = attributes.map { return CognitoIdentityProvider.AttributeType(name: $0.key, value: $0.value) }
-        let request = CognitoIdentityProvider.AdminCreateUserRequest(desiredDeliveryMediums:[.email], messageAction: messageAction, temporaryPassword: temporaryPassword, userAttributes: userAttributes, username: username, userPoolId: configuration.userPoolId)
+        let request = CognitoIdentityProvider.AdminCreateUserRequest(
+            clientMetadata: clientMetadata,
+            desiredDeliveryMediums:[.email],
+            messageAction: messageAction,
+            temporaryPassword: temporaryPassword,
+            userAttributes: userAttributes,
+            username: username,
+            userPoolId: configuration.userPoolId)
         return configuration.cognitoIDP.adminCreateUser(request)
             .flatMapErrorThrowing { error in
                 throw self.translateError(error: error)
@@ -137,16 +159,19 @@ public class AWSCognitoAuthenticatable {
     /// - parameters:
     ///     - username: user name for user
     ///     - password: password for user
-    ///     - with: Eventloop and authenticate context. You can use a Vapor request here.
+    ///     - clientMetadata: A map of custom key-value pairs that you can provide as input for AWS Lambda custom workflows
+    ///     - context: Context data for this request
+    ///     - on: Eventloop request should run on.
     /// - returns:
     ///     An authentication response. This can contain a challenge which the user has to fulfill before being allowed to login, or authentication access, id and refresh keys
-    public func authenticate(username: String, password: String, context: AWSCognitoContextData, on eventLoop: EventLoop) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
+    public func authenticate(username: String, password: String, clientMetadata: [String: String]? = nil, context: AWSCognitoContextData, on eventLoop: EventLoop) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
         return secretHashFuture(username: username, on: eventLoop).flatMap { secretHash in
             let authParameters : [String: String] = ["USERNAME":username,
                                                      "PASSWORD": password,
                                                      "SECRET_HASH":secretHash]
             return self.initiateAuthRequest(authFlow: .adminNoSrpAuth,
                                             authParameters: authParameters,
+                                            clientMetadata: clientMetadata,
                                             context: context,
                                             on: eventLoop)
         }
@@ -158,16 +183,19 @@ public class AWSCognitoAuthenticatable {
     /// - parameters:
     ///     - username: user name of user
     ///     - refreshToken: refresh token required to generate new access and id tokens
-    ///     - with: Eventloop and authenticate context. You can use a Vapor request here.
+    ///     - clientMetadata: A map of custom key-value pairs that you can provide as input for AWS Lambda custom workflows
+    ///     - context: Context data for this request
+    ///     - on: Eventloop request should run on.
     /// - returns:
     ///     - An authentication result which should include an id and status token
-    public func refresh(username: String, refreshToken: String, context: AWSCognitoContextData, on eventLoop: EventLoop) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
+    public func refresh(username: String, refreshToken: String, clientMetadata: [String: String]? = nil, context: AWSCognitoContextData, on eventLoop: EventLoop) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
         return secretHashFuture(username: username, on: eventLoop).flatMap { secretHash in
             let authParameters : [String: String] = ["USERNAME":username,
                                                      "REFRESH_TOKEN":refreshToken,
                                                      "SECRET_HASH":secretHash]
             return self.initiateAuthRequest(authFlow: .refreshTokenAuth,
                                            authParameters: authParameters,
+                                           clientMetadata: clientMetadata,
                                            context: context,
                                            on: eventLoop)
         }
@@ -183,10 +211,12 @@ public class AWSCognitoAuthenticatable {
     ///     - name: Name of challenge
     ///     - responses: Challenge responses
     ///     - session: Session id returned with challenge
-    ///     - with: EventLoop and authenticate context. You can use a Vapor request here.
+    ///     - clientMetadata: A map of custom key-value pairs that you can provide as input for AWS Lambda custom workflows
+    ///     - context: Context data for this request
+    ///     - on: Eventloop request should run on.
     /// - returns:
     ///     An authentication response. This can contain another challenge which the user has to fulfill before being allowed to login, or authentication access, id and refresh keys
-    public func respondToChallenge(username: String, name: AWSCognitoChallengeName, responses: [String: String], session: String?, context: AWSCognitoContextData, on eventLoop: EventLoop) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
+    public func respondToChallenge(username: String, name: AWSCognitoChallengeName, responses: [String: String], session: String?, clientMetadata: [String: String]? = nil, context: AWSCognitoContextData, on eventLoop: EventLoop) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
         return secretHashFuture(username: username, on: eventLoop).flatMap { secretHash in
             var challengeResponses = responses
             challengeResponses["USERNAME"] = username
@@ -195,6 +225,7 @@ public class AWSCognitoAuthenticatable {
             let request = CognitoIdentityProvider.AdminRespondToAuthChallengeRequest(challengeName: name,
                                                                                      challengeResponses: challengeResponses,
                                                                                      clientId: self.configuration.clientId,
+                                                                                     clientMetadata: clientMetadata,
                                                                                      contextData: context,
                                                                                      session: session,
                                                                                      userPoolId: self.configuration.userPoolId)
@@ -233,7 +264,8 @@ public class AWSCognitoAuthenticatable {
     ///     - username: User name of user
     ///     - password: new password
     ///     - session: Session id returned with challenge
-    ///     - with: EventLoop and authenticate context. You can use a Vapor request here.
+    ///     - context: Context data for this request
+    ///     - on: Eventloop request should run on.
     /// - returns:
     ///     An authentication response. This can contain another challenge which the user has to fulfill before being allowed to login, or authentication access, id and refresh keys
     public func respondToNewPasswordChallenge(username: String, password: String, session: String?, context: AWSCognitoContextData, on eventLoop: EventLoop) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
@@ -246,7 +278,8 @@ public class AWSCognitoAuthenticatable {
     ///     - username: User name of user
     ///     - password: new password
     ///     - session: Session id returned with challenge
-    ///     - with: EventLoop and authenticate context. You can use a Vapor request here.
+    ///     - context: Context data for this request
+    ///     - on: Eventloop request should run on.
     /// - returns:
     ///     An authentication response. This can contain another challenge which the user has to fulfill before being allowed to login, or authentication access, id and refresh keys
     public func respondToMFAChallenge(username: String, token: String, session: String?, context: AWSCognitoContextData, on eventLoop: EventLoop) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
@@ -285,12 +318,13 @@ extension AWSCognitoAuthenticatable {
     }
 
     /// return an authorization request future
-    func initiateAuthRequest(authFlow: CognitoIdentityProvider.AuthFlowType, authParameters: [String: String], context: AWSCognitoContextData, on eventLoop: EventLoop) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
+    func initiateAuthRequest(authFlow: CognitoIdentityProvider.AuthFlowType, authParameters: [String: String], clientMetadata: [String: String]? = nil, context: AWSCognitoContextData, on eventLoop: EventLoop) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
         guard let context = context.contextData else {return eventLoop.makeFailedFuture(AWSCognitoError.failedToCreateContextData)}
         let request = CognitoIdentityProvider.AdminInitiateAuthRequest(
             authFlow: authFlow,
             authParameters: authParameters,
             clientId: configuration.clientId,
+            clientMetadata: clientMetadata,
             contextData: context,
             userPoolId: configuration.userPoolId)
         return configuration.cognitoIDP.adminInitiateAuth(request)
