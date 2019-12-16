@@ -1,16 +1,13 @@
 import JWTKit
 
 /// JWT Access token
-struct AccessTokenVerifier<Config: AWSCognitoAuthenticatable>: JWTPayload {
+struct AccessTokenVerifier: JWTPayload {
     let expirationTime: Date
     let issuer: String
     let tokenUse: String
 
     func verify(using signer: JWTSigner) throws {
         guard expirationTime > Date() else {throw AWSCognitoError.unauthorized(reason:"token expired")}
-        guard issuer == "https://cognito-idp.\(Config.region.rawValue).amazonaws.com/\(Config.userPoolId)" else {
-            throw AWSCognitoError.unauthorized(reason:"invalid token")
-        }
         guard tokenUse == "access" else {throw AWSCognitoError.unauthorized(reason:"invalid token")}
     }
 
@@ -22,18 +19,14 @@ struct AccessTokenVerifier<Config: AWSCognitoAuthenticatable>: JWTPayload {
 }
 
 /// JWT Id token
-struct IdTokenVerifier<Config: AWSCognitoAuthenticatable>: JWTPayload {
+struct IdTokenVerifier: JWTPayload {
     let audience: String
     let expirationTime: Date
     let issuer: String
     let tokenUse: String
 
     func verify(using signer: JWTSigner) throws {
-        guard audience == Config.clientId else {throw AWSCognitoError.unauthorized(reason:"invalid token")}
         guard expirationTime > Date() else {throw AWSCognitoError.unauthorized(reason:"token expired")}
-        guard issuer == "https://cognito-idp.\(Config.region.rawValue).amazonaws.com/\(Config.userPoolId)" else {
-            throw AWSCognitoError.unauthorized(reason:"invalid token")
-        }
         guard tokenUse == "id" else {throw AWSCognitoError.unauthorized(reason:"invalid token")}
     }
 

@@ -3,24 +3,30 @@ import Foundation
 import NIO
 import OpenCrypto
 
-extension AWSCognitoAuthenticatable {
+public extension AWSCognitoAuthenticatable {
     /// authenticate using SRP
     ///
     /// - parameters:
     ///     - username: user name for user
     ///     - password: password for user
-    ///     - with: Eventloop and authenticate context. You can use a Vapor request here.
+    ///     - clientMetadata: A map of custom key-value pairs that you can provide as input for AWS Lambda custom workflows
+    ///     - context: Context data for this request
+    ///     - on: Eventloop request should run on.
     /// - returns:
     ///     An authentication response. This can contain a challenge which the user has to fulfill before being allowed to login, or authentication access, id and refresh keys
-    static func authenticateSRP(username: String, password: String, with eventLoopWithContext: AWSCognitoEventLoopWithContext) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
-        let eventLoop = eventLoopWithContext.eventLoop
+    func authenticateSRP(username: String, password: String, clientMetadata: [String: String]? = nil, context: AWSCognitoContextData, on eventLoop: EventLoop) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
         return secretHashFuture(username: username, on: eventLoop).flatMap { secretHash in
             let srp = SRP<SHA256>()
             let authParameters : [String: String] = ["USERNAME":username,
                                                      "SECRET_HASH":secretHash,
                                                      "SRP_A": srp.A.hex]
             print("Parameters \(authParameters)")
-            return initiateAuthRequest(authFlow: .userSrpAuth, authParameters: authParameters, with: eventLoopWithContext)
+            return self.initiateAuthRequest(
+                authFlow: .userSrpAuth,
+                authParameters: authParameters,
+                clientMetadata: clientMetadata,
+                context: context,
+                on: eventLoop)
                 .flatMap { response in
                     print("Response \(response)")
                     guard let challenge = response.challenged,
@@ -32,7 +38,7 @@ extension AWSCognitoAuthenticatable {
                         let dataB = parameters["SRP_B"] else { return eventLoop.makeFailedFuture(AWSCognitoError.unexpectedResult(reason: "AWS did not provide all the data required to do SRP authentication")) }
                     
                     let srpUsername = parameters["USER_ID_FOR_SRP"] ?? username
-                    let userPoolName = userPoolId.split(separator: "_")[1]
+                    let userPoolName = self.configuration.userPoolId.split(separator: "_")[1]
                     guard let B = BigNum(hex: dataB) else { return eventLoop.makeFailedFuture(AWSCognitoError.invalidPublicKey) }
                     
                     // get key
@@ -56,7 +62,7 @@ extension AWSCognitoAuthenticatable {
                                                              "PASSWORD_CLAIM_SIGNATURE": claim.base64EncodedString(),
                                                              "TIMESTAMP": timestamp
                     ]
-                    return respondToChallenge(username: username, name: .passwordVerifier, responses: authResponse, session: challenge.session, with: eventLoopWithContext)
+                    return self.respondToChallenge(username: username, name: .passwordVerifier, responses: authResponse, session: challenge.session, context: context, on: eventLoop)
             }
         }
     }
@@ -163,6 +169,16 @@ class SRP<H: HashFunction> {
             result += t
         }
         return Data(result[0..<count])
+    }
+}
+
+extension Array where Element: FixedWidthInteger {
+    static func random(count: Int) -> [Element] {
+        var array = self.init()
+        for _ in 0..<count {
+            array.append(.random(in: Element.min..<Element.max))
+        }
+        return array
     }
 }
 
