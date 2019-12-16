@@ -37,7 +37,8 @@ Once your user is created and confirmed in the signUp case. The following will g
 let response = authenticatable.authenticate(
     username: username, 
     password: password, 
-    with: request)
+    context: request,
+    on: request.eventLoop)
     .then { response in
         let accessToken = response.authenticated?.accessToken
         let idToken = response.authenticated?.idToken
@@ -93,7 +94,8 @@ To avoid having to ask the user for their username and password every 60 minutes
 let response = authenticatable.authenticate(
     username: username, 
     refreshToken: refreshToken, 
-    with: request)
+    context: request,
+    on: request.eventLoop)
     .then { response in
         let accessToken = response.authenticated?.accessToken
         let idToken = response.authenticated?.idToken
@@ -111,7 +113,8 @@ let response = authenticatable.respondToChallenge(
     name: challengeName, 
     responses: challengeResponse, 
     session: session, 
-    with: request)
+    context: request,
+    on: request.eventLoop)
     .then { response in
         let accessToken = response.authenticated?.accessToken
         let idToken = response.authenticated?.idToken
@@ -152,3 +155,47 @@ return identifiable.getIdentityId(idToken: idToken, on: req.eventLoop)
 }
 ```
 In the situation you are using Cognito user pools the `idToken` is the `idToken` returned when you authenticate a user.
+
+# Using with Vapor
+## Configuration
+Store your AWSCognitoConfiguration on the Application object. In configure.swift add the following with your configuration details
+```
+let awsCognitoConfiguration = AWSCognitoConfiguration(
+    userPoolId: String = "eu-west-1_userpoolid",
+    clientId: String = "23432clientId234234",
+    clientSecret: String = "1q9ln4m892j2cnsdapa0dalh9a3aakmpeugiaag8k3cacijlbkrp",
+    cognitoIDP: CognitoIdentityProvider = CognitoIdentityProvider(region: .euwest1),
+    region: Region = .euwest1
+)
+app.awsCognito.authenticatable = AWSCognitoAuthenticatable(configuration: awsCognitoConfiguration)
+```
+The CognitoIdentity configuration can be setup in a similar way.
+```
+let awsCognitoIdentityConfiguration = AWSCognitoIdentityConfiguration(
+    identityPoolId: String = "eu-west-1_identitypoolid"
+    identityProvider: String = "provider"
+    cognitoIdentity: CognitoIdentity = CognitoIdentity(region: .euwest1)
+)
+let app.awsCognito.identifiable = AWSCognitoIdentifiable(configuration: awsCognitoIdentityConfiguration)
+```
+## Accessing functionality
+Functions like `createUser`, `signUp`, `authenticate` with username and password and `responseToChallenge` are all accessed through `request.application.awsCognito.authenticatable` as in the following
+```
+func login(_ req: Request) throws -> Future<String> {
+    let user = try req.content.decode(User.self)
+    return req.application.awsCognito.authenticatable.authenticate(
+        username: user.username, 
+        password: user.password, 
+        context: req, 
+        on:req.eventLoop).transform(to: "Success")
+}
+```
+If id, access or refresh tokens are provided in the 'Authorization' header as Bearer tokens the following functions in Request can be used to verify them `authenticate(idToken:)`, `authenticate(accessToken:)`, `refresh`. as in the following
+```
+func authenticateAccess(_ req: Request) throws -> Future<> {
+    req.awsCognito.authenticateAccess().flatMap { _ in
+        ...
+    }
+}
+```
+
