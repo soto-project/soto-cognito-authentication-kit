@@ -24,6 +24,7 @@ public extension AWSCognitoAuthenticatable {
             return self.initiateAuthRequest(
                 authFlow: .userSrpAuth,
                 authParameters: authParameters,
+                requireAuthentication: false,
                 clientMetadata: clientMetadata,
                 context: context,
                 on: eventLoop)
@@ -62,7 +63,14 @@ public extension AWSCognitoAuthenticatable {
                                                              "PASSWORD_CLAIM_SIGNATURE": claim.base64EncodedString(),
                                                              "TIMESTAMP": timestamp
                     ]
-                    return self.respondToChallenge(username: username, name: .passwordVerifier, responses: authResponse, session: challenge.session, context: context, on: eventLoop)
+                    return self.respondToChallenge(
+                        username: username,
+                        name: .passwordVerifier,
+                        responses: authResponse,
+                        session: challenge.session,
+                        requireAuthentication: false,
+                        context: context,
+                        on: eventLoop)
             }
         }
     }
