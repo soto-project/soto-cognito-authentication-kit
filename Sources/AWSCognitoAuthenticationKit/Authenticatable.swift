@@ -188,13 +188,14 @@ public class AWSCognitoAuthenticatable {
     ///     - on: Eventloop request should run on.
     /// - returns:
     ///     - An authentication result which should include an id and status token
-    public func refresh(username: String, refreshToken: String, clientMetadata: [String: String]? = nil, context: AWSCognitoContextData, on eventLoop: EventLoop) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
+    public func refresh(username: String, refreshToken: String, requireAuthentication: Bool = true, clientMetadata: [String: String]? = nil, context: AWSCognitoContextData, on eventLoop: EventLoop) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
         return secretHashFuture(username: username, on: eventLoop).flatMap { secretHash in
             let authParameters : [String: String] = ["USERNAME":username,
                                                      "REFRESH_TOKEN":refreshToken,
                                                      "SECRET_HASH":secretHash]
             return self.initiateAuthRequest(authFlow: .refreshTokenAuth,
                                            authParameters: authParameters,
+                                           requireAuthentication: requireAuthentication,
                                            clientMetadata: clientMetadata,
                                            context: context,
                                            on: eventLoop)
@@ -216,21 +217,36 @@ public class AWSCognitoAuthenticatable {
     ///     - on: Eventloop request should run on.
     /// - returns:
     ///     An authentication response. This can contain another challenge which the user has to fulfill before being allowed to login, or authentication access, id and refresh keys
-    public func respondToChallenge(username: String, name: AWSCognitoChallengeName, responses: [String: String], session: String?, clientMetadata: [String: String]? = nil, context: AWSCognitoContextData, on eventLoop: EventLoop) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
+    public func respondToChallenge(username: String, name: AWSCognitoChallengeName, responses: [String: String], session: String?, requireAuthentication: Bool = true, clientMetadata: [String: String]? = nil, context: AWSCognitoContextData, on eventLoop: EventLoop) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
         return secretHashFuture(username: username, on: eventLoop).flatMap { secretHash in
             var challengeResponses = responses
             challengeResponses["USERNAME"] = username
             challengeResponses["SECRET_HASH"] = secretHash
-            guard let context = context.contextData else { return eventLoop.makeFailedFuture(AWSCognitoError.failedToCreateContextData) }
-            let request = CognitoIdentityProvider.AdminRespondToAuthChallengeRequest(challengeName: name,
-                                                                                     challengeResponses: challengeResponses,
-                                                                                     clientId: self.configuration.clientId,
-                                                                                     clientMetadata: clientMetadata,
-                                                                                     contextData: context,
-                                                                                     session: session,
-                                                                                     userPoolId: self.configuration.userPoolId)
-            return self.configuration.cognitoIDP.adminRespondToAuthChallenge(request)
-                .flatMapErrorThrowing { error in
+            
+            let respondFuture: EventLoopFuture<CognitoIdentityProvider.AdminRespondToAuthChallengeResponse>
+            // If authentication required that use admin version of RespondToAuthChallenge
+            if requireAuthentication {
+                guard let context = context.contextData else { return eventLoop.makeFailedFuture(AWSCognitoError.failedToCreateContextData) }
+                let request = CognitoIdentityProvider.AdminRespondToAuthChallengeRequest(challengeName: name,
+                                                                                         challengeResponses: challengeResponses,
+                                                                                         clientId: self.configuration.clientId,
+                                                                                         clientMetadata: clientMetadata,
+                                                                                         contextData: context,
+                                                                                         session: session,
+                                                                                         userPoolId: self.configuration.userPoolId)
+                respondFuture = self.configuration.cognitoIDP.adminRespondToAuthChallenge(request)
+            } else {
+                let request = CognitoIdentityProvider.RespondToAuthChallengeRequest(challengeName: name,
+                                                                                    challengeResponses: challengeResponses,
+                                                                                    clientId: self.configuration.clientId,
+                                                                                    clientMetadata: clientMetadata,
+                                                                                    session: session)
+                respondFuture = self.configuration.cognitoIDP.respondToAuthChallenge(request).map { response in
+                    return CognitoIdentityProvider.AdminRespondToAuthChallengeResponse(authenticationResult: response.authenticationResult, challengeName: response.challengeName, challengeParameters: response.challengeParameters, session: response.session)
+                }
+            }
+            
+            return respondFuture.flatMapErrorThrowing { error in
                     throw self.translateError(error: error)
                 }
                 .flatMapThrowing { (response)->AWSCognitoAuthenticateResponse in
@@ -318,17 +334,30 @@ extension AWSCognitoAuthenticatable {
     }
 
     /// return an authorization request future
-    func initiateAuthRequest(authFlow: CognitoIdentityProvider.AuthFlowType, authParameters: [String: String], clientMetadata: [String: String]? = nil, context: AWSCognitoContextData, on eventLoop: EventLoop) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
-        guard let context = context.contextData else {return eventLoop.makeFailedFuture(AWSCognitoError.failedToCreateContextData)}
-        let request = CognitoIdentityProvider.AdminInitiateAuthRequest(
-            authFlow: authFlow,
-            authParameters: authParameters,
-            clientId: configuration.clientId,
-            clientMetadata: clientMetadata,
-            contextData: context,
-            userPoolId: configuration.userPoolId)
-        return configuration.cognitoIDP.adminInitiateAuth(request)
-            .flatMapErrorThrowing { error in
+    func initiateAuthRequest(authFlow: CognitoIdentityProvider.AuthFlowType, authParameters: [String: String], requireAuthentication: Bool = true, clientMetadata: [String: String]? = nil, context: AWSCognitoContextData, on eventLoop: EventLoop) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
+        
+        let initAuthFuture: Future<CognitoIdentityProvider.AdminInitiateAuthResponse>
+        if requireAuthentication {
+            guard let context = context.contextData else {return eventLoop.makeFailedFuture(AWSCognitoError.failedToCreateContextData)}
+            let request = CognitoIdentityProvider.AdminInitiateAuthRequest(
+                authFlow: authFlow,
+                authParameters: authParameters,
+                clientId: configuration.clientId,
+                clientMetadata: clientMetadata,
+                contextData: context,
+                userPoolId: configuration.userPoolId)
+            initAuthFuture = configuration.cognitoIDP.adminInitiateAuth(request)
+        } else {
+            let request = CognitoIdentityProvider.InitiateAuthRequest(
+                authFlow: authFlow,
+                authParameters: authParameters,
+                clientId: configuration.clientId,
+                clientMetadata: clientMetadata)
+            initAuthFuture = configuration.cognitoIDP.initiateAuth(request).map { response in
+                return CognitoIdentityProvider.AdminInitiateAuthResponse(authenticationResult: response.authenticationResult, challengeName: response.challengeName, challengeParameters: response.challengeParameters, session: response.session)
+            }
+        }
+        return initAuthFuture.flatMapErrorThrowing { error in
                 throw self.translateError(error: error)
             }
             .flatMapThrowing { (response)->AWSCognitoAuthenticateResponse in

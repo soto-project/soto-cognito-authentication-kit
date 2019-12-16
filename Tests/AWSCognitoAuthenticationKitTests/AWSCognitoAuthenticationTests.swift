@@ -35,7 +35,8 @@ final class AWSCognitoAuthenticationKitTests: XCTestCase {
     static let userPoolName: String = "aws-cognito-authentication-tests"
     static let userPoolClientName: String = "aws-cognito-authentication-tests"
     static var authenticatable: AWSCognitoAuthenticatable!
-            
+    static var authenticatableUnauthenticated: AWSCognitoAuthenticatable!
+
     static var setUpFailure: String? = nil
     
     class override func setUp() {
@@ -213,12 +214,22 @@ final class AWSCognitoAuthenticationKitTests: XCTestCase {
     
     func testAuthenticateSRP() {
         XCTAssertNil(Self.setUpFailure)
+        
+        let cognitoIDPUnauthenticated = CognitoIdentityProvider(accessKeyId: "", secretAccessKey: "", region: .useast1, middlewares: [AWSLoggingMiddleware()], eventLoopGroupProvider: .shared(MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)))
+        let configuration = AWSCognitoConfiguration(
+            userPoolId: Self.authenticatable.configuration.userPoolId,
+            clientId: Self.authenticatable.configuration.clientId,
+            clientSecret: Self.authenticatable.configuration.clientSecret,
+            cognitoIDP: cognitoIDPUnauthenticated,
+            region: .useast1)
+        let authenticatable = AWSCognitoAuthenticatable(configuration: configuration)
+        
         attempt {
             let eventLoop = Self.cognitoIDP.client.eventLoopGroup.next()
             let context = AWSCognitoContextTest()
             let testData = try TestData(#function, on: eventLoop)
             
-            let response = try Self.authenticatable.authenticateSRP(username: testData.username, password: testData.password, context: context, on: eventLoop).wait()
+            let response = try authenticatable.authenticateSRP(username: testData.username, password: testData.password, context: context, on: eventLoop).wait()
             print(response)
         }
     }
