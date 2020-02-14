@@ -4,7 +4,7 @@
 import AWSSDKSwiftCore
 import Foundation
 import NIO
-import OpenCrypto
+import Crypto
 
 public typealias AWSCognitoChallengeName = CognitoIdentityProvider.ChallengeNameType
 public typealias AWSCognitoUserStatusType = CognitoIdentityProvider.UserStatusType
@@ -336,7 +336,7 @@ extension AWSCognitoAuthenticatable {
     /// return an authorization request future
     func initiateAuthRequest(authFlow: CognitoIdentityProvider.AuthFlowType, authParameters: [String: String], requireAuthentication: Bool = true, clientMetadata: [String: String]? = nil, context: AWSCognitoContextData, on eventLoop: EventLoop) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
         
-        let initAuthFuture: Future<CognitoIdentityProvider.AdminInitiateAuthResponse>
+        let initAuthFuture: EventLoopFuture<CognitoIdentityProvider.AdminInitiateAuthResponse>
         if requireAuthentication {
             guard let context = context.contextData else {return eventLoop.makeFailedFuture(AWSCognitoError.failedToCreateContextData)}
             let request = CognitoIdentityProvider.AdminInitiateAuthRequest(

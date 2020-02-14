@@ -2,7 +2,7 @@ import XCTest
 import AWSSDKSwiftCore
 import CognitoIdentityProvider
 import BigNum
-import OpenCrypto
+import Crypto
 import NIO
 @testable import AWSCognitoAuthenticationKit
 
@@ -31,7 +31,7 @@ class AWSCognitoContextTest: AWSCognitoContextData {
 
 final class AWSCognitoAuthenticationKitTests: XCTestCase {
     
-    static let cognitoIDP = CognitoIdentityProvider(region: .useast1, middlewares: [AWSLoggingMiddleware()], eventLoopGroupProvider: .shared(MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)))
+    static let cognitoIDP = CognitoIdentityProvider(region: .useast1, /*middlewares: [AWSLoggingMiddleware()], */eventLoopGroupProvider: .shared(MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)))
     static let userPoolName: String = "aws-cognito-authentication-tests"
     static let userPoolClientName: String = "aws-cognito-authentication-tests"
     static var authenticatable: AWSCognitoAuthenticatable!
@@ -113,7 +113,8 @@ final class AWSCognitoAuthenticationKitTests: XCTestCase {
         }
         
         deinit {
-            
+            let deleteUserRequest = CognitoIdentityProvider.AdminDeleteUserRequest(username: username, userPoolId: AWSCognitoAuthenticationKitTests.authenticatable.configuration.userPoolId)
+            try? AWSCognitoAuthenticationKitTests.cognitoIDP.adminDeleteUser(deleteUserRequest).wait()
         }
     }
     

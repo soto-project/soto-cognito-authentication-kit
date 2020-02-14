@@ -1,7 +1,7 @@
 import BigNum
 import Foundation
 import NIO
-import OpenCrypto
+import Crypto
 
 public extension AWSCognitoAuthenticatable {
     /// authenticate using SRP
@@ -54,13 +54,13 @@ public extension AWSCognitoAuthenticatable {
                     let timestamp = dateFormatter.string(from: Date())
                     
                     // construct claim
-                    let claim = SRP<SHA256>.HMAC(Data("\(userPoolName)\(srpUsername)".utf8) + secretBlock + Data(timestamp.utf8), key: key)
+                    let claim = HMAC<SHA256>.authenticationCode(for:Data("\(userPoolName)\(srpUsername)".utf8) + secretBlock + Data(timestamp.utf8), using: SymmetricKey(data: key))
                                        
-                    print("claim \(claim.hexdigest())")
+                    //print("claim \(claim.hexdigest())")
                     let authResponse : [String: String] = ["USERNAME":srpUsername,
                                                              "SECRET_HASH":secretHash,
                                                              "PASSWORD_CLAIM_SECRET_BLOCK": secretBlockBase64,
-                                                             "PASSWORD_CLAIM_SIGNATURE": claim.base64EncodedString(),
+                                                             "PASSWORD_CLAIM_SIGNATURE": Data(claim).base64EncodedString(),
                                                              "TIMESTAMP": timestamp
                     ]
                     return self.respondToChallenge(
@@ -105,7 +105,7 @@ class SRP<H: HashFunction> {
         + "43DB5BFCE0FD108E4B82D120A93AD2CAFFFFFFFFFFFFFFFF")!
         self.g = BigNum(2)
         // k = H(N,g)
-        self.k = BigNum(data: Self.Hash(Self.pad(self.N.data) + self.g.data))
+        self.k = BigNum(data: [UInt8].init(H.hash(data: Self.pad(self.N.data) + self.g.data)))
         self.infoKey = Data("Caldera Derived Key".utf8)
 
         if let a = a {
@@ -131,11 +131,11 @@ class SRP<H: HashFunction> {
         guard B % N != BigNum(0) else { return nil }
 
         // calculate u = H(A,B)
-        let u = BigNum(data: Self.Hash(Self.pad(A.data) + Self.pad(B.data)))
+        let u = BigNum(data: [UInt8].init(H.hash(data: Self.pad(A.data) + Self.pad(B.data))))
         
         // calculate x = H(salt | H(poolName | userId | ":" | password))
         let message = Data("\(username):\(password)".utf8)
-        let x = BigNum(data: Self.Hash(Self.pad(salt) + Self.Hash(message)))
+        let x = BigNum(data: [UInt8].init(H.hash(data: Self.pad(salt) + H.hash(data: message))))
         
         // calculate S
         let S = (B - k * g.power(x, modulus: N)).power(a + u * x, modulus: N)
@@ -153,23 +153,14 @@ class SRP<H: HashFunction> {
         return data
     }
     
-    static func Hash<D>(_ data: D) -> Data where D: DataProtocol {
-        return Data(H.hash(data: data))
-    }
-    
-    static func HMAC(_ data: Data, key: Data) -> Data {
-        let hmac: HashedAuthenticationCode<H> = OpenCrypto.HMAC.authenticationCode(for: data, using: SymmetricKey(data: key))
-        return Data(hmac)
-    }
-    
     static func HKDF(seed: Data, info: Data, salt: Data, count: Int) -> Data {
-        let prk = Self.HMAC(seed, key: salt)
+        let prk = HMAC<H>.authenticationCode(for:seed, using: SymmetricKey(data: salt))
         let iterations = Int(ceil(Double(count) / Double(H.Digest.byteCount)))
         
         var t = Data()
         var result = Data()
         for i in 1...iterations {
-            var hmac: OpenCrypto.HMAC<H> = OpenCrypto.HMAC(key: SymmetricKey(data: prk))
+            var hmac = HMAC<H>(key: SymmetricKey(data: prk))
             hmac.update(data: t)
             hmac.update(data: info)
             hmac.update(data: [UInt8(i)])
