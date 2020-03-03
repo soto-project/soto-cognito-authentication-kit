@@ -1,6 +1,12 @@
 name: Swift
 
-on: [push, pull_request, release]
+on: 
+  push:
+    branches: 
+    - "*"
+  pull_request:
+    branches: 
+    - "*"
 
 env:
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
