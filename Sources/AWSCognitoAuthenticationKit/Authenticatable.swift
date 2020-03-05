@@ -121,7 +121,8 @@ public class AWSCognitoAuthenticatable {
 
     /// create a new AWS Cognito user.
     ///
-    /// This uses AdminCreateUser. An invitation email, with a password  is sent to the user. This password requires to be renewed as soon as it is used.
+    /// This uses AdminCreateUser. An invitation email, with a password  is sent to the user. This password requires to be renewed as soon as it is used. As this function uses an Admin
+    /// function it requires a CognitoIdentityProvider with AWS credentials.
     /// - parameters:
     ///     - username: user name for new user
     ///     - attributes: user attributes. These should be from the list of standard claims detailed in the [OpenID spec](https://openid.net/specs/openid-connect-core-1_0.html#StandardClaims) . You can include custom attiibutes by prepending them with "custom:".
@@ -154,7 +155,8 @@ public class AWSCognitoAuthenticatable {
         .hop(to: eventLoop)
     }
 
-    /// authenticate using a username and password
+    /// Authenticate using a username and password.
+    /// This function uses the Admin version of the initiateAuthRequest so your CognitoIdentityProvider should be setup with AWS credentials.
     ///
     /// - parameters:
     ///     - username: user name for user
@@ -183,6 +185,7 @@ public class AWSCognitoAuthenticatable {
     /// - parameters:
     ///     - username: user name of user
     ///     - refreshToken: refresh token required to generate new access and id tokens
+    ///     - requireAuthentication: Do we need a CognitoIdentityProvider with AWS credentials
     ///     - clientMetadata: A map of custom key-value pairs that you can provide as input for AWS Lambda custom workflows
     ///     - context: Context data for this request
     ///     - on: Eventloop request should run on.
@@ -207,11 +210,13 @@ public class AWSCognitoAuthenticatable {
     /// In some situations when logging in Cognito will respond with a challenge before you are allowed to login. These could be supplying a new password for a new account,
     /// supply an MFA code. This is used to respond to those challenges. You respond with the challenge name, the session id return in the challenge and the response values required.
     /// If successful you will be returned an authenticated response which includes the access, id and refresh tokens.
+    ///
     /// - parameters:
     ///     - username: User name of user
     ///     - name: Name of challenge
     ///     - responses: Challenge responses
     ///     - session: Session id returned with challenge
+    ///     - requireAuthentication: Do we need a CognitoIdentityProvider with AWS credentials
     ///     - clientMetadata: A map of custom key-value pairs that you can provide as input for AWS Lambda custom workflows
     ///     - context: Context data for this request
     ///     - on: Eventloop request should run on.
