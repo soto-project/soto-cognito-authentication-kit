@@ -18,21 +18,21 @@ let configuration = AWSCognitoConfiguration(
 )
 let authenticatable = AWSCognitoAuthenticatable(configuration: configuration)
 ```
-The values `userPoolId`, `clientId` and `clientSecret` can all be find on the Amazon Cognito user pool console. `cognitoIDP` is the client used to communicate with Amazon Web Services. It is provided by the [aws-sdk-swift](https://github.com/swift-aws/aws-sdk-swift.git) library. If you are using `AWSCognitoAuthenticatable.authenticate(username, password, ...)` you will need to provide AWS credentials to your `CognitoIdentityProvider`. You can find more details about providing credentials [here](https://github.com/swift-aws/aws-sdk-swift#configuring-credentials). `region` is the AWS server region your user pool is in.
+The values `userPoolId`, `clientId` and `clientSecret` can all be find on the Amazon Cognito user pool console. `cognitoIDP` is the client used to communicate with Amazon Web Services. It is provided by the [aws-sdk-swift](https://github.com/swift-aws/aws-sdk-swift.git) library. Some functions will need you to provide AWS credentials to your `CognitoIdentityProvider`. You can find more details about providing credentials [here](https://github.com/swift-aws/aws-sdk-swift#configuring-credentials). `region` is the AWS server region your user pool is in.
 
 ## Creating a AWS Cognito user
-Assuming we have the `AWSCognitoAuthenticatable` instance from above the following can be used to create a user. 
+Assuming we have the `AWSCognitoAuthenticatable` instance from above the following can be used to create a user. This function requires a `CognitoIdentityProvider` setup with AWS credentials.
 ```
 let username = "johndoe"
 let attributes: [String: String] = ["email": "user@email.com", "name": "John Doe", "gender": "male"]
 return authenticatable.createUser(username: username, attributes: attributes, on: request.eventLoop)
 ```
-The attributes you provide should match the attributes you selected when creating the user pool in the AWS Cognito console. Once you've created a user an email is sent to them detailing their username and randomly generated password. The `on:` parameter is a Vapor Worker object. You can use the Request class here.
+The attributes you provide should match the attributes you selected when creating the user pool in the AWS Cognito console. Once you've created a user an email is sent to them detailing their username and randomly generated password. The `on:` parameter is an eventLoop to do the work on.
 
 As an alternative you can use the `signUp` function which takes a `username` and `password`. This will send a confirmation email to the user which includes a confirmation code. You then call `confirmSignUp` with this confirmation code. For this path to be available you need to have the 'Allow users to sign themselves up' flag set in your user pool. 
 
 ## Authenticating with a username and a password
-Once your user is created and confirmed in the signUp case. The following will generate JWT authentication tokens from a username and password. 
+Once your user is created and confirmed in the signUp case. The following will generate JWT authentication tokens from a username and password. This function requires a `CognitoIdentityProvider` setup with AWS credentials.
 ```
 let response = authenticatable.authenticate(
     username: username, 
