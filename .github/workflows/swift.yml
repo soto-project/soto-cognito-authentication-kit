@@ -21,7 +21,7 @@ jobs:
       with:
         fetch-depth: 1
     - name: Install dependencies
-        brew install libressl
+      run: brew install libressl
     - name: Build
       run: swift build
     - name: Test
