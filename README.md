@@ -1,6 +1,6 @@
-# AWS Cognito Authentication
+# AWS Cognito Authentication Kit
 [<img src="http://img.shields.io/badge/swift-5.1-brightgreen.svg" alt="Swift 5.1" />](https://swift.org)
-[<img src="https://github.com/adam-fowler/aws-cognito-authentication/workflows/Swift/badge.svg" />](https://github.com/adam-fowler/aws-cognito-authentication/actions)
+[<img src="https://github.com/adam-fowler/aws-cognito-authentication-kit/workflows/Swift/badge.svg" />](https://github.com/adam-fowler/aws-cognito-authentication-kit/actions?query=workflow%3ASwift)
 
 Amazon Cognito provides authentication, authorization, and user management for your web apps. 
 
@@ -39,20 +39,20 @@ let response = authenticatable.authenticate(
     password: password, 
     context: request,
     on: request.eventLoop)
-    .then { response in
+    .flatMap { response in
         let accessToken = response.authenticated?.accessToken
         let idToken = response.authenticated?.idToken
         let refreshToken = response.authenticated?.refreshToken
         ...
 }
 ```
-The access token is used just to indicate a user has been granted access. It contains verification information, the username and a subject uuid which can be used to identify the user if you don't want to use the username. The token is valid for 60 minutes. The idToken contains claims about the identity of the user. It should contain all the attributes attached to the user. Again this token is only valid for 60 minutes. 
+The access token is used just to indicate a user has been granted access. It contains verification information, the username and a subject uuid which can be used to identify the user if you don't want to use the username. The token is valid for 60 minutes. The idToken contains claims about the identity of the user. It should contain all the attributes attached to the user. Again this token is only valid for 60 minutes. If you don't receive any authentication tokens then you need to check the `challenged` variable to see if you have a login challenge and respond to it before receiving authentication tokens. See [below](#responding-to-authentication-challenges). 
 
 ## Verifying an access token is valid
 The following will verify whether a token gives access.
 ```
 let response = authenticatable.authenticate(accessToken: token, on: request.eventLoop)
-    .then { response in
+    .flatMap { response in
         let username = response.username
         let subject = response.subject
         ...
@@ -96,7 +96,7 @@ let response = authenticatable.authenticate(
     refreshToken: refreshToken, 
     context: request,
     on: request.eventLoop)
-    .then { response in
+    .flatMap { response in
         let accessToken = response.authenticated?.accessToken
         let idToken = response.authenticated?.idToken
         ...
@@ -104,7 +104,7 @@ let response = authenticatable.authenticate(
 ```
 
 ## Responding to authentication challenges
-Sometimes when you try to authenticate a username and password or a refresh token you will be returned a challenge instead of the authentication challenges. An example of being when someone logs in for the first time they are required to change their password before they can continue. In this situation AWS Cognito returns a new password challenge. When you respond to this with a new password it provides you with the authentication tokens. Other situations would include Multi Factor Authentication. The following is responding to the a change password request
+Sometimes when you try to authenticate a username and password or a refresh token you will be returned a challenge instead of the authentication tokens. An example of being when someone logs in for the first time they are required to change their password before they can continue. In this situation AWS Cognito returns a new password challenge. When you respond to this with a new password it provides you with the authentication tokens. Other situations would include Multi Factor Authentication. The following is responding to a change password request
 ```
 let challengeName: AWSCognitoChallengeName = .newPasswordRequired 
 let challengeResponse: [String: String] = ["NEW_PASSWORD":"MyNewPassword1"]
@@ -115,14 +115,14 @@ let response = authenticatable.respondToChallenge(
     session: session, 
     context: request,
     on: request.eventLoop)
-    .then { response in
+    .flatMap { response in
         let accessToken = response.authenticated?.accessToken
         let idToken = response.authenticated?.idToken
         let refreshToken = response.authenticated?.refreshToken
         ...
 }
 ```
-The `name` parameter is an enum containing all challenges. The `responses` parameter is a dictionary of inputs to the challenge. The `session` parameter was included in the challenge returned to you by the authentication request. If the challenge is successful `response.authenticated` will not be `nil`. If another challenge is required then you will get details of that in `response.challenged`.
+The `name` parameter is an enum containing all challenges. The `responses` parameter is a dictionary of inputs to the challenge. The `session` parameter was included in the challenge returned to you by the authentication request. If the challenge is successful `response.authenticated` will not be `nil`. If another challenge is required then you will get details of that in `response.challenged`. There are custom versions of the `respondToChallenge` function for new password: `respondToNewPasswordChallenge` and for Multi Factor Authentication: `respondToMFAChallenge`.
 
 ## Creating user pools
 There are a few settings that are required when creating your Cognito user pool, if you want to use it with the AWS Cognito Authentication library. Because the library uses the Admin level service calls device tracking is unavailable so ensure you set device remembering to off. Otherwise your refresh tokens will not work. 
