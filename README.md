@@ -1,6 +1,6 @@
 # AWS Cognito Authentication
 [<img src="http://img.shields.io/badge/swift-5.1-brightgreen.svg" alt="Swift 5.1" />](https://swift.org)
-[<img src="https://github.com/adam-fowler/aws-cognito-authentication/workflows/Swift/badge.svg" />](https://github.com/adam-fowler/aws-cognito-authentication/actions)
+[<img src="https://github.com/adam-fowler/aws-cognito-authentication/workflows/Swift/badge.svg" />](https://github.com/adam-fowler/aws-cognito-authentication-kit/workflows/Swift/badge.svg)
 
 Amazon Cognito provides authentication, authorization, and user management for your web apps. 
 
