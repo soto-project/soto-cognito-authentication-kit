@@ -18,7 +18,7 @@ let configuration = AWSCognitoConfiguration(
 )
 let authenticatable = AWSCognitoAuthenticatable(configuration: configuration)
 ```
-The values `userPoolId`, `clientId` and `clientSecret` can all be find on the Amazon Cognito user pool console. `cognitoIDP` is the client used to communicate with Amazon Web Services. It is provided by the [aws-sdk-swift](https://github.com/swift-aws/aws-sdk-swift.git) library. `region` is the AWS server region your user pool is in.
+The values `userPoolId`, `clientId` and `clientSecret` can all be find on the Amazon Cognito user pool console. `cognitoIDP` is the client used to communicate with Amazon Web Services. It is provided by the [aws-sdk-swift](https://github.com/swift-aws/aws-sdk-swift.git) library. If you are using `AWSCognitoAuthenticatable.authenticate(username, password, ...)` you will need to provide AWS credentials to your `CognitoIdentityProvider`. You can find more details about providing credentials [here](https://github.com/swift-aws/aws-sdk-swift#configuring-credentials). `region` is the AWS server region your user pool is in.
 
 ## Creating a AWS Cognito user
 Assuming we have the `AWSCognitoAuthenticatable` instance from above the following can be used to create a user. 
