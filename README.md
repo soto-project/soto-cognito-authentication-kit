@@ -1,4 +1,4 @@
-# AWS Cognito Authentication
+# AWS Cognito Authentication Kit
 [<img src="http://img.shields.io/badge/swift-5.1-brightgreen.svg" alt="Swift 5.1" />](https://swift.org)
 [<img src="https://github.com/adam-fowler/aws-cognito-authentication/workflows/Swift/badge.svg" />](https://github.com/adam-fowler/aws-cognito-authentication-kit/workflows/Swift/badge.svg)
 
