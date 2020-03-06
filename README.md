@@ -2,7 +2,7 @@
 [<img src="http://img.shields.io/badge/swift-5.1-brightgreen.svg" alt="Swift 5.1" />](https://swift.org)
 [<img src="https://github.com/adam-fowler/aws-cognito-authentication/workflows/Swift/badge.svg" />](https://github.com/adam-fowler/aws-cognito-authentication/actions)
 
-Amazon Cognito provides authentication, authorization, and user management for your web and mobile apps. This library provides access to this for Vapor server apps. 
+Amazon Cognito provides authentication, authorization, and user management for your web apps. 
 
 # Using with Cognito User Pools
 
@@ -155,47 +155,4 @@ return identifiable.getIdentityId(idToken: idToken, on: req.eventLoop)
 }
 ```
 In the situation you are using Cognito user pools the `idToken` is the `idToken` returned when you authenticate a user.
-
-# Using with Vapor
-## Configuration
-Store your AWSCognitoConfiguration on the Application object. In configure.swift add the following with your configuration details
-```
-let awsCognitoConfiguration = AWSCognitoConfiguration(
-    userPoolId: String = "eu-west-1_userpoolid",
-    clientId: String = "23432clientId234234",
-    clientSecret: String = "1q9ln4m892j2cnsdapa0dalh9a3aakmpeugiaag8k3cacijlbkrp",
-    cognitoIDP: CognitoIdentityProvider = CognitoIdentityProvider(region: .euwest1),
-    region: Region = .euwest1
-)
-app.awsCognito.authenticatable = AWSCognitoAuthenticatable(configuration: awsCognitoConfiguration)
-```
-The CognitoIdentity configuration can be setup in a similar way.
-```
-let awsCognitoIdentityConfiguration = AWSCognitoIdentityConfiguration(
-    identityPoolId: String = "eu-west-1_identitypoolid"
-    identityProvider: String = "provider"
-    cognitoIdentity: CognitoIdentity = CognitoIdentity(region: .euwest1)
-)
-let app.awsCognito.identifiable = AWSCognitoIdentifiable(configuration: awsCognitoIdentityConfiguration)
-```
-## Accessing functionality
-Functions like `createUser`, `signUp`, `authenticate` with username and password and `responseToChallenge` are all accessed through `request.application.awsCognito.authenticatable` as in the following
-```
-func login(_ req: Request) throws -> Future<String> {
-    let user = try req.content.decode(User.self)
-    return req.application.awsCognito.authenticatable.authenticate(
-        username: user.username, 
-        password: user.password, 
-        context: req, 
-        on:req.eventLoop).transform(to: "Success")
-}
-```
-If id, access or refresh tokens are provided in the 'Authorization' header as Bearer tokens the following functions in Request can be used to verify them `authenticate(idToken:)`, `authenticate(accessToken:)`, `refresh`. as in the following
-```
-func authenticateAccess(_ req: Request) throws -> Future<> {
-    req.awsCognito.authenticateAccess().flatMap { _ in
-        ...
-    }
-}
-```
 
