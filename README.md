@@ -39,7 +39,7 @@ let response = authenticatable.authenticate(
     password: password, 
     context: request,
     on: request.eventLoop)
-    .then { response in
+    .flatMap { response in
         let accessToken = response.authenticated?.accessToken
         let idToken = response.authenticated?.idToken
         let refreshToken = response.authenticated?.refreshToken
@@ -52,7 +52,7 @@ The access token is used just to indicate a user has been granted access. It con
 The following will verify whether a token gives access.
 ```
 let response = authenticatable.authenticate(accessToken: token, on: request.eventLoop)
-    .then { response in
+    .flatMap { response in
         let username = response.username
         let subject = response.subject
         ...
@@ -96,7 +96,7 @@ let response = authenticatable.authenticate(
     refreshToken: refreshToken, 
     context: request,
     on: request.eventLoop)
-    .then { response in
+    .flatMap { response in
         let accessToken = response.authenticated?.accessToken
         let idToken = response.authenticated?.idToken
         ...
@@ -115,7 +115,7 @@ let response = authenticatable.respondToChallenge(
     session: session, 
     context: request,
     on: request.eventLoop)
-    .then { response in
+    .flatMap { response in
         let accessToken = response.authenticated?.accessToken
         let idToken = response.authenticated?.idToken
         let refreshToken = response.authenticated?.refreshToken
