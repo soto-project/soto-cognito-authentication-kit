@@ -15,13 +15,13 @@ env:
 jobs:
   macOS:
     runs-on: macOS-latest
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_11.4.app/Contents/Developer
     steps:
     - name: Checkout
       uses: actions/checkout@v1
       with:
         fetch-depth: 1
-    - name: Install dependencies
-      run: brew install libressl
     - name: Build
       run: swift build
     - name: Test
@@ -30,13 +30,10 @@ jobs:
   linux:
     strategy:
       matrix:
-        os: [ubuntu-16.04, ubuntu-18.04]
-    runs-on: ${{ matrix.os }}
+        image: ["swift:5.2.1"]
+    runs-on: ubuntu-latest
     container:
-      image: swift:5.1.2
-      volumes:
-      - $GITHUB_WORKSPACE:/src
-      options: --workdir /src
+      image: ${{ matrix.image }}
     steps:
     - name: Checkout
       uses: actions/checkout@v1
