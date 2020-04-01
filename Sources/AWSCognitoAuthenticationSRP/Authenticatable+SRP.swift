@@ -2,6 +2,7 @@ import BigNum
 import Foundation
 import NIO
 import Crypto
+import AWSCognitoAuthenticationKit
 
 public extension AWSCognitoAuthenticatable {
     /// authenticate using SRP

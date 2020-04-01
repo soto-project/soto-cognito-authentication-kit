@@ -324,7 +324,7 @@ public class AWSCognitoAuthenticatable {
     }
 }
 
-extension AWSCognitoAuthenticatable {
+public extension AWSCognitoAuthenticatable {
     /// return secret hash to include in cognito identity provider calls
     func secretHash(username: String) -> String {
 
