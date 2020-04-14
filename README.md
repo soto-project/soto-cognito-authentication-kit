@@ -91,7 +91,7 @@ NB The username tag in an ID Token is "cognito:username"
 ## Refreshing id and access tokens
 To avoid having to ask the user for their username and password every 60 minutes a refresh token is also provided. You can use this to generate new id and access tokens whenever they have expired or are about to expire. The refresh token is valid for 30 days. Although you can edit the length of this in the Cognito console. 
 ```
-let response = authenticatable.authenticate(
+let response = authenticatable.refresh(
     username: username, 
     refreshToken: refreshToken, 
     context: request,
