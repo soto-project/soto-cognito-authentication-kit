@@ -16,7 +16,7 @@ let package = Package(
         .package(name: "AWSSDKSwift", url: "https://github.com/swift-aws/aws-sdk-swift.git", .upToNextMajor(from: "4.0.0")),
         .package(url: "https://github.com/vapor/jwt-kit.git", .upToNextMajor(from: "4.0.0-rc")),
         // for SRP
-        .package(url: "https://github.com/adam-fowler/big-num.git", .upToNextMajor(from: "1.1.1")),
+        .package(url: "https://github.com/adam-fowler/big-num.git", .upToNextMajor(from: "2.0.0")),
     ],
     targets: [
         .target(name: "AWSCognitoAuthenticationKit",

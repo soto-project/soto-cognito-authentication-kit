@@ -187,8 +187,8 @@ final class AWSCognitoAuthenticationKitTests: XCTestCase {
             "e84b46074762de8b254f37260e3b1da88529dd1060ca52b2dc9de5d773" +
             "72b1d74ea111de406aac964993133a6f172e8fae54eb885e6a3cd774f1" +
             "ca6be98b6ddc35")!
-        let salt = BigNum(hex: "8dbcb21f18ae3216")!.data
-        let expectedKey = BigNum(hex: "b70fad71e9658b24b0ec678774ecca30")!.data
+        let salt = BigNum(hex: "8dbcb21f18ae3216")!.bytes
+        let expectedKey = BigNum(hex: "b70fad71e9658b24b0ec678774ecca30")!.bytes
         
         let srp = createTestSRP()
         let key = srp.getPasswordAuthenticationKey(username: "poolidtestuser", password: "testpassword", B: B, salt: salt)
@@ -197,9 +197,9 @@ final class AWSCognitoAuthenticationKitTests: XCTestCase {
     }
     
     func testHKDF() {
-        let password = "password".data(using: .utf8)!
-        let salt = "salt".data(using: .utf8)!
-        let info = "HKDF key derivation".data(using: .utf8)!
+        let password = [UInt8]("password".utf8)
+        let salt = [UInt8]("salt".utf8)
+        let info = [UInt8]("HKDF key derivation".utf8)
         
         let sha1Result = SRP<Insecure.SHA1>.HKDF(seed: password, info: info, salt: salt, count: Insecure.SHA1.Digest.byteCount)
         XCTAssertEqual(sha1Result.hexdigest().uppercased(), "9912F20853DFF1AFA944E9B88CA63C410CBB1938")
