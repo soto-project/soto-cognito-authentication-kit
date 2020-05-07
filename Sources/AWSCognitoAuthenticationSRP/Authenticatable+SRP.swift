@@ -2,6 +2,7 @@ import BigNum
 import Foundation
 import NIO
 import Crypto
+import AWSCognitoAuthenticationKit
 
 public extension AWSCognitoAuthenticatable {
     /// authenticate using SRP
@@ -33,7 +34,7 @@ public extension AWSCognitoAuthenticatable {
                     guard let challenge = response.challenged,
                         let parameters = challenge.parameters,
                         let saltHex = parameters["SALT"],
-                        let salt = BigNum(hex: saltHex)?.data,
+                        let salt = BigNum(hex: saltHex)?.bytes,
                         let secretBlockBase64 = parameters["SECRET_BLOCK"],
                         let secretBlock = Data(base64Encoded: secretBlockBase64),
                         let dataB = parameters["SRP_B"] else { return eventLoop.makeFailedFuture(AWSCognitoError.unexpectedResult(reason: "AWS did not provide all the data required to do SRP authentication")) }
@@ -83,7 +84,7 @@ class SRP<H: HashFunction> {
     let k : BigNum
     let a : BigNum
     let A : BigNum
-    let infoKey: Data
+    let infoKey: [UInt8]
 
     init(a: BigNum? = nil) {
         self.N = BigNum(hex:
@@ -105,8 +106,8 @@ class SRP<H: HashFunction> {
         + "43DB5BFCE0FD108E4B82D120A93AD2CAFFFFFFFFFFFFFFFF")!
         self.g = BigNum(2)
         // k = H(N,g)
-        self.k = BigNum(data: [UInt8].init(H.hash(data: Self.pad(self.N.data) + self.g.data)))
-        self.infoKey = Data("Caldera Derived Key".utf8)
+        self.k = BigNum(bytes: [UInt8].init(H.hash(data: Self.pad(self.N.bytes) + self.g.bytes)))
+        self.infoKey = [UInt8]("Caldera Derived Key".utf8)
 
         if let a = a {
             self.a = a
@@ -115,7 +116,7 @@ class SRP<H: HashFunction> {
             var a = BigNum()
             var A = BigNum()
             repeat {
-                a = BigNum(data: Self.HKDF(seed: Data([UInt8].random(count: 128)), info: infoKey, salt: Data(), count: 128))
+                a = BigNum(bytes: Self.HKDF(seed: [UInt8].random(count: 128), info: infoKey, salt: [], count: 128))
                 A = self.g.power(a, modulus: self.N)
             } while A % self.N == BigNum(0)
             
@@ -126,48 +127,48 @@ class SRP<H: HashFunction> {
     }
     
     /// return password authenticatino key given the username, password, B value and salt from the server
-    func getPasswordAuthenticationKey(username: String, password: String, B: BigNum, salt: Data) -> Data? {
+    func getPasswordAuthenticationKey(username: String, password: String, B: BigNum, salt: [UInt8]) -> [UInt8]? {
 
         guard B % N != BigNum(0) else { return nil }
 
         // calculate u = H(A,B)
-        let u = BigNum(data: [UInt8].init(H.hash(data: Self.pad(A.data) + Self.pad(B.data))))
+        let u = BigNum(bytes: [UInt8].init(H.hash(data: Self.pad(A.bytes) + Self.pad(B.bytes))))
         
         // calculate x = H(salt | H(poolName | userId | ":" | password))
         let message = Data("\(username):\(password)".utf8)
-        let x = BigNum(data: [UInt8].init(H.hash(data: Self.pad(salt) + H.hash(data: message))))
+        let x = BigNum(bytes: [UInt8].init(H.hash(data: Self.pad(salt) + H.hash(data: message))))
         
         // calculate S
         let S = (B - k * g.power(x, modulus: N)).power(a + u * x, modulus: N)
         
-        let key = Self.HKDF(seed: Self.pad(S.data), info: infoKey, salt: Self.pad(u.data), count: 16)
+        let key = Self.HKDF(seed: Self.pad(S.bytes), info: infoKey, salt: Self.pad(u.bytes), count: 16)
 
         return key
     }    
     
     /// pad buffer before hashing
-    static func pad(_ data: Data) -> Data {
+    static func pad(_ data: [UInt8]) -> [UInt8] {
         if data[0] > 0x7f {
-            return Data([0]) + data
+            return [0] + data
         }
         return data
     }
     
-    static func HKDF(seed: Data, info: Data, salt: Data, count: Int) -> Data {
+    static func HKDF(seed: [UInt8], info: [UInt8], salt: [UInt8], count: Int) -> [UInt8] {
         let prk = HMAC<H>.authenticationCode(for:seed, using: SymmetricKey(data: salt))
         let iterations = Int(ceil(Double(count) / Double(H.Digest.byteCount)))
         
-        var t = Data()
-        var result = Data()
+        var t: [UInt8] = []
+        var result: [UInt8] = []
         for i in 1...iterations {
             var hmac = HMAC<H>(key: SymmetricKey(data: prk))
             hmac.update(data: t)
             hmac.update(data: info)
             hmac.update(data: [UInt8(i)])
-            t = Data(hmac.finalize())
+            t = [UInt8](hmac.finalize())
             result += t
         }
-        return Data(result[0..<count])
+        return [UInt8](result[0..<count])
     }
 }
 
