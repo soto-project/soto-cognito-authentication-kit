@@ -1,6 +1,6 @@
 import AWSSDKSwiftCore
-import CognitoIdentity
-import CognitoIdentityProvider
+import AWSCognitoIdentity
+import AWSCognitoIdentityProvider
 import JWTKit
 
 /// Struct that includes configuration for AWS Cognito authentication.

@@ -1,4 +1,4 @@
-@_exported import CognitoIdentityProvider
+@_exported import AWSCognitoIdentityProvider
 @_exported import JWTKit
 
 import AWSSDKSwiftCore
