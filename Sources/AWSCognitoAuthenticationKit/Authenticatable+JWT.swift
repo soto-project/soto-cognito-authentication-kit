@@ -72,7 +72,7 @@ extension AWSCognitoAuthenticatable {
 
         let JWTSignersURL = "https://cognito-idp.\(configuration.region.rawValue).amazonaws.com/\(configuration.userPoolId)/.well-known/jwks.json"
         let httpClient = configuration.cognitoIDP.client.httpClient
-        let request = AWSHTTPRequest(url: URL(string: JWTSignersURL)!, method: .GET, headers: [:], body: nil)
+        let request = AWSHTTPRequest(url: URL(string: JWTSignersURL)!, method: .GET, headers: [:], body: .empty)
         return httpClient
             .execute(request: request, timeout: TimeAmount.seconds(10), on: eventLoopGroup.next())
             .flatMapThrowing { response in
