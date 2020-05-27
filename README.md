@@ -155,4 +155,3 @@ return identifiable.getIdentityId(idToken: idToken, on: req.eventLoop)
 }
 ```
 In the situation you are using Cognito user pools the `idToken` is the `idToken` returned when you authenticate a user.
-
