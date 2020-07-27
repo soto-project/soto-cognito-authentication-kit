@@ -22,10 +22,11 @@ public struct AWSCognitoCreateUserResponse: Codable {
     public var userStatus: AWSCognitoUserStatusType
 }
 
-/// Response to initAuth
+/// Authentication response
 public enum AWSCognitoAuthenticateResponse: Codable {
-
+    /// response with authentication details
     case authenticated(AuthenticatedResponse)
+    /// response containing a challenge
     case challenged(ChallengedResponse)
     
     public struct AuthenticatedResponse: Codable {
