@@ -40,9 +40,10 @@ let response = authenticatable.authenticate(
     context: request,
     on: request.eventLoop)
     .flatMap { response in
-        let accessToken = response.authenticated?.accessToken
-        let idToken = response.authenticated?.idToken
-        let refreshToken = response.authenticated?.refreshToken
+        if case .authenticated(let authenticated) = response {
+            let accessToken = authenticated.accessToken
+            let idToken = authenticated.idToken
+            let refreshToken = authenticated.refreshToken
         ...
 }
 ```
