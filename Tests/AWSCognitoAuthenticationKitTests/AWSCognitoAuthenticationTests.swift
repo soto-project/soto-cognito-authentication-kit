@@ -121,7 +121,7 @@ final class AWSCognitoAuthenticationKitTests: XCTestCase {
         let context = AWSCognitoContextTest()
         return Self.authenticatable.authenticate(username: testData.username, password: testData.password, context: context, on: eventLoop)
             .flatMap { response in
-                if let challenged = response.challenged, let session = challenged.session {
+                if case .challenged(let challenged) = response, let session = challenged.session {
                     if challenged.name == "NEW_PASSWORD_REQUIRED" {
                         return Self.authenticatable.respondToChallenge(
                             username: testData.username,
@@ -146,7 +146,7 @@ final class AWSCognitoAuthenticationKitTests: XCTestCase {
             
             let result = try login(testData, on: eventLoop)
                 .flatMap { (response)->EventLoopFuture<AWSCognitoAccessToken> in
-                    guard let authenticated = response.authenticated else { return eventLoop.makeFailedFuture(AWSCognitoTestError.notAuthenticated) }
+                    guard case .authenticated(let authenticated) = response else { return eventLoop.makeFailedFuture(AWSCognitoTestError.notAuthenticated) }
                     guard let accessToken = authenticated.accessToken else { return eventLoop.makeFailedFuture(AWSCognitoTestError.missingToken) }
                     
                     return Self.authenticatable.authenticate(accessToken: accessToken, on: eventLoop)
@@ -176,7 +176,7 @@ final class AWSCognitoAuthenticationKitTests: XCTestCase {
             
             let result = try login(testData, on: eventLoop)
                 .flatMap { (response)->EventLoopFuture<User> in
-                    guard let authenticated = response.authenticated else { return eventLoop.makeFailedFuture(AWSCognitoTestError.notAuthenticated) }
+                    guard case .authenticated(let authenticated) = response else { return eventLoop.makeFailedFuture(AWSCognitoTestError.notAuthenticated) }
                     guard let idToken = authenticated.idToken else { return eventLoop.makeFailedFuture(AWSCognitoTestError.missingToken) }
                     
                     return Self.authenticatable.authenticate(idToken: idToken, on: eventLoop)
@@ -196,14 +196,14 @@ final class AWSCognitoAuthenticationKitTests: XCTestCase {
             
             let result = try login(testData, on: eventLoop)
                 .flatMap { (response)->EventLoopFuture<AWSCognitoAuthenticateResponse> in
-                    guard let authenticated = response.authenticated else { return eventLoop.makeFailedFuture(AWSCognitoTestError.notAuthenticated) }
+                    guard case .authenticated(let authenticated) = response else { return eventLoop.makeFailedFuture(AWSCognitoTestError.notAuthenticated) }
                     guard let refreshToken = authenticated.refreshToken else { return eventLoop.makeFailedFuture(AWSCognitoTestError.missingToken) }
                     let context = AWSCognitoContextTest()
                     
                     return Self.authenticatable.refresh(username: testData.username, refreshToken: refreshToken, context: context, on: eventLoop)
                 }
                 .flatMap { (response)->EventLoopFuture<AWSCognitoAccessToken> in
-                    guard let authenticated = response.authenticated else { return eventLoop.makeFailedFuture(AWSCognitoTestError.notAuthenticated) }
+                    guard case .authenticated(let authenticated) = response else { return eventLoop.makeFailedFuture(AWSCognitoTestError.notAuthenticated) }
                     guard let accessToken = authenticated.accessToken else { return eventLoop.makeFailedFuture(AWSCognitoTestError.missingToken) }
                     
                     return Self.authenticatable.authenticate(accessToken: accessToken, on: eventLoop)

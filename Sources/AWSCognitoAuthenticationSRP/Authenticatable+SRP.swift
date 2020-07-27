@@ -25,13 +25,13 @@ public extension AWSCognitoAuthenticatable {
             return self.initiateAuthRequest(
                 authFlow: .userSrpAuth,
                 authParameters: authParameters,
-                requireAuthentication: false,
+                requireAuthenticatedClient: false,
                 clientMetadata: clientMetadata,
                 context: context,
                 on: eventLoop)
                 .flatMap { response in
                     print("Response \(response)")
-                    guard let challenge = response.challenged,
+                    guard case .challenged(let challenge) = response,
                         let parameters = challenge.parameters,
                         let saltHex = parameters["SALT"],
                         let salt = BigNum(hex: saltHex)?.bytes,

@@ -10,10 +10,8 @@ import AWSCognitoAuthenticationKit
 func attempt(function : () throws -> ()) {
     do {
         try function()
-    } catch let error as AWSErrorType {
-        XCTFail(error.description)
     } catch {
-        XCTFail(error.localizedDescription)
+        XCTFail("\(error)")
     }
 }
 
