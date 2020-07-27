@@ -23,8 +23,11 @@ public struct AWSCognitoCreateUserResponse: Codable {
 }
 
 /// Response to initAuth
-public struct AWSCognitoAuthenticateResponse: Codable {
+public enum AWSCognitoAuthenticateResponse: Codable {
 
+    case authenticated(AuthenticatedResponse)
+    case challenged(ChallengedResponse)
+    
     public struct AuthenticatedResponse: Codable {
         public let accessToken : String?
         public let idToken : String?
@@ -37,13 +40,31 @@ public struct AWSCognitoAuthenticateResponse: Codable {
         public let parameters: [String: String]?
         public let session: String?
     }
-
-    public let authenticated: AuthenticatedResponse?
-    public let challenged: ChallengedResponse?
-
-    init(authenticated: AuthenticatedResponse? = nil, challenged: ChallengedResponse? = nil) {
-        self.authenticated = authenticated
-        self.challenged = challenged
+    
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        if let authenticated = try container.decodeIfPresent(AuthenticatedResponse.self, forKey: .authenticated) {
+            self = .authenticated(authenticated)
+        } else if let challenged = try container.decodeIfPresent(ChallengedResponse.self, forKey: .challenged) {
+            self = .challenged(challenged)
+        } else {
+            throw DecodingError.valueNotFound(AWSCognitoAuthenticateResponse.self, .init(codingPath: decoder.codingPath, debugDescription: "No valid response found"))
+        }
+    }
+    
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        switch self {
+        case .authenticated(let authenticated):
+            try container.encode(authenticated, forKey: .authenticated)
+        case .challenged(let challenged):
+            try container.encode(challenged, forKey: .challenged)
+        }
+    }
+    
+    private enum CodingKeys: String, CodingKey {
+        case authenticated
+        case challenged
     }
 }
 
@@ -71,7 +92,13 @@ public class AWSCognitoAuthenticatable {
     ///     - on: Event loop request is running on.
     /// - returns:
     ///     EventLoopFuture holding the sign up response
-    public func signUp(username: String, password: String, attributes: [String:String], clientMetadata: [String: String]? = nil, on eventLoop: EventLoop) -> EventLoopFuture<CognitoIdentityProvider.SignUpResponse> {
+    public func signUp(
+        username: String,
+        password: String,
+        attributes: [String:String],
+        clientMetadata: [String: String]? = nil,
+        on eventLoop: EventLoop
+    ) -> EventLoopFuture<CognitoIdentityProvider.SignUpResponse> {
         return secretHashFuture(username: username, on: eventLoop).flatMap { secretHash in
             let userAttributes = attributes.map { return CognitoIdentityProvider.AttributeType(name: $0.key, value: $0.value) }
             let request = CognitoIdentityProvider.SignUpRequest(
@@ -131,7 +158,14 @@ public class AWSCognitoAuthenticatable {
     ///     - on: Event loop request is running on.
     /// - returns:
     ///     EventLoopFuture holding the create user response
-    public func createUser(username: String, attributes: [String:String], temporaryPassword: String? = nil, messageAction: CognitoIdentityProvider.MessageActionType? = nil, clientMetadata: [String: String]? = nil, on eventLoop: EventLoop) -> EventLoopFuture<AWSCognitoCreateUserResponse> {
+    public func createUser(
+        username: String,
+        attributes: [String:String],
+        temporaryPassword: String? = nil,
+        messageAction: CognitoIdentityProvider.MessageActionType? = nil,
+        clientMetadata: [String: String]? = nil,
+        on eventLoop: EventLoop
+    ) -> EventLoopFuture<AWSCognitoCreateUserResponse> {
         let userAttributes = attributes.map { return CognitoIdentityProvider.AttributeType(name: $0.key, value: $0.value) }
         let request = CognitoIdentityProvider.AdminCreateUserRequest(
             clientMetadata: clientMetadata,
@@ -161,18 +195,27 @@ public class AWSCognitoAuthenticatable {
     /// - parameters:
     ///     - username: user name for user
     ///     - password: password for user
+    ///     - requireAuthenticatedClient: Do we need a CognitoIdentityProvider with AWS credentials
     ///     - clientMetadata: A map of custom key-value pairs that you can provide as input for AWS Lambda custom workflows
     ///     - context: Context data for this request
     ///     - on: Eventloop request should run on.
     /// - returns:
     ///     An authentication response. This can contain a challenge which the user has to fulfill before being allowed to login, or authentication access, id and refresh keys
-    public func authenticate(username: String, password: String, clientMetadata: [String: String]? = nil, context: AWSCognitoContextData, on eventLoop: EventLoop) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
+    public func authenticate(
+        username: String,
+        password: String,
+        requireAuthenticatedClient: Bool = true,
+        clientMetadata: [String: String]? = nil,
+        context: AWSCognitoContextData,
+        on eventLoop: EventLoop
+    ) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
         return secretHashFuture(username: username, on: eventLoop).flatMap { secretHash in
             let authParameters : [String: String] = ["USERNAME":username,
                                                      "PASSWORD": password,
                                                      "SECRET_HASH":secretHash]
             return self.initiateAuthRequest(authFlow: .adminUserPasswordAuth,
                                             authParameters: authParameters,
+                                            requireAuthenticatedClient: requireAuthenticatedClient,
                                             clientMetadata: clientMetadata,
                                             context: context,
                                             on: eventLoop)
@@ -185,20 +228,27 @@ public class AWSCognitoAuthenticatable {
     /// - parameters:
     ///     - username: user name of user
     ///     - refreshToken: refresh token required to generate new access and id tokens
-    ///     - requireAuthentication: Do we need a CognitoIdentityProvider with AWS credentials
+    ///     - requireAuthenticatedClient: Do we need a CognitoIdentityProvider with AWS credentials
     ///     - clientMetadata: A map of custom key-value pairs that you can provide as input for AWS Lambda custom workflows
     ///     - context: Context data for this request
     ///     - on: Eventloop request should run on.
     /// - returns:
     ///     - An authentication result which should include an id and status token
-    public func refresh(username: String, refreshToken: String, requireAuthentication: Bool = true, clientMetadata: [String: String]? = nil, context: AWSCognitoContextData, on eventLoop: EventLoop) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
+    public func refresh(
+        username: String,
+        refreshToken: String,
+        requireAuthenticatedClient: Bool = true,
+        clientMetadata: [String: String]? = nil,
+        context: AWSCognitoContextData,
+        on eventLoop: EventLoop
+    ) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
         return secretHashFuture(username: username, on: eventLoop).flatMap { secretHash in
             let authParameters : [String: String] = ["USERNAME":username,
                                                      "REFRESH_TOKEN":refreshToken,
                                                      "SECRET_HASH":secretHash]
             return self.initiateAuthRequest(authFlow: .refreshTokenAuth,
                                            authParameters: authParameters,
-                                           requireAuthentication: requireAuthentication,
+                                           requireAuthenticatedClient: requireAuthenticatedClient,
                                            clientMetadata: clientMetadata,
                                            context: context,
                                            on: eventLoop)
@@ -261,19 +311,21 @@ public class AWSCognitoAuthenticatable {
                         else {
                             // if there was no tokens returned, return challenge if it exists
                             if let challengeName = response.challengeName {
-                                return AWSCognitoAuthenticateResponse(challenged: AWSCognitoAuthenticateResponse.ChallengedResponse(
+                                return .challenged(.init(
                                     name: challengeName.rawValue,
                                     parameters: response.challengeParameters,
-                                    session: response.session))
+                                    session: response.session)
+                                )
                             }
                             throw AWSCognitoError.unexpectedResult(reason: "Authenticated response does not authentication tokens or challenge information") // should have either an authenticated result or a challenge
                     }
 
-                    return AWSCognitoAuthenticateResponse(authenticated: AWSCognitoAuthenticateResponse.AuthenticatedResponse(
+                    return .authenticated(.init(
                         accessToken: accessToken,
                         idToken: idToken,
                         refreshToken: authenticationResult.refreshToken,
-                        expiresIn: authenticationResult.expiresIn != nil ? Date(timeIntervalSinceNow: TimeInterval(authenticationResult.expiresIn!)) : nil))
+                        expiresIn: authenticationResult.expiresIn != nil ? Date(timeIntervalSinceNow: TimeInterval(authenticationResult.expiresIn!)) : nil
+                    ))
             }
             .hop(to: eventLoop)
         }
@@ -339,10 +391,16 @@ public extension AWSCognitoAuthenticatable {
     }
 
     /// return an authorization request future
-    func initiateAuthRequest(authFlow: CognitoIdentityProvider.AuthFlowType, authParameters: [String: String], requireAuthentication: Bool = true, clientMetadata: [String: String]? = nil, context: AWSCognitoContextData, on eventLoop: EventLoop) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
-        
+    func initiateAuthRequest(
+        authFlow: CognitoIdentityProvider.AuthFlowType,
+        authParameters: [String: String],
+        requireAuthenticatedClient: Bool,
+        clientMetadata: [String: String]? = nil,
+        context: AWSCognitoContextData,
+        on eventLoop: EventLoop
+    ) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
         let initAuthFuture: EventLoopFuture<CognitoIdentityProvider.AdminInitiateAuthResponse>
-        if requireAuthentication {
+        if requireAuthenticatedClient {
             guard let context = context.contextData else {return eventLoop.makeFailedFuture(AWSCognitoError.failedToCreateContextData)}
             let request = CognitoIdentityProvider.AdminInitiateAuthRequest(
                 authFlow: authFlow,
@@ -372,19 +430,21 @@ public extension AWSCognitoAuthenticatable {
                     else {
                         // if there was no tokens returned, return challenge if it exists
                         if let challengeName = response.challengeName {
-                            return AWSCognitoAuthenticateResponse(challenged: AWSCognitoAuthenticateResponse.ChallengedResponse(
+                            return .challenged(.init(
                                 name: challengeName.rawValue,
                                 parameters: response.challengeParameters,
-                                session: response.session))
+                                session: response.session
+                            ))
                         }
                         throw AWSCognitoError.unexpectedResult(reason: "Authenticated response does not authentication tokens or challenge information") // should have either an authenticated result or a challenge
                 }
 
-                return AWSCognitoAuthenticateResponse(authenticated: AWSCognitoAuthenticateResponse.AuthenticatedResponse(
+                return .authenticated(.init(
                     accessToken: accessToken,
                     idToken: idToken,
                     refreshToken: authenticationResult.refreshToken,
-                    expiresIn: authenticationResult.expiresIn != nil ? Date(timeIntervalSinceNow: TimeInterval(authenticationResult.expiresIn!)) : nil))
+                    expiresIn: authenticationResult.expiresIn != nil ? Date(timeIntervalSinceNow: TimeInterval(authenticationResult.expiresIn!)) : nil
+                ))
         }
         .hop(to: eventLoop)
     }
