@@ -127,7 +127,7 @@ The `name` parameter is an enum containing all challenges. The `responses` param
 ## Creating user pools
 There are a few settings that are required when creating your Cognito user pool, if you want to use it with the AWS Cognito Authentication library. Because the library uses the Admin level service calls device tracking is unavailable so ensure you set device remembering to off. Otherwise your refresh tokens will not work. 
 
-When creating the app client for your user pool ensure you have 'Generate client secret' enabled. The AWS Cognito Authentication library automatically creates the secret hash required for user pools that have a client secret. It would be sensible to take advantage of this. As the library is designed to work on secured backend servers it uses the Admin no SRP authorization flow to authenticate users. You will also need to tick 'Enable sign-in API for server-based authentication (ADMIN_NO_SRP_AUTH)' to ensure authentiation works. 
+When creating the app client for your user pool ensure you have 'Generate client secret' enabled. The AWS Cognito Authentication library automatically creates the secret hash required for user pools that have a client secret. It would be sensible to take advantage of this. As the library is designed to work on secured backend servers it uses the Admin no SRP authorization flow to authenticate users. You will also need to tick 'Enable username password auth for admin APIs for authentication (ALLOW_ADMIN_USER_PASSWORD_AUTH)' to ensure authentiation works. 
 
 For more details on AWS Cognito User Pools you can find Amazon's documentation [here](https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-identity-pools.html)
 
