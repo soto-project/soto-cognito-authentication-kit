@@ -32,11 +32,12 @@ The attributes you provide should match the attributes you selected when creatin
 As an alternative you can use the `signUp` function which takes a `username` and `password`. This will send a confirmation email to the user which includes a confirmation code. You then call `confirmSignUp` with this confirmation code. For this path to be available you need to have the 'Allow users to sign themselves up' flag set in your user pool. 
 
 ## Authenticating with a username and a password
-Once your user is created and confirmed in the signUp case. The following will generate JWT authentication tokens from a username and password. This function requires a `CognitoIdentityProvider` setup with AWS credentials.
+Once your user is created and confirmed in the signUp case. The following will generate JWT authentication tokens from a username and password. This function requires a `CognitoIdentityProvider` setup with AWS credentials, unless you pass the `requireAuthenticatedClient` parameter set to `false`.
 ```
 let response = authenticatable.authenticate(
     username: username, 
-    password: password, 
+    password: password,
+    requireAuthenticatedClient: true,
     context: request,
     on: request.eventLoop)
     .flatMap { response in
