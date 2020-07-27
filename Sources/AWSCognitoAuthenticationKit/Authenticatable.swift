@@ -171,7 +171,7 @@ public class AWSCognitoAuthenticatable {
             let authParameters : [String: String] = ["USERNAME":username,
                                                      "PASSWORD": password,
                                                      "SECRET_HASH":secretHash]
-            return self.initiateAuthRequest(authFlow: .adminNoSrpAuth,
+            return self.initiateAuthRequest(authFlow: .adminUserPasswordAuth,
                                             authParameters: authParameters,
                                             clientMetadata: clientMetadata,
                                             context: context,
