@@ -47,7 +47,7 @@ let response = authenticatable.authenticate(
         ...
 }
 ```
-The access token is used just to indicate a user has been granted access. It contains verification information, the username and a subject uuid which can be used to identify the user if you don't want to use the username. The token is valid for 60 minutes. The idToken contains claims about the identity of the user. It should contain all the attributes attached to the user. Again this token is only valid for 60 minutes. If you don't receive any authentication tokens then you need to check the `challenged` variable to see if you have a login challenge and respond to it before receiving authentication tokens. See [below](#responding-to-authentication-challenges). 
+The access token is used just to indicate a user has been granted access. It contains verification information, the username and a subject uuid which can be used to identify the user if you don't want to use the username. The token is valid for 60 minutes. The idToken contains claims about the identity of the user. It should contain all the attributes attached to the user. Again this token is only valid for 60 minutes. If you receive a `challenged` case then you have a login challenge and must respond to it before receiving authentication tokens. See [below](#responding-to-authentication-challenges). 
 
 ## Verifying an access token is valid
 The following will verify whether a token gives access.
@@ -123,7 +123,7 @@ let response = authenticatable.respondToChallenge(
         ...
 }
 ```
-The `name` parameter is an enum containing all challenges. The `responses` parameter is a dictionary of inputs to the challenge. The `session` parameter was included in the challenge returned to you by the authentication request. If the challenge is successful `response.authenticated` will not be `nil`. If another challenge is required then you will get details of that in `response.challenged`. There are custom versions of the `respondToChallenge` function for new password: `respondToNewPasswordChallenge` and for Multi Factor Authentication: `respondToMFAChallenge`.
+The `name` parameter is an enum containing all challenges. The `responses` parameter is a dictionary of inputs to the challenge. The `session` parameter was included in the challenge returned to you by the authentication request. If the challenge is successful you will get `response.authenticated` as a response. If another challenge is required then you will get details of that in `response.challenged`. There are custom versions of the `respondToChallenge` function for new password: `respondToNewPasswordChallenge` and for Multi Factor Authentication: `respondToMFAChallenge`.
 
 ## Creating user pools
 There are a few settings that are required when creating your Cognito user pool, if you want to use it with the AWS Cognito Authentication library. Because the library uses the Admin level service calls device tracking is unavailable so ensure you set device remembering to off. Otherwise your refresh tokens will not work. 
