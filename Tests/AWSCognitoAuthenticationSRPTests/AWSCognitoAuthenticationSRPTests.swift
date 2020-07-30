@@ -30,10 +30,12 @@ public class AWSCognitoContextTest: AWSCognitoContextData {
 }
 
 final class AWSCognitoAuthenticationKitTests: XCTestCase {
+
     static var middlewares: [AWSServiceMiddleware] {
         ProcessInfo.processInfo.environment["CI"] == "true" ? [] : [AWSLoggingMiddleware()]
     }
-    static let cognitoIDP = CognitoIdentityProvider(region: .useast1, middlewares: middlewares)
+    static let awsClient = AWSClient(middlewares: middlewares, httpClientProvider: .createNew)
+    static let cognitoIDP = CognitoIdentityProvider(client: awsClient, region: .useast1)
     static let userPoolName: String = "aws-cognito-authentication-tests"
     static let userPoolClientName: String = "aws-cognito-authentication-tests"
     static var authenticatable: AWSCognitoAuthenticatable!
@@ -123,7 +125,9 @@ final class AWSCognitoAuthenticationKitTests: XCTestCase {
     func testAuthenticateSRP() {
         XCTAssertNil(Self.setUpFailure)
 
-        let cognitoIDPUnauthenticated = CognitoIdentityProvider(accessKeyId: "", secretAccessKey: "", region: .useast1, middlewares: Self.middlewares)
+        let awsClient = AWSClient(credentialProvider: .empty, middlewares: Self.middlewares, httpClientProvider: .createNew)
+        defer { XCTAssertNoThrow(try awsClient.syncShutdown()) }
+        let cognitoIDPUnauthenticated = CognitoIdentityProvider(client: awsClient, region: .useast1)
         let configuration = AWSCognitoConfiguration(
             userPoolId: Self.authenticatable.configuration.userPoolId,
             clientId: Self.authenticatable.configuration.clientId,

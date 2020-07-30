@@ -74,7 +74,7 @@ extension AWSCognitoAuthenticatable {
         let httpClient = configuration.cognitoIDP.client.httpClient
         let request = AWSHTTPRequest(url: URL(string: JWTSignersURL)!, method: .GET, headers: [:], body: .empty)
         return httpClient
-            .execute(request: request, timeout: TimeAmount.seconds(10), on: eventLoopGroup.next())
+            .execute(request: request, timeout: TimeAmount.seconds(10), on: eventLoopGroup.next(), logger: AWSClient.loggingDisabled)
             .flatMapThrowing { response in
                 let signers = JWTSigners()
                 guard let body = response.body else { return JWTSigners() }

@@ -34,7 +34,8 @@ final class AWSCognitoAuthenticationKitTests: XCTestCase {
     static var middlewares: [AWSServiceMiddleware] {
         ProcessInfo.processInfo.environment["CI"] == "true" ? [] : [AWSLoggingMiddleware()]
     }
-    static let cognitoIDP = CognitoIdentityProvider(region: .useast1, middlewares: middlewares)
+    static let awsClient = AWSClient(middlewares: middlewares, httpClientProvider: .createNew)
+    static let cognitoIDP = CognitoIdentityProvider(client: awsClient, region: .useast1)
     static let userPoolName: String = "aws-cognito-authentication-tests"
     static let userPoolClientName: String = "aws-cognito-authentication-tests"
     static var authenticatable: AWSCognitoAuthenticatable!
