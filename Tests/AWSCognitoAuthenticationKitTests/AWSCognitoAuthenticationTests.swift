@@ -1,4 +1,5 @@
 import XCTest
+import AsyncHTTPClient
 import AWSSDKSwiftCore
 import AWSCognitoIdentityProvider
 import Crypto
@@ -31,11 +32,8 @@ class AWSCognitoContextTest: AWSCognitoContextData {
 
 final class AWSCognitoAuthenticationKitTests: XCTestCase {
 
-    static var middlewares: [AWSServiceMiddleware] {
-        ProcessInfo.processInfo.environment["CI"] == "true" ? [] : [AWSLoggingMiddleware()]
-    }
-    static let awsClient = AWSClient(middlewares: middlewares, httpClientProvider: .createNew)
-    static let cognitoIDP = CognitoIdentityProvider(client: awsClient, region: .useast1)
+    static var awsClient: AWSClient!
+    static var cognitoIDP: CognitoIdentityProvider!
     static let userPoolName: String = "aws-cognito-authentication-tests"
     static let userPoolClientName: String = "aws-cognito-authentication-tests"
     static var authenticatable: AWSCognitoAuthenticatable!
@@ -44,6 +42,8 @@ final class AWSCognitoAuthenticationKitTests: XCTestCase {
     static var setUpFailure: String? = nil
 
     class override func setUp() {
+        awsClient = AWSClient(middlewares: [AWSLoggingMiddleware()], httpClientProvider: .createNew)
+        cognitoIDP = CognitoIdentityProvider(client: awsClient, region: .useast1)
         do {
             let userPoolId: String
             let clientId: String
@@ -93,6 +93,10 @@ final class AWSCognitoAuthenticationKitTests: XCTestCase {
         } catch {
             setUpFailure = error.localizedDescription
         }
+    }
+
+    class override func tearDown() {
+        XCTAssertNoThrow(try awsClient.syncShutdown())
     }
 
     class TestData {
