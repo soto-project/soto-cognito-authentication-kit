@@ -1,5 +1,5 @@
 import AsyncHTTPClient
-import AWSSDKSwiftCore
+import SotoCore
 import Foundation
 import JWTKit
 import NIO

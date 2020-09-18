@@ -1,6 +1,6 @@
 import XCTest
-import AWSSDKSwiftCore
-import AWSCognitoIdentityProvider
+import SotoCore
+import SotoCognitoIdentityProvider
 import BigNum
 import Crypto
 import Foundation

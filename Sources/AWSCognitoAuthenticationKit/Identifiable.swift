@@ -1,4 +1,4 @@
-import AWSCognitoIdentity
+import SotoCognitoIdentity
 import NIO
 
 public class AWSCognitoIdentifiable {

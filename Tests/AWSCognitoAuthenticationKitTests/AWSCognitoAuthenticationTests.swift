@@ -1,7 +1,7 @@
 import XCTest
 import AsyncHTTPClient
-import AWSSDKSwiftCore
-import AWSCognitoIdentityProvider
+import SotoCore
+import SotoCognitoIdentityProvider
 import Crypto
 import Foundation
 import NIO

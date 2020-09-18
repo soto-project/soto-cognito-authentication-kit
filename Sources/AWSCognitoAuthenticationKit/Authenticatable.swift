@@ -1,7 +1,6 @@
-@_exported import AWSCognitoIdentityProvider
-@_exported import JWTKit
-
-import AWSSDKSwiftCore
+@_exported import SotoCognitoIdentityProvider
+import JWTKit
+import SotoCore
 import Foundation
 import NIO
 import Crypto
