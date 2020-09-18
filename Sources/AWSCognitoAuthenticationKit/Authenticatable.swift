@@ -1,6 +1,5 @@
 @_exported import SotoCognitoIdentityProvider
 import JWTKit
-import SotoCore
 import Foundation
 import NIO
 import Crypto

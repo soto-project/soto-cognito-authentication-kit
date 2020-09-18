@@ -1,5 +1,4 @@
 import AsyncHTTPClient
-import SotoCore
 import Foundation
 import JWTKit
 import NIO

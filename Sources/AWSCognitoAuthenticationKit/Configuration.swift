@@ -1,4 +1,3 @@
-import SotoCore
 import SotoCognitoIdentity
 import SotoCognitoIdentityProvider
 import JWTKit
