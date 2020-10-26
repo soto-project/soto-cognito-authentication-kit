@@ -54,8 +54,8 @@ extension AWSCognitoIdentifiable {
     /// translate error from one thrown by aws-sdk-swift to vapor error
     func translateError(error: Error) -> Error {
         switch error {
-        case CognitoIdentityErrorType.notAuthorizedException(let message):
-            return AWSCognitoError.unauthorized(reason: message)
+        case let error as CognitoIdentityErrorType where error == .notAuthorizedException:
+            return AWSCognitoError.unauthorized(reason: error.message)
 
         default:
             return error

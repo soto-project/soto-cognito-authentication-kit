@@ -108,7 +108,7 @@ final class AWSCognitoAuthenticationKitTests: XCTestCase {
                 .map { _ in return }
                 // deal with user already existing
                 .flatMapErrorThrowing { error in
-                    if case CognitoIdentityProviderErrorType.usernameExistsException(_) = error {
+                    if let error = error as? CognitoIdentityProviderErrorType, error == .usernameExistsException {
                         return
                     }
                     throw error
@@ -141,8 +141,7 @@ final class AWSCognitoAuthenticationKitTests: XCTestCase {
             let context = AWSCognitoContextTest()
             let testData = try TestData(#function, on: eventLoop)
 
-            let response = try authenticatable.authenticateSRP(username: testData.username, password: testData.password, context: context, on: eventLoop).wait()
-            print(response)
+            _ = try authenticatable.authenticateSRP(username: testData.username, password: testData.password, context: context, on: eventLoop).wait()
         }
     }
 

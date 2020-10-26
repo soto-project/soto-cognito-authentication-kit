@@ -42,7 +42,7 @@ final class AWSCognitoAuthenticationKitTests: XCTestCase {
     static var setUpFailure: String? = nil
 
     class override func setUp() {
-        awsClient = AWSClient(middlewares: [AWSLoggingMiddleware()], httpClientProvider: .createNew)
+        awsClient = AWSClient(httpClientProvider: .createNew)
         cognitoIDP = CognitoIdentityProvider(client: awsClient, region: .useast1)
         do {
             let userPoolId: String
@@ -112,7 +112,7 @@ final class AWSCognitoAuthenticationKitTests: XCTestCase {
                 .map { _ in return }
                 // deal with user already existing
                 .flatMapErrorThrowing { error in
-                    if case CognitoIdentityProviderErrorType.usernameExistsException(_) = error {
+                    if let error = error as? CognitoIdentityProviderErrorType, error == .usernameExistsException {
                         return
                     }
                     throw error
@@ -193,7 +193,6 @@ final class AWSCognitoAuthenticationKitTests: XCTestCase {
             XCTAssertEqual(result.email, attributes["email"])
             XCTAssertEqual(result.givenName, attributes["given_name"])
             XCTAssertEqual(result.familyName, attributes["family_name"])
-            print(result)
         }
     }
 
