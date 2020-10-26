@@ -125,7 +125,7 @@ final class AWSCognitoAuthenticationKitTests: XCTestCase {
     func testAuthenticateSRP() {
         XCTAssertNil(Self.setUpFailure)
 
-        let awsClient = AWSClient(credentialProvider: .empty, middlewares: Self.middlewares, httpClientProvider: .createNew)
+        let awsClient = AWSClient(credentialProvider: .empty, middlewares: [AWSLoggingMiddleware()], httpClientProvider: .createNew)
         defer { XCTAssertNoThrow(try awsClient.syncShutdown()) }
         let cognitoIDPUnauthenticated = CognitoIdentityProvider(client: awsClient, region: .useast1)
         let configuration = AWSCognitoConfiguration(

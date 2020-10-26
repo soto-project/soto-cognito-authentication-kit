@@ -216,7 +216,6 @@ final class AWSCognitoAuthenticationKitTests: XCTestCase {
 
                     return Self.authenticatable.authenticate(accessToken: accessToken, on: eventLoop)
             }.wait()
-            print(result)
         }
     }
 

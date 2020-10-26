@@ -21,7 +21,7 @@ public extension AWSCognitoAuthenticatable {
             let authParameters : [String: String] = ["USERNAME":username,
                                                      "SECRET_HASH":secretHash,
                                                      "SRP_A": srp.A.hex]
-            print("Parameters \(authParameters)")
+            //print("Parameters \(authParameters)")
             return self.initiateAuthRequest(
                 authFlow: .userSrpAuth,
                 authParameters: authParameters,
@@ -30,7 +30,7 @@ public extension AWSCognitoAuthenticatable {
                 context: context,
                 on: eventLoop)
                 .flatMap { response in
-                    print("Response \(response)")
+                    //print("Response \(response)")
                     guard case .challenged(let challenge) = response,
                         let parameters = challenge.parameters,
                         let saltHex = parameters["SALT"],
@@ -121,7 +121,6 @@ class SRP<H: HashFunction> {
             } while A % self.N == BigNum(0)
             
             self.a = a
-            print(a.hex)
             self.A = A
         }
     }
