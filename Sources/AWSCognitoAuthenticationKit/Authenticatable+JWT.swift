@@ -74,7 +74,7 @@ extension AWSCognitoAuthenticatable {
         let httpClient = AsyncHTTPClient.HTTPClient(eventLoopGroupProvider:.shared(eventLoopGroup))
         return httpClient
             .get(url: JWTSignersURL, deadline: .now() + TimeAmount.seconds(10))
-            .always { _ in try? httpClient.syncShutdown() }
+            .always { _ in httpClient.shutdown() { _ in } }
             .flatMapThrowing { response in
                 let signers = JWTSigners()
                 guard let body = response.body else { return JWTSigners() }
