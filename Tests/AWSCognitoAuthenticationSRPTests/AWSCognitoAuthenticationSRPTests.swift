@@ -3,6 +3,7 @@ import AWSSDKSwiftCore
 import CognitoIdentityProvider
 import BigNum
 import Crypto
+import Foundation
 import NIO
 import AWSCognitoAuthenticationKit
 @testable import AWSCognitoAuthenticationSRP
@@ -29,8 +30,10 @@ public class AWSCognitoContextTest: AWSCognitoContextData {
 }
 
 final class AWSCognitoAuthenticationKitTests: XCTestCase {
-    
-    static let cognitoIDP = CognitoIdentityProvider(region: .useast1, /*middlewares: [AWSLoggingMiddleware()], */eventLoopGroupProvider: .shared(MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)))
+    static var middlewares: [AWSServiceMiddleware] {
+        ProcessInfo.processInfo.environment["CI"] == "true" ? [] : [AWSLoggingMiddleware()]
+    }
+    static let cognitoIDP = CognitoIdentityProvider(region: .useast1, middlewares: middlewares, eventLoopGroupProvider: .shared(MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)))
     static let userPoolName: String = "aws-cognito-authentication-tests"
     static let userPoolClientName: String = "aws-cognito-authentication-tests"
     static var authenticatable: AWSCognitoAuthenticatable!
@@ -120,7 +123,7 @@ final class AWSCognitoAuthenticationKitTests: XCTestCase {
     func testAuthenticateSRP() {
         XCTAssertNil(Self.setUpFailure)
         
-        let cognitoIDPUnauthenticated = CognitoIdentityProvider(accessKeyId: "", secretAccessKey: "", region: .useast1, middlewares: [AWSLoggingMiddleware()], eventLoopGroupProvider: .shared(MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)))
+        let cognitoIDPUnauthenticated = CognitoIdentityProvider(accessKeyId: "", secretAccessKey: "", region: .useast1, middlewares: Self.middlewares,  eventLoopGroupProvider: .shared(MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)))
         let configuration = AWSCognitoConfiguration(
             userPoolId: Self.authenticatable.configuration.userPoolId,
             clientId: Self.authenticatable.configuration.clientId,

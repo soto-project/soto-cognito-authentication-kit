@@ -2,6 +2,7 @@ import XCTest
 import AWSSDKSwiftCore
 import CognitoIdentityProvider
 import Crypto
+import Foundation
 import NIO
 @testable import AWSCognitoAuthenticationKit
 
@@ -30,7 +31,10 @@ class AWSCognitoContextTest: AWSCognitoContextData {
 
 final class AWSCognitoAuthenticationKitTests: XCTestCase {
     
-    static let cognitoIDP = CognitoIdentityProvider(region: .useast1, /*middlewares: [AWSLoggingMiddleware()], */eventLoopGroupProvider: .shared(MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)))
+    static var middlewares: [AWSServiceMiddleware] {
+        ProcessInfo.processInfo.environment["CI"] == "true" ? [] : [AWSLoggingMiddleware()]
+    }
+    static let cognitoIDP = CognitoIdentityProvider(region: .useast1, middlewares: middlewares, eventLoopGroupProvider: .shared(MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)))
     static let userPoolName: String = "aws-cognito-authentication-tests"
     static let userPoolClientName: String = "aws-cognito-authentication-tests"
     static var authenticatable: AWSCognitoAuthenticatable!
