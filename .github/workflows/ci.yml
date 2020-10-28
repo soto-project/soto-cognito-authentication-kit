@@ -36,8 +36,8 @@ jobs:
         fetch-depth: 1
     - name: Xcodebuild
       run: |
-        xcodebuild -scheme soto-core-Package -quiet -destination 'platform=iOS Simulator,name=iPhone 11'
-        xcodebuild test -scheme soto-core-Package -destination 'platform=iOS Simulator,name=iPhone 11'
+        xcodebuild -scheme aws-cognito-authentication-kit-Package -quiet -destination 'platform=iOS Simulator,name=iPhone 11'
+        xcodebuild test -scheme aws-cognito-authentication-kit-Package -destination 'platform=iOS Simulator,name=iPhone 11'
 
   linux:
     strategy:
