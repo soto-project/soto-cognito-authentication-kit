@@ -1,4 +1,4 @@
-name: Swift
+name: CI
 
 on:
   push:
@@ -19,7 +19,7 @@ jobs:
       DEVELOPER_DIR: /Applications/Xcode_11.4.app/Contents/Developer
     steps:
     - name: Checkout
-      uses: actions/checkout@v1
+      uses: actions/checkout@v2
       with:
         fetch-depth: 1
     - name: Build
@@ -27,16 +27,28 @@ jobs:
     - name: Test
       run: swift test
 
+  ios:
+    runs-on: macOS-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 1
+    - name: Xcodebuild
+      run: |
+        xcodebuild -scheme soto-core-Package -quiet -destination 'platform=iOS Simulator,name=iPhone 11'
+        xcodebuild test -scheme soto-core-Package -destination 'platform=iOS Simulator,name=iPhone 11'
+
   linux:
     strategy:
       matrix:
-        image: ["swift:5.2.1"]
+        image: ["swift:5.2", "swift:5.3"]
     runs-on: ubuntu-latest
     container:
       image: ${{ matrix.image }}
     steps:
     - name: Checkout
-      uses: actions/checkout@v1
+      uses: actions/checkout@v2
       with:
         fetch-depth: 1
     - name: Install dependencies
