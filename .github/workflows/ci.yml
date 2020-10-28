@@ -27,18 +27,6 @@ jobs:
     - name: Test
       run: swift test
 
-  ios:
-    runs-on: macOS-latest
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v2
-      with:
-        fetch-depth: 1
-    - name: Xcodebuild
-      run: |
-        xcodebuild -scheme aws-cognito-authentication-kit-Package -quiet -destination 'platform=iOS Simulator,name=iPhone 11'
-        xcodebuild test -scheme aws-cognito-authentication-kit-Package -destination 'platform=iOS Simulator,name=iPhone 11'
-
   linux:
     strategy:
       matrix:
