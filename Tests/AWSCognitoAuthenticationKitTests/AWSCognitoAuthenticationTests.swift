@@ -202,7 +202,7 @@ final class AWSCognitoAuthenticationKitTests: XCTestCase {
             let eventLoop = Self.cognitoIDP.client.eventLoopGroup.next()
             let testData = try TestData(#function, on: eventLoop)
 
-            let result = try login(testData, on: eventLoop)
+            _ = try login(testData, on: eventLoop)
                 .flatMap { (response)->EventLoopFuture<AWSCognitoAuthenticateResponse> in
                     guard case .authenticated(let authenticated) = response else { return eventLoop.makeFailedFuture(AWSCognitoTestError.notAuthenticated) }
                     guard let refreshToken = authenticated.refreshToken else { return eventLoop.makeFailedFuture(AWSCognitoTestError.missingToken) }
