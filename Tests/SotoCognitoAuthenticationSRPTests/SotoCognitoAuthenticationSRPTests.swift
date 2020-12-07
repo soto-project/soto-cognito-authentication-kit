@@ -85,8 +85,8 @@ final class SotoCognitoAuthenticationKitTests: XCTestCase {
                 userPoolId: userPoolId,
                 clientId: clientId,
                 clientSecret: clientSecret,
-                cognitoIDP: self.cognitoIDP,
-                region: .useast1)
+                cognitoIDP: self.cognitoIDP
+            )
             Self.authenticatable = SotoCognitoAuthenticatable(configuration: configuration)
         } catch let error as AWSErrorType {
             setUpFailure = error.description
@@ -132,8 +132,8 @@ final class SotoCognitoAuthenticationKitTests: XCTestCase {
             userPoolId: Self.authenticatable.configuration.userPoolId,
             clientId: Self.authenticatable.configuration.clientId,
             clientSecret: Self.authenticatable.configuration.clientSecret,
-            cognitoIDP: cognitoIDPUnauthenticated,
-            region: .useast1)
+            cognitoIDP: cognitoIDPUnauthenticated
+        )
         let authenticatable = SotoCognitoAuthenticatable(configuration: configuration)
 
         attempt {

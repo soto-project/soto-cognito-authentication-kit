@@ -15,16 +15,15 @@ public struct SotoCognitoConfiguration {
     public let clientSecret: String
     /// Cognito Identity Provider client
     public let cognitoIDP: CognitoIdentityProvider
-    /// region userpool is in
-    public let region: Region
-    
+    /// region userpool is in, can get this from the client
+    public var region: Region { return cognitoIDP.region }
+
     /// initializer
-    public init(userPoolId: String, clientId: String, clientSecret: String, cognitoIDP: CognitoIdentityProvider, region: Region) {
+    public init(userPoolId: String, clientId: String, clientSecret: String, cognitoIDP: CognitoIdentityProvider) {
         self.userPoolId = userPoolId
         self.clientId = clientId
         self.clientSecret = clientSecret
         self.cognitoIDP = cognitoIDP
-        self.region = region
     }
 }
 
