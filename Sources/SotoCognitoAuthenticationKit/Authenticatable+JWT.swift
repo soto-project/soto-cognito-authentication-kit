@@ -4,7 +4,7 @@ import JWTKit
 import NIO
 
 /// struct returned when authenticating an access token
-public struct SotoCognitoAccessToken: Codable {
+public struct CognitoAccessToken: Codable {
     public let username: String
     public let subject: UUID
     public let expirationTime: Date
@@ -17,7 +17,7 @@ public struct SotoCognitoAccessToken: Codable {
 }
 
 /// Public interface functions for authenticating with CognitoIdentityProvider access and id tokens
-public extension SotoCognitoAuthenticatable {
+public extension CognitoAuthenticatable {
     /// Verify id Token JWT and return contents
     ///
     /// This function verifies the id token signature, verifies it was issued by your user pool, it was generated for your application client, that it hasn't
@@ -51,10 +51,10 @@ public extension SotoCognitoAuthenticatable {
     ///     - on: Event loop to run on
     /// - returns:
     ///     An event loop future returning a structure with the username and UUID for the user.
-    func authenticate(accessToken: String, on eventLoopGroup: EventLoopGroup) -> EventLoopFuture<SotoCognitoAccessToken> {
+    func authenticate(accessToken: String, on eventLoopGroup: EventLoopGroup) -> EventLoopFuture<CognitoAccessToken> {
         return loadSigners(region: configuration.region, on: eventLoopGroup)
             .flatMapThrowing { signers in
-                let jwtPayload = try signers.verify(accessToken, as: VerifiedToken<AccessTokenVerifier, SotoCognitoAccessToken>.self)
+                let jwtPayload = try signers.verify(accessToken, as: VerifiedToken<AccessTokenVerifier, CognitoAccessToken>.self)
                 guard jwtPayload.token.issuer == "https://cognito-idp.\(self.configuration.region.rawValue).amazonaws.com/\(self.configuration.userPoolId)" else {
                     throw SotoCognitoError.unauthorized(reason:"invalid token")
                 }
@@ -63,7 +63,7 @@ public extension SotoCognitoAuthenticatable {
     }
 }
 
-extension SotoCognitoAuthenticatable {
+extension CognitoAuthenticatable {
     /// load JSON web keys and create JWT signers from them
     func loadSigners(region: Region, on eventLoopGroup: EventLoopGroup) -> EventLoopFuture<JWTSigners> {
         // check we haven't already loaded the jwt signing key set

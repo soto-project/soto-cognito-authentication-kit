@@ -4,8 +4,8 @@ import Foundation
 import NIO
 import Crypto
 
-public typealias SotoCognitoChallengeName = CognitoIdentityProvider.ChallengeNameType
-public typealias SotoCognitoUserStatusType = CognitoIdentityProvider.UserStatusType
+public typealias CognitoChallengeName = CognitoIdentityProvider.ChallengeNameType
+public typealias CognitoUserStatusType = CognitoIdentityProvider.UserStatusType
 
 public enum SotoCognitoError: Error {
     case failedToCreateContextData
@@ -15,13 +15,13 @@ public enum SotoCognitoError: Error {
 }
 
 /// Response to create user
-public struct SotoCognitoCreateUserResponse: Codable {
+public struct CognitoCreateUserResponse: Codable {
     public var userName: String
-    public var userStatus: SotoCognitoUserStatusType
+    public var userStatus: CognitoUserStatusType
 }
 
 /// Authentication response
-public enum SotoCognitoAuthenticateResponse: Codable {
+public enum CognitoAuthenticateResponse: Codable {
     /// response with authentication details
     case authenticated(AuthenticatedResponse)
     /// response containing a challenge
@@ -47,7 +47,7 @@ public enum SotoCognitoAuthenticateResponse: Codable {
         } else if let challenged = try container.decodeIfPresent(ChallengedResponse.self, forKey: .challenged) {
             self = .challenged(challenged)
         } else {
-            throw DecodingError.valueNotFound(SotoCognitoAuthenticateResponse.self, .init(codingPath: decoder.codingPath, debugDescription: "No valid response found"))
+            throw DecodingError.valueNotFound(CognitoAuthenticateResponse.self, .init(codingPath: decoder.codingPath, debugDescription: "No valid response found"))
         }
     }
     
@@ -69,14 +69,14 @@ public enum SotoCognitoAuthenticateResponse: Codable {
 
 
 /// Public interface functions for authenticating with CognitoIdentityProvider and generating access and id tokens.
-public class SotoCognitoAuthenticatable {
+public class CognitoAuthenticatable {
 
     /// configuration
-    public let configuration: SotoCognitoConfiguration
+    public let configuration: CognitoConfiguration
     /// JWT SIgners
     var jwtSigners: JWTSigners?
     
-    public init(configuration: SotoCognitoConfiguration) {
+    public init(configuration: CognitoConfiguration) {
         self.configuration = configuration
         self.jwtSigners = nil
     }
@@ -164,7 +164,7 @@ public class SotoCognitoAuthenticatable {
         messageAction: CognitoIdentityProvider.MessageActionType? = nil,
         clientMetadata: [String: String]? = nil,
         on eventLoop: EventLoop
-    ) -> EventLoopFuture<SotoCognitoCreateUserResponse> {
+    ) -> EventLoopFuture<CognitoCreateUserResponse> {
         let userAttributes = attributes.map { return CognitoIdentityProvider.AttributeType(name: $0.key, value: $0.value) }
         let request = CognitoIdentityProvider.AdminCreateUserRequest(
             clientMetadata: clientMetadata,
@@ -183,7 +183,7 @@ public class SotoCognitoAuthenticatable {
                     let username = user.username,
                     let userStatus = user.userStatus
                     else { throw SotoCognitoError.unexpectedResult(reason: "AWS did not supply all the user information expected") }
-                return SotoCognitoCreateUserResponse(userName: username, userStatus: userStatus)
+                return CognitoCreateUserResponse(userName: username, userStatus: userStatus)
         }
         .hop(to: eventLoop)
     }
@@ -205,9 +205,9 @@ public class SotoCognitoAuthenticatable {
         password: String,
         requireAuthenticatedClient: Bool = true,
         clientMetadata: [String: String]? = nil,
-        context: SotoCognitoContextData,
+        context: CognitoContextData,
         on eventLoop: EventLoop
-    ) -> EventLoopFuture<SotoCognitoAuthenticateResponse> {
+    ) -> EventLoopFuture<CognitoAuthenticateResponse> {
         return secretHashFuture(username: username, on: eventLoop).flatMap { secretHash in
             let authParameters : [String: String] = ["USERNAME":username,
                                                      "PASSWORD": password,
@@ -238,9 +238,9 @@ public class SotoCognitoAuthenticatable {
         refreshToken: String,
         requireAuthenticatedClient: Bool = true,
         clientMetadata: [String: String]? = nil,
-        context: SotoCognitoContextData,
+        context: CognitoContextData,
         on eventLoop: EventLoop
-    ) -> EventLoopFuture<SotoCognitoAuthenticateResponse> {
+    ) -> EventLoopFuture<CognitoAuthenticateResponse> {
         return secretHashFuture(username: username, on: eventLoop).flatMap { secretHash in
             let authParameters : [String: String] = ["USERNAME":username,
                                                      "REFRESH_TOKEN":refreshToken,
@@ -271,7 +271,7 @@ public class SotoCognitoAuthenticatable {
     ///     - on: Eventloop request should run on.
     /// - returns:
     ///     An authentication response. This can contain another challenge which the user has to fulfill before being allowed to login, or authentication access, id and refresh keys
-    public func respondToChallenge(username: String, name: SotoCognitoChallengeName, responses: [String: String], session: String?, requireAuthentication: Bool = true, clientMetadata: [String: String]? = nil, context: SotoCognitoContextData, on eventLoop: EventLoop) -> EventLoopFuture<SotoCognitoAuthenticateResponse> {
+    public func respondToChallenge(username: String, name: CognitoChallengeName, responses: [String: String], session: String?, requireAuthentication: Bool = true, clientMetadata: [String: String]? = nil, context: CognitoContextData, on eventLoop: EventLoop) -> EventLoopFuture<CognitoAuthenticateResponse> {
         return secretHashFuture(username: username, on: eventLoop).flatMap { secretHash in
             var challengeResponses = responses
             challengeResponses["USERNAME"] = username
@@ -303,7 +303,7 @@ public class SotoCognitoAuthenticatable {
             return respondFuture.flatMapErrorThrowing { error in
                     throw self.translateError(error: error)
                 }
-                .flatMapThrowing { (response)->SotoCognitoAuthenticateResponse in
+                .flatMapThrowing { (response)->CognitoAuthenticateResponse in
                     guard let authenticationResult = response.authenticationResult,
                         let accessToken = authenticationResult.accessToken,
                         let idToken = authenticationResult.idToken
@@ -340,7 +340,7 @@ public class SotoCognitoAuthenticatable {
     ///     - on: Eventloop request should run on.
     /// - returns:
     ///     An authentication response. This can contain another challenge which the user has to fulfill before being allowed to login, or authentication access, id and refresh keys
-    public func respondToNewPasswordChallenge(username: String, password: String, session: String?, context: SotoCognitoContextData, on eventLoop: EventLoop) -> EventLoopFuture<SotoCognitoAuthenticateResponse> {
+    public func respondToNewPasswordChallenge(username: String, password: String, session: String?, context: CognitoContextData, on eventLoop: EventLoop) -> EventLoopFuture<CognitoAuthenticateResponse> {
         return respondToChallenge(username: username, name: .newPasswordRequired, responses: ["NEW_PASSWORD":password], session: session, context: context, on: eventLoop)
     }
     
@@ -354,7 +354,7 @@ public class SotoCognitoAuthenticatable {
     ///     - on: Eventloop request should run on.
     /// - returns:
     ///     An authentication response. This can contain another challenge which the user has to fulfill before being allowed to login, or authentication access, id and refresh keys
-    public func respondToMFAChallenge(username: String, token: String, session: String?, context: SotoCognitoContextData, on eventLoop: EventLoop) -> EventLoopFuture<SotoCognitoAuthenticateResponse> {
+    public func respondToMFAChallenge(username: String, token: String, session: String?, context: CognitoContextData, on eventLoop: EventLoop) -> EventLoopFuture<CognitoAuthenticateResponse> {
         return respondToChallenge(username: username, name: .smsMfa, responses: ["SMS_MFA_CODE":token], session: session, context: context, on: eventLoop)
     }
     
@@ -375,7 +375,7 @@ public class SotoCognitoAuthenticatable {
     }
 }
 
-public extension SotoCognitoAuthenticatable {
+public extension CognitoAuthenticatable {
     /// return secret hash to include in cognito identity provider calls
     func secretHash(username: String) -> String {
 
@@ -395,9 +395,9 @@ public extension SotoCognitoAuthenticatable {
         authParameters: [String: String],
         requireAuthenticatedClient: Bool,
         clientMetadata: [String: String]? = nil,
-        context: SotoCognitoContextData,
+        context: CognitoContextData,
         on eventLoop: EventLoop
-    ) -> EventLoopFuture<SotoCognitoAuthenticateResponse> {
+    ) -> EventLoopFuture<CognitoAuthenticateResponse> {
         let initAuthFuture: EventLoopFuture<CognitoIdentityProvider.AdminInitiateAuthResponse>
         if requireAuthenticatedClient {
             guard let context = context.contextData else {return eventLoop.makeFailedFuture(SotoCognitoError.failedToCreateContextData)}
@@ -422,7 +422,7 @@ public extension SotoCognitoAuthenticatable {
         return initAuthFuture.flatMapErrorThrowing { error in
                 throw self.translateError(error: error)
             }
-            .flatMapThrowing { (response)->SotoCognitoAuthenticateResponse in
+            .flatMapThrowing { (response)->CognitoAuthenticateResponse in
                 guard let authenticationResult = response.authenticationResult,
                     let accessToken = authenticationResult.accessToken,
                     let idToken = authenticationResult.idToken

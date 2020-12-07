@@ -1,12 +1,12 @@
 import SotoCognitoIdentity
 import NIO
 
-public class SotoCognitoIdentifiable {
+public class CognitoIdentifiable {
     
     /// configuration
-    public let configuration: SotoCognitoIdentityConfiguration
+    public let configuration: CognitoIdentityConfiguration
     
-    public init(configuration: SotoCognitoIdentityConfiguration) {
+    public init(configuration: CognitoIdentityConfiguration) {
         self.configuration = configuration
     }
     
@@ -50,7 +50,7 @@ public class SotoCognitoIdentifiable {
     }
 }
 
-extension SotoCognitoIdentifiable {
+extension CognitoIdentifiable {
     /// translate error from one thrown by aws-sdk-swift to vapor error
     func translateError(error: Error) -> Error {
         switch error {

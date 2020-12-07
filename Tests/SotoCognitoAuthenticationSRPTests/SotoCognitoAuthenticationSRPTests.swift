@@ -23,7 +23,7 @@ enum AWSCognitoTestError: Error {
 }
 
 /// eventLoop with context object used for tests
-public class AWSCognitoContextTest: SotoCognitoContextData {
+public class AWSCognitoContextTest: CognitoContextData {
     public var contextData: CognitoIdentityProvider.ContextDataType? {
         return CognitoIdentityProvider.ContextDataType(httpHeaders: [], ipAddress: "127.0.0.1", serverName: "127.0.0.1", serverPath: "/")
     }
@@ -38,8 +38,8 @@ final class SotoCognitoAuthenticationKitTests: XCTestCase {
     static let cognitoIDP = CognitoIdentityProvider(client: awsClient, region: .useast1)
     static let userPoolName: String = "aws-cognito-authentication-tests"
     static let userPoolClientName: String = "aws-cognito-authentication-tests"
-    static var authenticatable: SotoCognitoAuthenticatable!
-    static var authenticatableUnauthenticated: SotoCognitoAuthenticatable!
+    static var authenticatable: CognitoAuthenticatable!
+    static var authenticatableUnauthenticated: CognitoAuthenticatable!
 
     static var setUpFailure: String? = nil
 
@@ -81,13 +81,13 @@ final class SotoCognitoAuthenticationKitTests: XCTestCase {
                 clientId = createClientResponse.userPoolClient!.clientId!
                 clientSecret = createClientResponse.userPoolClient!.clientSecret!
             }
-            let configuration = SotoCognitoConfiguration(
+            let configuration = CognitoConfiguration(
                 userPoolId: userPoolId,
                 clientId: clientId,
                 clientSecret: clientSecret,
                 cognitoIDP: self.cognitoIDP
             )
-            Self.authenticatable = SotoCognitoAuthenticatable(configuration: configuration)
+            Self.authenticatable = CognitoAuthenticatable(configuration: configuration)
         } catch let error as AWSErrorType {
             setUpFailure = error.description
         } catch {
@@ -128,13 +128,13 @@ final class SotoCognitoAuthenticationKitTests: XCTestCase {
         let awsClient = AWSClient(credentialProvider: .empty, middlewares: [AWSLoggingMiddleware()], httpClientProvider: .createNew)
         defer { XCTAssertNoThrow(try awsClient.syncShutdown()) }
         let cognitoIDPUnauthenticated = CognitoIdentityProvider(client: awsClient, region: .useast1)
-        let configuration = SotoCognitoConfiguration(
+        let configuration = CognitoConfiguration(
             userPoolId: Self.authenticatable.configuration.userPoolId,
             clientId: Self.authenticatable.configuration.clientId,
             clientSecret: Self.authenticatable.configuration.clientSecret,
             cognitoIDP: cognitoIDPUnauthenticated
         )
-        let authenticatable = SotoCognitoAuthenticatable(configuration: configuration)
+        let authenticatable = CognitoAuthenticatable(configuration: configuration)
 
         attempt {
             let eventLoop = Self.cognitoIDP.client.eventLoopGroup.next()

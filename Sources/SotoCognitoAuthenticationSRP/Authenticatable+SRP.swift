@@ -4,7 +4,7 @@ import NIO
 import Crypto
 import SotoCognitoAuthenticationKit
 
-public extension SotoCognitoAuthenticatable {
+public extension CognitoAuthenticatable {
     /// authenticate using SRP
     ///
     /// - parameters:
@@ -15,7 +15,7 @@ public extension SotoCognitoAuthenticatable {
     ///     - on: Eventloop request should run on.
     /// - returns:
     ///     An authentication response. This can contain a challenge which the user has to fulfill before being allowed to login, or authentication access, id and refresh keys
-    func authenticateSRP(username: String, password: String, clientMetadata: [String: String]? = nil, context: SotoCognitoContextData, on eventLoop: EventLoop) -> EventLoopFuture<SotoCognitoAuthenticateResponse> {
+    func authenticateSRP(username: String, password: String, clientMetadata: [String: String]? = nil, context: CognitoContextData, on eventLoop: EventLoop) -> EventLoopFuture<CognitoAuthenticateResponse> {
         return secretHashFuture(username: username, on: eventLoop).flatMap { secretHash in
             let srp = SRP<SHA256>()
             let authParameters : [String: String] = ["USERNAME":username,
