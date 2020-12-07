@@ -104,7 +104,7 @@ final class SotoCognitoAuthenticationKitTests: XCTestCase {
         let password: String
 
         init(_ testName: String, attributes: [String: String] = [:], on eventloop: EventLoop) throws {
-            self.username = testName
+            self.username = testName + Self.randomString()
             let messageHmac: HashedAuthenticationCode<SHA256> = HMAC.authenticationCode(for: Data(testName.utf8), using: SymmetricKey(data: Data(SotoCognitoAuthenticationKitTests.authenticatable.configuration.clientSecret.utf8)))
             self.password = messageHmac.description + "1!A"
 
@@ -123,6 +123,10 @@ final class SotoCognitoAuthenticationKitTests: XCTestCase {
         deinit {
             let deleteUserRequest = CognitoIdentityProvider.AdminDeleteUserRequest(username: username, userPoolId: SotoCognitoAuthenticationKitTests.authenticatable.configuration.userPoolId)
             try? SotoCognitoAuthenticationKitTests.cognitoIDP.adminDeleteUser(deleteUserRequest).wait()
+        }
+
+        static func randomString() -> String {
+            return String((0...7).map { _ in ("abcdefghijklmnopqrstuvwxyz").randomElement()! })
         }
     }
 
