@@ -1,27 +1,27 @@
-# AWS Cognito Authentication Kit
+# Soto Cognito Authentication Kit
 [<img src="http://img.shields.io/badge/swift-5.1-brightgreen.svg" alt="Swift 5.1" />](https://swift.org)
-[<img src="https://github.com/adam-fowler/aws-cognito-authentication-kit/workflows/Swift/badge.svg" />](https://github.com/adam-fowler/aws-cognito-authentication-kit/actions?query=workflow%3ASwift)
+[<img src="https://github.com/adam-fowler/soto-cognito-authentication-kit/workflows/Swift/badge.svg" />](https://github.com/adam-fowler/soto-cognito-authentication-kit/actions?query=workflow%3ASwift)
 
 Amazon Cognito provides authentication, authorization, and user management for your web apps. 
 
 # Using with Cognito User Pools
 
 ## Configuration
-First you need to create an `AWSCognitoConfiguration` instance that stores all your configuration information and create your `AWSCognitoAuthenticatable` instance
+First you need to create an `CognitoConfiguration` instance that stores all your configuration information and create your `CognitoAuthenticatable` instance
 ```
-let configuration = AWSCognitoConfiguration(
+let configuration = CognitoConfiguration(
     userPoolId: String = "eu-west-1_userpoolid",
     clientId: String = "23432clientId234234",
     clientSecret: String = "1q9ln4m892j2cnsdapa0dalh9a3aakmpeugiaag8k3cacijlbkrp",
     cognitoIDP: CognitoIdentityProvider = CognitoIdentityProvider(region: .euwest1),
     region: Region = .euwest1
 )
-let authenticatable = AWSCognitoAuthenticatable(configuration: configuration)
+let authenticatable = CognitoAuthenticatable(configuration: configuration)
 ```
-The values `userPoolId`, `clientId` and `clientSecret` can all be find on the Amazon Cognito user pool console. `cognitoIDP` is the client used to communicate with Amazon Web Services. It is provided by the [Soto](https://github.com/soto-project/soto.git) library. Some functions will need you to provide AWS credentials to your `CognitoIdentityProvider`. You can find more details about providing credentials [here](https://github.com/soto-project/soto#configuring-credentials). `region` is the AWS server region your user pool is in.
+The values `userPoolId`, `clientId` and `clientSecret` can all be find on the Amazon Cognito user pool console. `cognitoIDP` is the client used to communicate with Amazon Web Services. It is provided by the [Soto](https://github.com/soto-project/soto.git) library. Some functions will need you to provide AWS credentials to your `CognitoIdentityProvider`. You can find more details about providing credentials [here](https://soto.codes/user-guides/credential-providers.html). `region` is the AWS server region your user pool is in.
 
 ## Creating a AWS Cognito user
-Assuming we have the `AWSCognitoAuthenticatable` instance from above the following can be used to create a user. This function requires a `CognitoIdentityProvider` setup with AWS credentials.
+Assuming we have the `CognitoAuthenticatable` instance from above the following can be used to create a user. This function requires a `CognitoIdentityProvider` setup with AWS credentials.
 ```
 let username = "johndoe"
 let attributes: [String: String] = ["email": "user@email.com", "name": "John Doe", "gender": "male"]
@@ -108,7 +108,7 @@ let response = authenticatable.refresh(
 ## Responding to authentication challenges
 Sometimes when you try to authenticate a username and password or a refresh token you will be returned a challenge instead of the authentication tokens. An example of being when someone logs in for the first time they are required to change their password before they can continue. In this situation AWS Cognito returns a new password challenge. When you respond to this with a new password it provides you with the authentication tokens. Other situations would include Multi Factor Authentication. The following is responding to a change password request
 ```
-let challengeName: AWSCognitoChallengeName = .newPasswordRequired 
+let challengeName: CognitoChallengeName = .newPasswordRequired 
 let challengeResponse: [String: String] = ["NEW_PASSWORD":"MyNewPassword1"]
 let response = authenticatable.respondToChallenge(
     username: username, 
@@ -127,26 +127,26 @@ let response = authenticatable.respondToChallenge(
 The `name` parameter is an enum containing all challenges. The `responses` parameter is a dictionary of inputs to the challenge. The `session` parameter was included in the challenge returned to you by the authentication request. If the challenge is successful you will get `response.authenticated` as a response. If another challenge is required then you will get details of that in `response.challenged`. There are custom versions of the `respondToChallenge` function for new password: `respondToNewPasswordChallenge` and for Multi Factor Authentication: `respondToMFAChallenge`.
 
 ## Creating user pools
-There are a few settings that are required when creating your Cognito user pool, if you want to use it with the AWS Cognito Authentication library. Because the library uses the Admin level service calls device tracking is unavailable so ensure you set device remembering to off. Otherwise your refresh tokens will not work. 
+There are a few settings that are required when creating your Cognito user pool, if you want to use it with the Soto Cognito Authentication library. Because the library uses the Admin level service calls device tracking is unavailable so ensure you set device remembering to off. Otherwise your refresh tokens will not work. 
 
-When creating the app client for your user pool ensure you have 'Generate client secret' enabled. The AWS Cognito Authentication library automatically creates the secret hash required for user pools that have a client secret. It would be sensible to take advantage of this. As the library is designed to work on secured backend servers it uses the Admin no SRP authorization flow to authenticate users. You will also need to tick 'Enable username password auth for admin APIs for authentication (ALLOW_ADMIN_USER_PASSWORD_AUTH)' to ensure authentiation works. 
+When creating the app client for your user pool ensure you have 'Generate client secret' enabled. The Soto Cognito Authentication library automatically creates the secret hash required for user pools that have a client secret. It would be sensible to take advantage of this. As the library is designed to work on secured backend servers it uses the Admin no SRP authorization flow to authenticate users. You will also need to tick 'Enable username password auth for admin APIs for authentication (ALLOW_ADMIN_USER_PASSWORD_AUTH)' to ensure authentiation works. 
 
 For more details on AWS Cognito User Pools you can find Amazon's documentation [here](https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-identity-pools.html)
 
 # Using with Cognito Identity Pools
-AWS Cognito Authentication can be used to interface with Amazon Cognito Federated Identities, allowing you to create temporary credentials for accessing AWS services.
+Soto Cognito Authentication can be used to interface with Amazon Cognito Federated Identities, allowing you to create temporary credentials for accessing AWS services.
 
 ## Configuration
-First you need to create an `AWSCognitoIdentityConfiguration` instance that stores all your configuration information for interfacing with Amazon Cognito Federated Identities and a `AWSCognitoIdentifiable` instance. 
+First you need to create an `CognitoIdentityConfiguration` instance that stores all your configuration information for interfacing with Amazon Cognito Federated Identities and a `CognitoIdentifiable` instance. 
 ```
-let configuration = AWSCognitoIdentityConfiguration(
+let configuration = CognitoIdentityConfiguration(
     identityPoolId: String = "eu-west-1_identitypoolid"
     identityProvider: String = "provider"
     cognitoIdentity: CognitoIdentity = CognitoIdentity(region: .euwest1)
 )
-let identifiable = AWSCognitoIdentifiable(configuration: configuration)
+let identifiable = CognitoIdentifiable(configuration: configuration)
 ```
-The `identityPoolId` you can get from "Edit Identity Pool" section of the AWS console. `cognitoIdentity` is the client used to communicate with Amazon Web Services. It is provided by the [aws-sdk-swift](https://github.com/swift-aws/aws-sdk-swift.git) library. The `identityProvider` is whatever you setup in the AWS Cognito Identity Pool for providing authentication details. If you are using this in conjunction with Cognito User Pools you can use the protocol `AWSCognitoUserPoolIdentifiable` which sets up the `identityProvider` for you. This conforms with the `AWSCognitoAuthenticatable` protocol so can be used for user pool actions as well.
+The `identityPoolId` you can get from "Edit Identity Pool" section of the AWS console. `cognitoIdentity` is the client used to communicate with Amazon Web Services. It is provided by the [Soto](https://github.com/soto-project/soto.git) library. The `identityProvider` is whatever you setup in the AWS Cognito Identity Pool for providing authentication details.
 
 ## Accessing credentials
 There are two steps to accessing AWS credentials. First you need to get an identity id and then with that identity id you can get your AWS credentials. This can be done with the following.

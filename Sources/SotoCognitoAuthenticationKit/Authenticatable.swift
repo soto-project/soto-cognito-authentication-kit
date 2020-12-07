@@ -1,15 +1,13 @@
-@_exported import CognitoIdentityProvider
-@_exported import JWTKit
-
-import AWSSDKSwiftCore
+@_exported import SotoCognitoIdentityProvider
+import JWTKit
 import Foundation
 import NIO
 import Crypto
 
-public typealias AWSCognitoChallengeName = CognitoIdentityProvider.ChallengeNameType
-public typealias AWSCognitoUserStatusType = CognitoIdentityProvider.UserStatusType
+public typealias CognitoChallengeName = CognitoIdentityProvider.ChallengeNameType
+public typealias CognitoUserStatusType = CognitoIdentityProvider.UserStatusType
 
-public enum AWSCognitoError: Error {
+public enum SotoCognitoError: Error {
     case failedToCreateContextData
     case unexpectedResult(reason: String?)
     case unauthorized(reason: String?)
@@ -17,13 +15,13 @@ public enum AWSCognitoError: Error {
 }
 
 /// Response to create user
-public struct AWSCognitoCreateUserResponse: Codable {
+public struct CognitoCreateUserResponse: Codable {
     public var userName: String
-    public var userStatus: AWSCognitoUserStatusType
+    public var userStatus: CognitoUserStatusType
 }
 
 /// Authentication response
-public enum AWSCognitoAuthenticateResponse: Codable {
+public enum CognitoAuthenticateResponse: Codable {
     /// response with authentication details
     case authenticated(AuthenticatedResponse)
     /// response containing a challenge
@@ -49,7 +47,7 @@ public enum AWSCognitoAuthenticateResponse: Codable {
         } else if let challenged = try container.decodeIfPresent(ChallengedResponse.self, forKey: .challenged) {
             self = .challenged(challenged)
         } else {
-            throw DecodingError.valueNotFound(AWSCognitoAuthenticateResponse.self, .init(codingPath: decoder.codingPath, debugDescription: "No valid response found"))
+            throw DecodingError.valueNotFound(CognitoAuthenticateResponse.self, .init(codingPath: decoder.codingPath, debugDescription: "No valid response found"))
         }
     }
     
@@ -71,14 +69,14 @@ public enum AWSCognitoAuthenticateResponse: Codable {
 
 
 /// Public interface functions for authenticating with CognitoIdentityProvider and generating access and id tokens.
-public class AWSCognitoAuthenticatable {
+public class CognitoAuthenticatable {
 
     /// configuration
-    public let configuration: AWSCognitoConfiguration
+    public let configuration: CognitoConfiguration
     /// JWT SIgners
     var jwtSigners: JWTSigners?
     
-    public init(configuration: AWSCognitoConfiguration) {
+    public init(configuration: CognitoConfiguration) {
         self.configuration = configuration
         self.jwtSigners = nil
     }
@@ -166,7 +164,7 @@ public class AWSCognitoAuthenticatable {
         messageAction: CognitoIdentityProvider.MessageActionType? = nil,
         clientMetadata: [String: String]? = nil,
         on eventLoop: EventLoop
-    ) -> EventLoopFuture<AWSCognitoCreateUserResponse> {
+    ) -> EventLoopFuture<CognitoCreateUserResponse> {
         let userAttributes = attributes.map { return CognitoIdentityProvider.AttributeType(name: $0.key, value: $0.value) }
         let request = CognitoIdentityProvider.AdminCreateUserRequest(
             clientMetadata: clientMetadata,
@@ -184,8 +182,8 @@ public class AWSCognitoAuthenticatable {
                 guard let user = response.user,
                     let username = user.username,
                     let userStatus = user.userStatus
-                    else { throw AWSCognitoError.unexpectedResult(reason: "AWS did not supply all the user information expected") }
-                return AWSCognitoCreateUserResponse(userName: username, userStatus: userStatus)
+                    else { throw SotoCognitoError.unexpectedResult(reason: "AWS did not supply all the user information expected") }
+                return CognitoCreateUserResponse(userName: username, userStatus: userStatus)
         }
         .hop(to: eventLoop)
     }
@@ -207,9 +205,9 @@ public class AWSCognitoAuthenticatable {
         password: String,
         requireAuthenticatedClient: Bool = true,
         clientMetadata: [String: String]? = nil,
-        context: AWSCognitoContextData,
+        context: CognitoContextData,
         on eventLoop: EventLoop
-    ) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
+    ) -> EventLoopFuture<CognitoAuthenticateResponse> {
         return secretHashFuture(username: username, on: eventLoop).flatMap { secretHash in
             let authParameters : [String: String] = ["USERNAME":username,
                                                      "PASSWORD": password,
@@ -240,9 +238,9 @@ public class AWSCognitoAuthenticatable {
         refreshToken: String,
         requireAuthenticatedClient: Bool = true,
         clientMetadata: [String: String]? = nil,
-        context: AWSCognitoContextData,
+        context: CognitoContextData,
         on eventLoop: EventLoop
-    ) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
+    ) -> EventLoopFuture<CognitoAuthenticateResponse> {
         return secretHashFuture(username: username, on: eventLoop).flatMap { secretHash in
             let authParameters : [String: String] = ["USERNAME":username,
                                                      "REFRESH_TOKEN":refreshToken,
@@ -273,7 +271,7 @@ public class AWSCognitoAuthenticatable {
     ///     - on: Eventloop request should run on.
     /// - returns:
     ///     An authentication response. This can contain another challenge which the user has to fulfill before being allowed to login, or authentication access, id and refresh keys
-    public func respondToChallenge(username: String, name: AWSCognitoChallengeName, responses: [String: String], session: String?, requireAuthentication: Bool = true, clientMetadata: [String: String]? = nil, context: AWSCognitoContextData, on eventLoop: EventLoop) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
+    public func respondToChallenge(username: String, name: CognitoChallengeName, responses: [String: String], session: String?, requireAuthentication: Bool = true, clientMetadata: [String: String]? = nil, context: CognitoContextData, on eventLoop: EventLoop) -> EventLoopFuture<CognitoAuthenticateResponse> {
         return secretHashFuture(username: username, on: eventLoop).flatMap { secretHash in
             var challengeResponses = responses
             challengeResponses["USERNAME"] = username
@@ -282,7 +280,7 @@ public class AWSCognitoAuthenticatable {
             let respondFuture: EventLoopFuture<CognitoIdentityProvider.AdminRespondToAuthChallengeResponse>
             // If authentication required that use admin version of RespondToAuthChallenge
             if requireAuthentication {
-                guard let context = context.contextData else { return eventLoop.makeFailedFuture(AWSCognitoError.failedToCreateContextData) }
+                guard let context = context.contextData else { return eventLoop.makeFailedFuture(SotoCognitoError.failedToCreateContextData) }
                 let request = CognitoIdentityProvider.AdminRespondToAuthChallengeRequest(challengeName: name,
                                                                                          challengeResponses: challengeResponses,
                                                                                          clientId: self.configuration.clientId,
@@ -305,7 +303,7 @@ public class AWSCognitoAuthenticatable {
             return respondFuture.flatMapErrorThrowing { error in
                     throw self.translateError(error: error)
                 }
-                .flatMapThrowing { (response)->AWSCognitoAuthenticateResponse in
+                .flatMapThrowing { (response)->CognitoAuthenticateResponse in
                     guard let authenticationResult = response.authenticationResult,
                         let accessToken = authenticationResult.accessToken,
                         let idToken = authenticationResult.idToken
@@ -318,7 +316,7 @@ public class AWSCognitoAuthenticatable {
                                     session: response.session)
                                 )
                             }
-                            throw AWSCognitoError.unexpectedResult(reason: "Authenticated response does not authentication tokens or challenge information") // should have either an authenticated result or a challenge
+                            throw SotoCognitoError.unexpectedResult(reason: "Authenticated response does not authentication tokens or challenge information") // should have either an authenticated result or a challenge
                     }
 
                     return .authenticated(.init(
@@ -342,7 +340,7 @@ public class AWSCognitoAuthenticatable {
     ///     - on: Eventloop request should run on.
     /// - returns:
     ///     An authentication response. This can contain another challenge which the user has to fulfill before being allowed to login, or authentication access, id and refresh keys
-    public func respondToNewPasswordChallenge(username: String, password: String, session: String?, context: AWSCognitoContextData, on eventLoop: EventLoop) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
+    public func respondToNewPasswordChallenge(username: String, password: String, session: String?, context: CognitoContextData, on eventLoop: EventLoop) -> EventLoopFuture<CognitoAuthenticateResponse> {
         return respondToChallenge(username: username, name: .newPasswordRequired, responses: ["NEW_PASSWORD":password], session: session, context: context, on: eventLoop)
     }
     
@@ -356,7 +354,7 @@ public class AWSCognitoAuthenticatable {
     ///     - on: Eventloop request should run on.
     /// - returns:
     ///     An authentication response. This can contain another challenge which the user has to fulfill before being allowed to login, or authentication access, id and refresh keys
-    public func respondToMFAChallenge(username: String, token: String, session: String?, context: AWSCognitoContextData, on eventLoop: EventLoop) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
+    public func respondToMFAChallenge(username: String, token: String, session: String?, context: CognitoContextData, on eventLoop: EventLoop) -> EventLoopFuture<CognitoAuthenticateResponse> {
         return respondToChallenge(username: username, name: .smsMfa, responses: ["SMS_MFA_CODE":token], session: session, context: context, on: eventLoop)
     }
     
@@ -377,7 +375,7 @@ public class AWSCognitoAuthenticatable {
     }
 }
 
-public extension AWSCognitoAuthenticatable {
+public extension CognitoAuthenticatable {
     /// return secret hash to include in cognito identity provider calls
     func secretHash(username: String) -> String {
 
@@ -397,12 +395,12 @@ public extension AWSCognitoAuthenticatable {
         authParameters: [String: String],
         requireAuthenticatedClient: Bool,
         clientMetadata: [String: String]? = nil,
-        context: AWSCognitoContextData,
+        context: CognitoContextData,
         on eventLoop: EventLoop
-    ) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
+    ) -> EventLoopFuture<CognitoAuthenticateResponse> {
         let initAuthFuture: EventLoopFuture<CognitoIdentityProvider.AdminInitiateAuthResponse>
         if requireAuthenticatedClient {
-            guard let context = context.contextData else {return eventLoop.makeFailedFuture(AWSCognitoError.failedToCreateContextData)}
+            guard let context = context.contextData else {return eventLoop.makeFailedFuture(SotoCognitoError.failedToCreateContextData)}
             let request = CognitoIdentityProvider.AdminInitiateAuthRequest(
                 authFlow: authFlow,
                 authParameters: authParameters,
@@ -424,7 +422,7 @@ public extension AWSCognitoAuthenticatable {
         return initAuthFuture.flatMapErrorThrowing { error in
                 throw self.translateError(error: error)
             }
-            .flatMapThrowing { (response)->AWSCognitoAuthenticateResponse in
+            .flatMapThrowing { (response)->CognitoAuthenticateResponse in
                 guard let authenticationResult = response.authenticationResult,
                     let accessToken = authenticationResult.accessToken,
                     let idToken = authenticationResult.idToken
@@ -437,7 +435,7 @@ public extension AWSCognitoAuthenticatable {
                                 session: response.session
                             ))
                         }
-                        throw AWSCognitoError.unexpectedResult(reason: "Authenticated response does not authentication tokens or challenge information") // should have either an authenticated result or a challenge
+                        throw SotoCognitoError.unexpectedResult(reason: "Authenticated response does not authentication tokens or challenge information") // should have either an authenticated result or a challenge
                 }
 
                 return .authenticated(.init(
@@ -453,8 +451,8 @@ public extension AWSCognitoAuthenticatable {
     /// translate error from one thrown by aws-sdk-swift to vapor error
     func translateError(error: Error) -> Error {
         switch error {
-        case CognitoIdentityProviderErrorType.notAuthorizedException(let message):
-            return AWSCognitoError.unauthorized(reason: message)
+        case let error as CognitoIdentityProviderErrorType where error == .notAuthorizedException:
+            return SotoCognitoError.unauthorized(reason: error.message)
 
         default:
             return error

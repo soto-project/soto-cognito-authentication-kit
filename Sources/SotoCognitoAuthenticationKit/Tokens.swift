@@ -7,8 +7,8 @@ struct AccessTokenVerifier: JWTPayload {
     let tokenUse: String
 
     func verify(using signer: JWTSigner) throws {
-        guard expirationTime > Date() else {throw AWSCognitoError.unauthorized(reason:"token expired")}
-        guard tokenUse == "access" else {throw AWSCognitoError.unauthorized(reason:"invalid token")}
+        guard expirationTime > Date() else {throw SotoCognitoError.unauthorized(reason:"token expired")}
+        guard tokenUse == "access" else {throw SotoCognitoError.unauthorized(reason:"invalid token")}
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -26,8 +26,8 @@ struct IdTokenVerifier: JWTPayload {
     let tokenUse: String
 
     func verify(using signer: JWTSigner) throws {
-        guard expirationTime > Date() else {throw AWSCognitoError.unauthorized(reason:"token expired")}
-        guard tokenUse == "id" else {throw AWSCognitoError.unauthorized(reason:"invalid token")}
+        guard expirationTime > Date() else {throw SotoCognitoError.unauthorized(reason:"token expired")}
+        guard tokenUse == "id" else {throw SotoCognitoError.unauthorized(reason:"invalid token")}
     }
 
     private enum CodingKeys: String, CodingKey {

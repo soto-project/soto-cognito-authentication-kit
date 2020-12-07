@@ -1,12 +1,12 @@
-import CognitoIdentity
+import SotoCognitoIdentity
 import NIO
 
-public class AWSCognitoIdentifiable {
+public class CognitoIdentifiable {
     
     /// configuration
-    public let configuration: AWSCognitoIdentityConfiguration
+    public let configuration: CognitoIdentityConfiguration
     
-    public init(configuration: AWSCognitoIdentityConfiguration) {
+    public init(configuration: CognitoIdentityConfiguration) {
         self.configuration = configuration
     }
     
@@ -23,7 +23,7 @@ public class AWSCognitoIdentifiable {
                 throw self.translateError(error: error)
             }
             .flatMapThrowing { response in
-                guard let identityId = response.identityId else { throw AWSCognitoError.unexpectedResult(reason: "AWS did not return an identity id") }
+                guard let identityId = response.identityId else { throw SotoCognitoError.unexpectedResult(reason: "AWS did not return an identity id") }
                 return identityId
             }
             .hop(to: eventLoop)
@@ -43,19 +43,19 @@ public class AWSCognitoIdentifiable {
                 throw self.translateError(error: error)
             }
             .flatMapThrowing { response in
-                guard let credentials = response.credentials else { throw AWSCognitoError.unexpectedResult(reason: "AWS did not supply any credentials") }
+                guard let credentials = response.credentials else { throw SotoCognitoError.unexpectedResult(reason: "AWS did not supply any credentials") }
                 return credentials
             }
         .hop(to: eventLoop)
     }
 }
 
-extension AWSCognitoIdentifiable {
+extension CognitoIdentifiable {
     /// translate error from one thrown by aws-sdk-swift to vapor error
     func translateError(error: Error) -> Error {
         switch error {
-        case CognitoIdentityErrorType.notAuthorizedException(let message):
-            return AWSCognitoError.unauthorized(reason: message)
+        case let error as CognitoIdentityErrorType where error == .notAuthorizedException:
+            return SotoCognitoError.unauthorized(reason: error.message)
 
         default:
             return error
