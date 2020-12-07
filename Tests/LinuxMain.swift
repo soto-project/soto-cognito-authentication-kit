@@ -1,6 +1,6 @@
 import XCTest
-@testable import AWSCognitoAuthenticationKitTests
+@testable import SotoCognitoAuthenticationKitTests
 
 XCTMain([
-    testCase(AWSCognitoAuthenticationKitTests.allTests)
+    testCase(SotoCognitoAuthenticationKitTests.allTests)
 ])
