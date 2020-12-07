@@ -5,8 +5,8 @@ import BigNum
 import Crypto
 import Foundation
 import NIO
-import AWSCognitoAuthenticationKit
-@testable import AWSCognitoAuthenticationSRP
+import SotoCognitoAuthenticationKit
+@testable import SotoCognitoAuthenticationSRP
 
 func attempt(function : () throws -> ()) {
     do {

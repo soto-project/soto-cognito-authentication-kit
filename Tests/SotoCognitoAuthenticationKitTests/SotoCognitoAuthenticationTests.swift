@@ -5,7 +5,7 @@ import SotoCognitoIdentityProvider
 import Crypto
 import Foundation
 import NIO
-@testable import AWSCognitoAuthenticationKit
+@testable import SotoCognitoAuthenticationKit
 
 func attempt(function : () throws -> ()) {
     do {

@@ -4,24 +4,24 @@
 import PackageDescription
 
 let package = Package(
-    name: "aws-cognito-authentication-kit",
+    name: "soto-cognito-authentication-kit",
     platforms: [
         .macOS(.v10_15),
-        .iOS(.v13),
+        .iOS(.v13)
     ],
     products: [
-        .library(name: "AWSCognitoAuthenticationKit", targets: ["AWSCognitoAuthenticationKit"]),
-        .library(name: "AWSCognitoAuthenticationSRP", targets: ["AWSCognitoAuthenticationSRP"]),
+        .library(name: "SotoCognitoAuthenticationKit", targets: ["SotoCognitoAuthenticationKit"]),
+        .library(name: "SotoCognitoAuthenticationSRP", targets: ["SotoCognitoAuthenticationSRP"]),
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-crypto.git", .upToNextMajor(from: "1.0.0")),
-        .package(url: "https://github.com/soto-project/soto.git", .upToNextMajor(from: "5.0.0-beta")),
+        .package(url: "https://github.com/soto-project/soto.git", .upToNextMajor(from: "5.0.0")),
         .package(url: "https://github.com/vapor/jwt-kit.git", .upToNextMajor(from: "4.0.0")),
         // for SRP
         .package(url: "https://github.com/adam-fowler/big-num.git", .upToNextMajor(from: "2.0.0")),
     ],
     targets: [
-        .target(name: "AWSCognitoAuthenticationKit",
+        .target(name: "SotoCognitoAuthenticationKit",
                 dependencies: [
                     .product(name: "SotoCognitoIdentity", package: "soto"),
                     .product(name: "SotoCognitoIdentityProvider", package: "soto"),
@@ -29,14 +29,14 @@ let package = Package(
                     .product(name: "Crypto", package: "swift-crypto")
             ]
         ),
-        .testTarget(name: "AWSCognitoAuthenticationKitTests", dependencies: ["AWSCognitoAuthenticationKit"]),
+        .testTarget(name: "SotoCognitoAuthenticationKitTests", dependencies: ["SotoCognitoAuthenticationKit"]),
 
-        .target(name: "AWSCognitoAuthenticationSRP",
+        .target(name: "SotoCognitoAuthenticationSRP",
                 dependencies: [
                     .product(name: "BigNum", package: "big-num"),
-                    .target(name: "AWSCognitoAuthenticationKit")
+                    .target(name: "SotoCognitoAuthenticationKit")
             ]
         ),
-        .testTarget(name: "AWSCognitoAuthenticationSRPTests", dependencies: ["AWSCognitoAuthenticationSRP"]),
+        .testTarget(name: "SotoCognitoAuthenticationSRPTests", dependencies: ["SotoCognitoAuthenticationSRP"]),
     ]
 )
