@@ -4,7 +4,7 @@ import NIO
 import Crypto
 import SotoCognitoAuthenticationKit
 
-public extension AWSCognitoAuthenticatable {
+public extension SotoCognitoAuthenticatable {
     /// authenticate using SRP
     ///
     /// - parameters:
@@ -15,7 +15,7 @@ public extension AWSCognitoAuthenticatable {
     ///     - on: Eventloop request should run on.
     /// - returns:
     ///     An authentication response. This can contain a challenge which the user has to fulfill before being allowed to login, or authentication access, id and refresh keys
-    func authenticateSRP(username: String, password: String, clientMetadata: [String: String]? = nil, context: AWSCognitoContextData, on eventLoop: EventLoop) -> EventLoopFuture<AWSCognitoAuthenticateResponse> {
+    func authenticateSRP(username: String, password: String, clientMetadata: [String: String]? = nil, context: SotoCognitoContextData, on eventLoop: EventLoop) -> EventLoopFuture<SotoCognitoAuthenticateResponse> {
         return secretHashFuture(username: username, on: eventLoop).flatMap { secretHash in
             let srp = SRP<SHA256>()
             let authParameters : [String: String] = ["USERNAME":username,
@@ -37,15 +37,15 @@ public extension AWSCognitoAuthenticatable {
                         let salt = BigNum(hex: saltHex)?.bytes,
                         let secretBlockBase64 = parameters["SECRET_BLOCK"],
                         let secretBlock = Data(base64Encoded: secretBlockBase64),
-                        let dataB = parameters["SRP_B"] else { return eventLoop.makeFailedFuture(AWSCognitoError.unexpectedResult(reason: "AWS did not provide all the data required to do SRP authentication")) }
+                        let dataB = parameters["SRP_B"] else { return eventLoop.makeFailedFuture(SotoCognitoError.unexpectedResult(reason: "AWS did not provide all the data required to do SRP authentication")) }
                     
                     let srpUsername = parameters["USER_ID_FOR_SRP"] ?? username
                     let userPoolName = self.configuration.userPoolId.split(separator: "_")[1]
-                    guard let B = BigNum(hex: dataB) else { return eventLoop.makeFailedFuture(AWSCognitoError.invalidPublicKey) }
+                    guard let B = BigNum(hex: dataB) else { return eventLoop.makeFailedFuture(SotoCognitoError.invalidPublicKey) }
                     
                     // get key
                     guard let key = srp.getPasswordAuthenticationKey(username: "\(userPoolName)\(srpUsername)", password: password, B: B, salt: salt) else {
-                        return eventLoop.makeFailedFuture(AWSCognitoError.invalidPublicKey)
+                        return eventLoop.makeFailedFuture(SotoCognitoError.invalidPublicKey)
                     }
 
                     let dateFormatter = DateFormatter()

@@ -6,7 +6,7 @@ import JWTKit
 ///
 /// See [Cognito Userpool](https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-identity-pools.html)
 /// documention for more information.
-public struct AWSCognitoConfiguration {
+public struct SotoCognitoConfiguration {
     /// user pool id
     public let userPoolId: String
     /// app client it
@@ -32,7 +32,7 @@ public struct AWSCognitoConfiguration {
 ///
 /// See [Cognito Identity Pools](https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-identity.html)
 /// documention for more information.
-public struct AWSCognitoIdentityConfiguration {
+public struct SotoCognitoIdentityConfiguration {
     /// cognito identity pool id
     public let identityPoolId: String
     /// identity provider

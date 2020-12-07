@@ -23,13 +23,13 @@ enum AWSCognitoTestError: Error {
 }
 
 /// eventLoop with context object used for tests
-public class AWSCognitoContextTest: AWSCognitoContextData {
+public class AWSCognitoContextTest: SotoCognitoContextData {
     public var contextData: CognitoIdentityProvider.ContextDataType? {
         return CognitoIdentityProvider.ContextDataType(httpHeaders: [], ipAddress: "127.0.0.1", serverName: "127.0.0.1", serverPath: "/")
     }
 }
 
-final class AWSCognitoAuthenticationKitTests: XCTestCase {
+final class SotoCognitoAuthenticationKitTests: XCTestCase {
 
     static var middlewares: [AWSServiceMiddleware] {
         ProcessInfo.processInfo.environment["CI"] == "true" ? [] : [AWSLoggingMiddleware()]
@@ -38,8 +38,8 @@ final class AWSCognitoAuthenticationKitTests: XCTestCase {
     static let cognitoIDP = CognitoIdentityProvider(client: awsClient, region: .useast1)
     static let userPoolName: String = "aws-cognito-authentication-tests"
     static let userPoolClientName: String = "aws-cognito-authentication-tests"
-    static var authenticatable: AWSCognitoAuthenticatable!
-    static var authenticatableUnauthenticated: AWSCognitoAuthenticatable!
+    static var authenticatable: SotoCognitoAuthenticatable!
+    static var authenticatableUnauthenticated: SotoCognitoAuthenticatable!
 
     static var setUpFailure: String? = nil
 
@@ -81,13 +81,13 @@ final class AWSCognitoAuthenticationKitTests: XCTestCase {
                 clientId = createClientResponse.userPoolClient!.clientId!
                 clientSecret = createClientResponse.userPoolClient!.clientSecret!
             }
-            let configuration = AWSCognitoConfiguration(
+            let configuration = SotoCognitoConfiguration(
                 userPoolId: userPoolId,
                 clientId: clientId,
                 clientSecret: clientSecret,
                 cognitoIDP: self.cognitoIDP,
                 region: .useast1)
-            Self.authenticatable = AWSCognitoAuthenticatable(configuration: configuration)
+            Self.authenticatable = SotoCognitoAuthenticatable(configuration: configuration)
         } catch let error as AWSErrorType {
             setUpFailure = error.description
         } catch {
@@ -101,10 +101,10 @@ final class AWSCognitoAuthenticationKitTests: XCTestCase {
 
         init(_ testName: String, attributes: [String: String] = [:], on eventloop: EventLoop) throws {
             self.username = testName
-            let messageHmac: HashedAuthenticationCode<SHA256> = HMAC.authenticationCode(for: Data(testName.utf8), using: SymmetricKey(data: Data(AWSCognitoAuthenticationKitTests.authenticatable.configuration.clientSecret.utf8)))
+            let messageHmac: HashedAuthenticationCode<SHA256> = HMAC.authenticationCode(for: Data(testName.utf8), using: SymmetricKey(data: Data(SotoCognitoAuthenticationKitTests.authenticatable.configuration.clientSecret.utf8)))
             self.password = messageHmac.description + "1!A"
 
-            let create = AWSCognitoAuthenticationKitTests.authenticatable.createUser(username: self.username, attributes: attributes, temporaryPassword: password, messageAction:.suppress, on: eventloop)
+            let create = SotoCognitoAuthenticationKitTests.authenticatable.createUser(username: self.username, attributes: attributes, temporaryPassword: password, messageAction:.suppress, on: eventloop)
                 .map { _ in return }
                 // deal with user already existing
                 .flatMapErrorThrowing { error in
@@ -117,8 +117,8 @@ final class AWSCognitoAuthenticationKitTests: XCTestCase {
         }
 
         deinit {
-            let deleteUserRequest = CognitoIdentityProvider.AdminDeleteUserRequest(username: username, userPoolId: AWSCognitoAuthenticationKitTests.authenticatable.configuration.userPoolId)
-            try? AWSCognitoAuthenticationKitTests.cognitoIDP.adminDeleteUser(deleteUserRequest).wait()
+            let deleteUserRequest = CognitoIdentityProvider.AdminDeleteUserRequest(username: username, userPoolId: SotoCognitoAuthenticationKitTests.authenticatable.configuration.userPoolId)
+            try? SotoCognitoAuthenticationKitTests.cognitoIDP.adminDeleteUser(deleteUserRequest).wait()
         }
     }
 
@@ -128,13 +128,13 @@ final class AWSCognitoAuthenticationKitTests: XCTestCase {
         let awsClient = AWSClient(credentialProvider: .empty, middlewares: [AWSLoggingMiddleware()], httpClientProvider: .createNew)
         defer { XCTAssertNoThrow(try awsClient.syncShutdown()) }
         let cognitoIDPUnauthenticated = CognitoIdentityProvider(client: awsClient, region: .useast1)
-        let configuration = AWSCognitoConfiguration(
+        let configuration = SotoCognitoConfiguration(
             userPoolId: Self.authenticatable.configuration.userPoolId,
             clientId: Self.authenticatable.configuration.clientId,
             clientSecret: Self.authenticatable.configuration.clientSecret,
             cognitoIDP: cognitoIDPUnauthenticated,
             region: .useast1)
-        let authenticatable = AWSCognitoAuthenticatable(configuration: configuration)
+        let authenticatable = SotoCognitoAuthenticatable(configuration: configuration)
 
         attempt {
             let eventLoop = Self.cognitoIDP.client.eventLoopGroup.next()
