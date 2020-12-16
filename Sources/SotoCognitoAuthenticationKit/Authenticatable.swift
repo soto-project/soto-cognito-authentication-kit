@@ -98,21 +98,19 @@ public class CognitoAuthenticatable {
         clientMetadata: [String: String]? = nil,
         on eventLoop: EventLoop
     ) -> EventLoopFuture<CognitoIdentityProvider.SignUpResponse> {
-        return secretHashFuture(username: username, on: eventLoop).flatMap { secretHash in
-            let userAttributes = attributes.map { return CognitoIdentityProvider.AttributeType(name: $0.key, value: $0.value) }
-            let request = CognitoIdentityProvider.SignUpRequest(
-                clientId: self.configuration.clientId,
-                clientMetadata: clientMetadata,
-                password: password,
-                secretHash: secretHash,
-                userAttributes: userAttributes,
-                username: username)
-            return self.configuration.cognitoIDP.signUp(request)
-                .flatMapErrorThrowing { error in
-                    throw self.translateError(error: error)
-                }
-                .hop(to: eventLoop)
-        }
+        let userAttributes = attributes.map { return CognitoIdentityProvider.AttributeType(name: $0.key, value: $0.value) }
+        let request = CognitoIdentityProvider.SignUpRequest(
+            clientId: self.configuration.clientId,
+            clientMetadata: clientMetadata,
+            password: password,
+            secretHash: secretHash(username: username),
+            userAttributes: userAttributes,
+            username: username)
+        return self.configuration.cognitoIDP.signUp(request)
+            .flatMapErrorThrowing { error in
+                throw self.translateError(error: error)
+            }
+            .hop(to: eventLoop)
     }
 
     /// Confirm sign up of user
@@ -126,23 +124,21 @@ public class CognitoAuthenticatable {
     /// - returns:
     ///     Empty EventLoopFuture
     public func confirmSignUp(username: String, confirmationCode: String, clientMetadata: [String: String]? = nil, on eventLoop: EventLoop) -> EventLoopFuture<Void> {
-        return secretHashFuture(username: username, on: eventLoop).flatMap { secretHash in
-            let request = CognitoIdentityProvider.ConfirmSignUpRequest(
-                clientId: self.configuration.clientId,
-                clientMetadata: clientMetadata,
-                confirmationCode: confirmationCode,
-                forceAliasCreation: false,
-                secretHash: secretHash,
-                username: username)
-            return self.configuration.cognitoIDP.confirmSignUp(request)
-                .flatMapErrorThrowing { error in
-                    throw self.translateError(error: error)
-                }
-                .map { _ in
-                    return
+        let request = CognitoIdentityProvider.ConfirmSignUpRequest(
+            clientId: self.configuration.clientId,
+            clientMetadata: clientMetadata,
+            confirmationCode: confirmationCode,
+            forceAliasCreation: false,
+            secretHash: secretHash(username: username),
+            username: username)
+        return self.configuration.cognitoIDP.confirmSignUp(request)
+            .flatMapErrorThrowing { error in
+                throw self.translateError(error: error)
             }
-            .hop(to: eventLoop)
+            .map { _ in
+                return
         }
+        .hop(to: eventLoop)
     }
 
     /// create a new AWS Cognito user.
@@ -208,17 +204,18 @@ public class CognitoAuthenticatable {
         context: CognitoContextData,
         on eventLoop: EventLoop
     ) -> EventLoopFuture<CognitoAuthenticateResponse> {
-        return secretHashFuture(username: username, on: eventLoop).flatMap { secretHash in
-            let authParameters : [String: String] = ["USERNAME":username,
-                                                     "PASSWORD": password,
-                                                     "SECRET_HASH":secretHash]
-            return self.initiateAuthRequest(authFlow: .adminUserPasswordAuth,
-                                            authParameters: authParameters,
-                                            requireAuthenticatedClient: requireAuthenticatedClient,
-                                            clientMetadata: clientMetadata,
-                                            context: context,
-                                            on: eventLoop)
-        }
+        var authParameters : [String: String] = [
+            "USERNAME":username,
+            "PASSWORD": password
+        ]
+        authParameters["SECRET_HASH"] = secretHash(username: username)
+
+        return self.initiateAuthRequest(authFlow: .adminUserPasswordAuth,
+                                        authParameters: authParameters,
+                                        requireAuthenticatedClient: requireAuthenticatedClient,
+                                        clientMetadata: clientMetadata,
+                                        context: context,
+                                        on: eventLoop)
     }
 
     /// Get new access and id tokens from a refresh token
@@ -241,17 +238,19 @@ public class CognitoAuthenticatable {
         context: CognitoContextData,
         on eventLoop: EventLoop
     ) -> EventLoopFuture<CognitoAuthenticateResponse> {
-        return secretHashFuture(username: username, on: eventLoop).flatMap { secretHash in
-            let authParameters : [String: String] = ["USERNAME":username,
-                                                     "REFRESH_TOKEN":refreshToken,
-                                                     "SECRET_HASH":secretHash]
-            return self.initiateAuthRequest(authFlow: .refreshTokenAuth,
-                                           authParameters: authParameters,
-                                           requireAuthenticatedClient: requireAuthenticatedClient,
-                                           clientMetadata: clientMetadata,
-                                           context: context,
-                                           on: eventLoop)
-        }
+        var authParameters : [String: String] = [
+            "USERNAME":username,
+            "REFRESH_TOKEN":refreshToken
+        ]
+        authParameters["SECRET_HASH"] = secretHash(username: username)
+
+        return self.initiateAuthRequest(authFlow: .refreshTokenAuth,
+            authParameters: authParameters,
+            requireAuthenticatedClient: requireAuthenticatedClient,
+            clientMetadata: clientMetadata,
+            context: context,
+            on: eventLoop
+        )
     }
 
     /// respond to authentication challenge
@@ -271,63 +270,70 @@ public class CognitoAuthenticatable {
     ///     - on: Eventloop request should run on.
     /// - returns:
     ///     An authentication response. This can contain another challenge which the user has to fulfill before being allowed to login, or authentication access, id and refresh keys
-    public func respondToChallenge(username: String, name: CognitoChallengeName, responses: [String: String], session: String?, requireAuthentication: Bool = true, clientMetadata: [String: String]? = nil, context: CognitoContextData, on eventLoop: EventLoop) -> EventLoopFuture<CognitoAuthenticateResponse> {
-        return secretHashFuture(username: username, on: eventLoop).flatMap { secretHash in
-            var challengeResponses = responses
-            challengeResponses["USERNAME"] = username
-            challengeResponses["SECRET_HASH"] = secretHash
-            
-            let respondFuture: EventLoopFuture<CognitoIdentityProvider.AdminRespondToAuthChallengeResponse>
-            // If authentication required that use admin version of RespondToAuthChallenge
-            if requireAuthentication {
-                guard let context = context.contextData else { return eventLoop.makeFailedFuture(SotoCognitoError.failedToCreateContextData) }
-                let request = CognitoIdentityProvider.AdminRespondToAuthChallengeRequest(challengeName: name,
-                                                                                         challengeResponses: challengeResponses,
-                                                                                         clientId: self.configuration.clientId,
-                                                                                         clientMetadata: clientMetadata,
-                                                                                         contextData: context,
-                                                                                         session: session,
-                                                                                         userPoolId: self.configuration.userPoolId)
-                respondFuture = self.configuration.cognitoIDP.adminRespondToAuthChallenge(request)
-            } else {
-                let request = CognitoIdentityProvider.RespondToAuthChallengeRequest(challengeName: name,
-                                                                                    challengeResponses: challengeResponses,
-                                                                                    clientId: self.configuration.clientId,
-                                                                                    clientMetadata: clientMetadata,
-                                                                                    session: session)
-                respondFuture = self.configuration.cognitoIDP.respondToAuthChallenge(request).map { response in
-                    return CognitoIdentityProvider.AdminRespondToAuthChallengeResponse(authenticationResult: response.authenticationResult, challengeName: response.challengeName, challengeParameters: response.challengeParameters, session: response.session)
-                }
-            }
-            
-            return respondFuture.flatMapErrorThrowing { error in
-                    throw self.translateError(error: error)
-                }
-                .flatMapThrowing { (response)->CognitoAuthenticateResponse in
-                    guard let authenticationResult = response.authenticationResult,
-                        let accessToken = authenticationResult.accessToken,
-                        let idToken = authenticationResult.idToken
-                        else {
-                            // if there was no tokens returned, return challenge if it exists
-                            if let challengeName = response.challengeName {
-                                return .challenged(.init(
-                                    name: challengeName.rawValue,
-                                    parameters: response.challengeParameters,
-                                    session: response.session)
-                                )
-                            }
-                            throw SotoCognitoError.unexpectedResult(reason: "Authenticated response does not authentication tokens or challenge information") // should have either an authenticated result or a challenge
-                    }
+    public func respondToChallenge(
+        username: String,
+        name: CognitoChallengeName,
+        responses: [String: String],
+        session: String?,
+        requireAuthentication: Bool = true,
+        clientMetadata: [String: String]? = nil,
+        context: CognitoContextData,
+        on eventLoop: EventLoop
+    ) -> EventLoopFuture<CognitoAuthenticateResponse> {
+        var challengeResponses = responses
+        challengeResponses["USERNAME"] = username
+        challengeResponses["SECRET_HASH"] = secretHash(username: username)
 
-                    return .authenticated(.init(
-                        accessToken: accessToken,
-                        idToken: idToken,
-                        refreshToken: authenticationResult.refreshToken,
-                        expiresIn: authenticationResult.expiresIn != nil ? Date(timeIntervalSinceNow: TimeInterval(authenticationResult.expiresIn!)) : nil
-                    ))
+        let respondFuture: EventLoopFuture<CognitoIdentityProvider.AdminRespondToAuthChallengeResponse>
+        // If authentication required that use admin version of RespondToAuthChallenge
+        if requireAuthentication {
+            guard let context = context.contextData else { return eventLoop.makeFailedFuture(SotoCognitoError.failedToCreateContextData) }
+            let request = CognitoIdentityProvider.AdminRespondToAuthChallengeRequest(challengeName: name,
+                                                                                     challengeResponses: challengeResponses,
+                                                                                     clientId: self.configuration.clientId,
+                                                                                     clientMetadata: clientMetadata,
+                                                                                     contextData: context,
+                                                                                     session: session,
+                                                                                     userPoolId: self.configuration.userPoolId)
+            respondFuture = self.configuration.cognitoIDP.adminRespondToAuthChallenge(request)
+        } else {
+            let request = CognitoIdentityProvider.RespondToAuthChallengeRequest(challengeName: name,
+                                                                                challengeResponses: challengeResponses,
+                                                                                clientId: self.configuration.clientId,
+                                                                                clientMetadata: clientMetadata,
+                                                                                session: session)
+            respondFuture = self.configuration.cognitoIDP.respondToAuthChallenge(request).map { response in
+                return CognitoIdentityProvider.AdminRespondToAuthChallengeResponse(authenticationResult: response.authenticationResult, challengeName: response.challengeName, challengeParameters: response.challengeParameters, session: response.session)
             }
-            .hop(to: eventLoop)
         }
+
+        return respondFuture.flatMapErrorThrowing { error in
+                throw self.translateError(error: error)
+            }
+            .flatMapThrowing { (response)->CognitoAuthenticateResponse in
+                guard let authenticationResult = response.authenticationResult,
+                    let accessToken = authenticationResult.accessToken,
+                    let idToken = authenticationResult.idToken
+                    else {
+                        // if there was no tokens returned, return challenge if it exists
+                        if let challengeName = response.challengeName {
+                            return .challenged(.init(
+                                name: challengeName.rawValue,
+                                parameters: response.challengeParameters,
+                                session: response.session)
+                            )
+                        }
+                        throw SotoCognitoError.unexpectedResult(reason: "Authenticated response does not authentication tokens or challenge information") // should have either an authenticated result or a challenge
+                }
+
+                return .authenticated(.init(
+                    accessToken: accessToken,
+                    idToken: idToken,
+                    refreshToken: authenticationResult.refreshToken,
+                    expiresIn: authenticationResult.expiresIn != nil ? Date(timeIntervalSinceNow: TimeInterval(authenticationResult.expiresIn!)) : nil
+                ))
+        }
+        .hop(to: eventLoop)
     }
 
     /// respond to new password authentication challenge
@@ -377,16 +383,11 @@ public class CognitoAuthenticatable {
 
 public extension CognitoAuthenticatable {
     /// return secret hash to include in cognito identity provider calls
-    func secretHash(username: String) -> String {
-
+    func secretHash(username: String) -> String? {
+        guard let clientSecret = configuration.clientSecret else { return nil }
         let message = username + configuration.clientId
-        let messageHmac: HashedAuthenticationCode<SHA256> = HMAC.authenticationCode(for: Data(message.utf8), using: SymmetricKey(data: Data(configuration.clientSecret.utf8)))
+        let messageHmac: HashedAuthenticationCode<SHA256> = HMAC.authenticationCode(for: Data(message.utf8), using: SymmetricKey(data: Data(clientSecret.utf8)))
         return Data(messageHmac).base64EncodedString()
-    }
-
-    /// return future containing secret hash to include in cognito identity provider calls
-    func secretHashFuture(username: String, on eventLoopGroup: EventLoopGroup) -> EventLoopFuture<String> {
-        return eventLoopGroup.next().makeSucceededFuture(secretHash(username: username))
     }
 
     /// return an authorization request future
