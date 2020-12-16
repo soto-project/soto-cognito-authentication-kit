@@ -47,7 +47,7 @@ final class SotoCognitoAuthenticationKitTests: XCTestCase {
         do {
             let userPoolId: String
             let clientId: String
-            let clientSecret: String
+            let clientSecret: String?
             // does userpool exist
             let listRequest = CognitoIdentityProvider.ListUserPoolsRequest(maxResults: 60)
             let userPools = try cognitoIDP.listUserPools(listRequest).wait().userPools
@@ -69,7 +69,7 @@ final class SotoCognitoAuthenticationKitTests: XCTestCase {
                 clientId = client.clientId!
                 let describeRequest = CognitoIdentityProvider.DescribeUserPoolClientRequest(clientId: clientId, userPoolId: userPoolId)
                 let describeResponse = try cognitoIDP.describeUserPoolClient(describeRequest).wait()
-                clientSecret = describeResponse.userPoolClient!.clientSecret!
+                clientSecret = describeResponse.userPoolClient!.clientSecret
             } else {
                 // create userpool client
                 let createClientRequest = CognitoIdentityProvider.CreateUserPoolClientRequest(
@@ -79,7 +79,7 @@ final class SotoCognitoAuthenticationKitTests: XCTestCase {
                     userPoolId: userPoolId)
                 let createClientResponse = try cognitoIDP.createUserPoolClient(createClientRequest).wait()
                 clientId = createClientResponse.userPoolClient!.clientId!
-                clientSecret = createClientResponse.userPoolClient!.clientSecret!
+                clientSecret = createClientResponse.userPoolClient!.clientSecret
             }
             let configuration = CognitoConfiguration(
                 userPoolId: userPoolId,
