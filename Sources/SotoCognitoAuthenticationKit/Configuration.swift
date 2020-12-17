@@ -19,7 +19,7 @@ public struct CognitoConfiguration {
     public var region: Region { return cognitoIDP.region }
 
     /// initializer
-    public init(userPoolId: String, clientId: String, clientSecret: String?, cognitoIDP: CognitoIdentityProvider) {
+    public init(userPoolId: String, clientId: String, clientSecret: String? = nil, cognitoIDP: CognitoIdentityProvider) {
         self.userPoolId = userPoolId
         self.clientId = clientId
         self.clientSecret = clientSecret
