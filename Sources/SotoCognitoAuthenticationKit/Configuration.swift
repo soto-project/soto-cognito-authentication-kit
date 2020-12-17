@@ -12,14 +12,14 @@ public struct CognitoConfiguration {
     /// app client it
     public let clientId: String
     /// app client secret
-    public let clientSecret: String
+    public let clientSecret: String?
     /// Cognito Identity Provider client
     public let cognitoIDP: CognitoIdentityProvider
     /// region userpool is in, can get this from the client
     public var region: Region { return cognitoIDP.region }
 
     /// initializer
-    public init(userPoolId: String, clientId: String, clientSecret: String, cognitoIDP: CognitoIdentityProvider) {
+    public init(userPoolId: String, clientId: String, clientSecret: String?, cognitoIDP: CognitoIdentityProvider) {
         self.userPoolId = userPoolId
         self.clientId = clientId
         self.clientSecret = clientSecret

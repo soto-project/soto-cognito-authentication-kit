@@ -16,63 +16,67 @@ public extension CognitoAuthenticatable {
     /// - returns:
     ///     An authentication response. This can contain a challenge which the user has to fulfill before being allowed to login, or authentication access, id and refresh keys
     func authenticateSRP(username: String, password: String, clientMetadata: [String: String]? = nil, context: CognitoContextData, on eventLoop: EventLoop) -> EventLoopFuture<CognitoAuthenticateResponse> {
-        return secretHashFuture(username: username, on: eventLoop).flatMap { secretHash in
-            let srp = SRP<SHA256>()
-            let authParameters : [String: String] = ["USERNAME":username,
-                                                     "SECRET_HASH":secretHash,
-                                                     "SRP_A": srp.A.hex]
-            //print("Parameters \(authParameters)")
-            return self.initiateAuthRequest(
-                authFlow: .userSrpAuth,
-                authParameters: authParameters,
-                requireAuthenticatedClient: false,
-                clientMetadata: clientMetadata,
-                context: context,
-                on: eventLoop)
-                .flatMap { response in
-                    //print("Response \(response)")
-                    guard case .challenged(let challenge) = response,
-                        let parameters = challenge.parameters,
-                        let saltHex = parameters["SALT"],
-                        let salt = BigNum(hex: saltHex)?.bytes,
-                        let secretBlockBase64 = parameters["SECRET_BLOCK"],
-                        let secretBlock = Data(base64Encoded: secretBlockBase64),
-                        let dataB = parameters["SRP_B"] else { return eventLoop.makeFailedFuture(SotoCognitoError.unexpectedResult(reason: "AWS did not provide all the data required to do SRP authentication")) }
-                    
-                    let srpUsername = parameters["USER_ID_FOR_SRP"] ?? username
-                    let userPoolName = self.configuration.userPoolId.split(separator: "_")[1]
-                    guard let B = BigNum(hex: dataB) else { return eventLoop.makeFailedFuture(SotoCognitoError.invalidPublicKey) }
-                    
-                    // get key
-                    guard let key = srp.getPasswordAuthenticationKey(username: "\(userPoolName)\(srpUsername)", password: password, B: B, salt: salt) else {
-                        return eventLoop.makeFailedFuture(SotoCognitoError.invalidPublicKey)
-                    }
+        let srp = SRP<SHA256>()
+        var authParameters : [String: String] = [
+            "USERNAME":username,
+            "SRP_A": srp.A.hex
+        ]
+        authParameters["SECRET_HASH"] = secretHash(username: username)
 
-                    let dateFormatter = DateFormatter()
-                    // cognito expects the dateformat to have the timezone as UTC
-                    dateFormatter.dateFormat = "EEE MMM d HH:mm:ss 'UTC' yyyy"
-                    dateFormatter.timeZone = TimeZone(identifier: "UTC")
-                    let timestamp = dateFormatter.string(from: Date())
-                    
-                    // construct claim
-                    let claim = HMAC<SHA256>.authenticationCode(for:Data("\(userPoolName)\(srpUsername)".utf8) + secretBlock + Data(timestamp.utf8), using: SymmetricKey(data: key))
-                                       
-                    //print("claim \(claim.hexdigest())")
-                    let authResponse : [String: String] = ["USERNAME":srpUsername,
-                                                             "SECRET_HASH":secretHash,
-                                                             "PASSWORD_CLAIM_SECRET_BLOCK": secretBlockBase64,
-                                                             "PASSWORD_CLAIM_SIGNATURE": Data(claim).base64EncodedString(),
-                                                             "TIMESTAMP": timestamp
-                    ]
-                    return self.respondToChallenge(
-                        username: username,
-                        name: .passwordVerifier,
-                        responses: authResponse,
-                        session: challenge.session,
-                        requireAuthentication: false,
-                        context: context,
-                        on: eventLoop)
-            }
+        //print("Parameters \(authParameters)")
+        return self.initiateAuthRequest(
+            authFlow: .userSrpAuth,
+            authParameters: authParameters,
+            requireAuthenticatedClient: false,
+            clientMetadata: clientMetadata,
+            context: context,
+            on: eventLoop)
+            .flatMap { response in
+                //print("Response \(response)")
+                guard case .challenged(let challenge) = response,
+                    let parameters = challenge.parameters,
+                    let saltHex = parameters["SALT"],
+                    let salt = BigNum(hex: saltHex)?.bytes,
+                    let secretBlockBase64 = parameters["SECRET_BLOCK"],
+                    let secretBlock = Data(base64Encoded: secretBlockBase64),
+                    let dataB = parameters["SRP_B"] else { return eventLoop.makeFailedFuture(SotoCognitoError.unexpectedResult(reason: "AWS did not provide all the data required to do SRP authentication")) }
+
+                let srpUsername = parameters["USER_ID_FOR_SRP"] ?? username
+                let userPoolName = self.configuration.userPoolId.split(separator: "_")[1]
+                guard let B = BigNum(hex: dataB) else { return eventLoop.makeFailedFuture(SotoCognitoError.invalidPublicKey) }
+
+                // get key
+                guard let key = srp.getPasswordAuthenticationKey(username: "\(userPoolName)\(srpUsername)", password: password, B: B, salt: salt) else {
+                    return eventLoop.makeFailedFuture(SotoCognitoError.invalidPublicKey)
+                }
+
+                let dateFormatter = DateFormatter()
+                // cognito expects the dateformat to have the timezone as UTC
+                dateFormatter.dateFormat = "EEE MMM d HH:mm:ss 'UTC' yyyy"
+                dateFormatter.timeZone = TimeZone(identifier: "UTC")
+                let timestamp = dateFormatter.string(from: Date())
+
+                // construct claim
+                let claim = HMAC<SHA256>.authenticationCode(for:Data("\(userPoolName)\(srpUsername)".utf8) + secretBlock + Data(timestamp.utf8), using: SymmetricKey(data: key))
+
+                //print("claim \(claim.hexdigest())")
+                var authResponse : [String: String] = [
+                    "USERNAME":srpUsername,
+                    "PASSWORD_CLAIM_SECRET_BLOCK": secretBlockBase64,
+                    "PASSWORD_CLAIM_SIGNATURE": Data(claim).base64EncodedString(),
+                    "TIMESTAMP": timestamp
+                ]
+                authResponse["SECRET_HASH"] = self.secretHash(username: username)
+
+                return self.respondToChallenge(
+                    username: username,
+                    name: .passwordVerifier,
+                    responses: authResponse,
+                    session: challenge.session,
+                    requireAuthentication: false,
+                    context: context,
+                    on: eventLoop
+                )
         }
     }
 }
