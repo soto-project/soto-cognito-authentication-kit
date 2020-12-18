@@ -10,10 +10,10 @@ Amazon Cognito provides authentication, authorization, and user management for y
 First you need to create an `CognitoConfiguration` instance that stores all your configuration information and create your `CognitoAuthenticatable` instance
 ```
 let configuration = CognitoConfiguration(
-    userPoolId: String = "eu-west-1_userpoolid",
-    clientId: String = "23432clientId234234",
-    clientSecret: String = "1q9ln4m892j2cnsdapa0dalh9a3aakmpeugiaag8k3cacijlbkrp",
-    cognitoIDP: CognitoIdentityProvider = CognitoIdentityProvider(region: .euwest1)
+    userPoolId: "eu-west-1_userpoolid",
+    clientId: "23432clientId234234",
+    clientSecret: "1q9ln4m892j2secreta0dalh9a3aakmpeugiaag8k3cacijlbkrp",
+    cognitoIDP: CognitoIdentityProvider(region: .euwest1)
 )
 let authenticatable = CognitoAuthenticatable(configuration: configuration)
 ```
