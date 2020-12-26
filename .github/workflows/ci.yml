@@ -11,6 +11,7 @@ on:
     - main
     paths:
     - '**.swift'
+    - '.github/workflows/ci.yml'
   workflow_dispatch:
 
 env:
@@ -26,7 +27,17 @@ jobs:
       with:
         fetch-depth: 1
     - name: Test
-      run: swift test
+      run: swift test --enable-code-coverage --sanitize=thread
+    - name: Convert coverage files
+      run: |
+        xcrun llvm-cov export -format="lcov" \
+          .build/debug/soto-cognito-authentication-kitPackageTests.xctest/Contents/MacOs/soto-cognito-authentication-kitPackageTests \
+          -ignore-filename-regex="\/Tests\/" \
+          -instr-profile .build/debug/codecov/default.profdata > info.lcov
+    - name: Upload to codecov.io
+      uses: codecov/codecov-action@v1
+      with:
+        file: info.lcov
 
   linux:
     strategy:
@@ -43,7 +54,7 @@ jobs:
     - name: Install dependencies
       run: |
         apt-get update -qq
-        apt-get install -q -y tzdata zlib1g-dev
+        apt-get install -q -y tzdata zlib1g-dev curl
     - name: Test
       run: swift test --enable-test-discovery --enable-code-coverage --sanitize=thread
     - name: Convert coverage files
