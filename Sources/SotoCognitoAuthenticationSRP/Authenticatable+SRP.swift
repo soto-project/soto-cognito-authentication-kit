@@ -73,7 +73,7 @@ public extension CognitoAuthenticatable {
                     name: .passwordVerifier,
                     responses: authResponse,
                     session: challenge.session,
-                    requireAuthentication: false,
+                    requireAuthenticatedClient: false,
                     context: context,
                     on: eventLoop
                 )
