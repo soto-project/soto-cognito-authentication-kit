@@ -262,4 +262,38 @@ final class SotoCognitoAuthenticationKitTests: XCTestCase {
             XCTAssertEqual(result.username, testData.username)
         }
     }
+
+    func testAuthenticatedResponseCodable() throws {
+        do {
+            let authenticated = CognitoAuthenticateResponse.AuthenticatedResponse(
+                accessToken: "ACCESSTOKEN",
+                idToken: "IDTOKEN",
+                refreshToken: "REFRESHTOKEN",
+                expiresIn: nil
+            )
+            let response: CognitoAuthenticateResponse = .authenticated(authenticated)
+            let data = try JSONEncoder().encode(response)
+            let decoded = try JSONDecoder().decode(CognitoAuthenticateResponse.self, from: data)
+            if case .authenticated(let decodedAuthenticated) = decoded {
+                XCTAssertEqual(decodedAuthenticated.accessToken, authenticated.accessToken)
+                XCTAssertEqual(decodedAuthenticated.idToken, authenticated.idToken)
+                XCTAssertEqual(decodedAuthenticated.refreshToken, authenticated.refreshToken)
+            } else {
+                XCTFail()
+            }
+        }
+        do {
+            let challenged = CognitoAuthenticateResponse.ChallengedResponse(name: "NEW_PASSWORD_REQUIRED", parameters: ["USERNAME": "JohnDoe"], session: "SessionId")
+            let response: CognitoAuthenticateResponse = .challenged(challenged)
+            let data = try JSONEncoder().encode(response)
+            let decoded = try JSONDecoder().decode(CognitoAuthenticateResponse.self, from: data)
+            if case .challenged(let decodedChallenged) = decoded {
+                XCTAssertEqual(decodedChallenged.name, challenged.name)
+                XCTAssertEqual(decodedChallenged.parameters, challenged.parameters)
+                XCTAssertEqual(decodedChallenged.session, challenged.session)
+            } else {
+                XCTFail()
+            }
+        }
+    }
 }
