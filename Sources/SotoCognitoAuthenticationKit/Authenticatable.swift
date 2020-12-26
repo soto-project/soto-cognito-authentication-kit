@@ -539,7 +539,8 @@ public extension CognitoAuthenticatable {
         switch error {
         case let error as CognitoIdentityProviderErrorType where error == .notAuthorizedException:
             return SotoCognitoError.unauthorized(reason: error.message)
-
+        case let error as AWSClientError where error == .missingAuthenticationToken:
+            return SotoCognitoError.unauthorized(reason: error.message)
         default:
             return error
         }
