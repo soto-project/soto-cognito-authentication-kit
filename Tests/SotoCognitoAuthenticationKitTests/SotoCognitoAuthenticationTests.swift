@@ -263,6 +263,34 @@ final class SotoCognitoAuthenticationKitTests: XCTestCase {
         }
     }
 
+
+    func testRequireAuthenticatedClient() {
+        XCTAssertNil(Self.setUpFailure)
+        attempt {
+            let awsClient = AWSClient(credentialProvider: .empty, httpClientProvider: .shared(Self.awsClient.httpClient))
+            defer { XCTAssertNoThrow(try awsClient.syncShutdown()) }
+            let cognitoIdentityProvider = CognitoIdentityProvider(client: awsClient, region: Self.cognitoIDP.region)
+            let configuration = CognitoConfiguration(
+                userPoolId: Self.authenticatable.configuration.userPoolId,
+                clientId: Self.authenticatable.configuration.clientId,
+                clientSecret: Self.authenticatable.configuration.clientSecret,
+                cognitoIDP: cognitoIdentityProvider
+            )
+            let authenticatable = CognitoAuthenticatable(configuration: configuration)
+            let eventLoop = cognitoIdentityProvider.client.eventLoopGroup.next()
+            let testData = try TestData(#function, on: eventLoop)
+
+            XCTAssertThrowsError(try login(testData, authenticatable: authenticatable, requireAuthenticatedClient: true, on: eventLoop).wait()) { error in
+                switch error {
+                case SotoCognitoError.unauthorized:
+                    break
+                default:
+                    XCTFail()
+                }
+            }
+        }
+    }
+
     func testAuthenticatedResponseCodable() throws {
         do {
             let authenticated = CognitoAuthenticateResponse.AuthenticatedResponse(
@@ -293,6 +321,28 @@ final class SotoCognitoAuthenticationKitTests: XCTestCase {
                 XCTAssertEqual(decodedChallenged.session, challenged.session)
             } else {
                 XCTFail()
+            }
+        }
+    }
+
+    func testAuthenticateFail() {
+        XCTAssertNil(Self.setUpFailure)
+        attempt {
+            let eventLoop = Self.cognitoIDP.client.eventLoopGroup.next()
+            let testData = try TestData(#function, on: eventLoop)
+            let context = AWSCognitoContextTest()
+            XCTAssertThrowsError(try Self.authenticatable.authenticate(
+                username: testData.username,
+                password: testData.password+"!",
+                context: context,
+                on: eventLoop
+            ).wait()) { error in
+                switch error {
+                case SotoCognitoError.unauthorized:
+                    break
+                default:
+                    XCTFail()
+                }
             }
         }
     }
