@@ -369,7 +369,31 @@ public class CognitoAuthenticatable {
     ///     - on: Eventloop request should run on.
     /// - returns:
     ///     An authentication response. This can contain another challenge which the user has to fulfill before being allowed to login, or authentication access, id and refresh keys
-    public func respondToNewPasswordChallenge(username: String, password: String, session: String?, context: CognitoContextData, on eventLoop: EventLoop) -> EventLoopFuture<CognitoAuthenticateResponse> {
+    public func respondToNewPasswordChallenge(
+        username: String,
+        password: String,
+        session: String?,
+        requireAuthenticatedClient: Bool,
+        context: CognitoContextData,
+        on eventLoop: EventLoop
+    ) -> EventLoopFuture<CognitoAuthenticateResponse> {
+        return respondToChallenge(
+            username: username,
+            name: .newPasswordRequired,
+            responses: ["NEW_PASSWORD":password],
+            session: session,
+            requireAuthenticatedClient: requireAuthenticatedClient,
+            context: context,
+            on: eventLoop
+        )
+    }
+    public func respondToNewPasswordChallenge(
+        username: String,
+        password: String,
+        session: String?,
+        context: CognitoContextData,
+        on eventLoop: EventLoop
+    ) -> EventLoopFuture<CognitoAuthenticateResponse> {
         return respondToChallenge(
             username: username,
             name: .newPasswordRequired,
@@ -379,7 +403,7 @@ public class CognitoAuthenticatable {
             on: eventLoop
         )
     }
-    
+
     /// respond to MFA token challenge
     ///
     /// - parameters:
@@ -390,7 +414,31 @@ public class CognitoAuthenticatable {
     ///     - on: Eventloop request should run on.
     /// - returns:
     ///     An authentication response. This can contain another challenge which the user has to fulfill before being allowed to login, or authentication access, id and refresh keys
-    public func respondToMFAChallenge(username: String, token: String, session: String?, context: CognitoContextData, on eventLoop: EventLoop) -> EventLoopFuture<CognitoAuthenticateResponse> {
+    public func respondToMFAChallenge(
+        username: String,
+        token: String,
+        session: String?,
+        requireAuthenticatedClient: Bool,
+        context: CognitoContextData,
+        on eventLoop: EventLoop
+    ) -> EventLoopFuture<CognitoAuthenticateResponse> {
+        return respondToChallenge(
+            username: username,
+            name: .smsMfa,
+            responses: ["SMS_MFA_CODE":token],
+            session: session,
+            requireAuthenticatedClient: requireAuthenticatedClient,
+            context: context,
+            on: eventLoop
+        )
+    }
+    public func respondToMFAChallenge(
+        username: String,
+        token: String,
+        session: String?,
+        context: CognitoContextData,
+        on eventLoop: EventLoop
+    ) -> EventLoopFuture<CognitoAuthenticateResponse> {
         return respondToChallenge(
             username: username,
             name: .smsMfa,
@@ -400,7 +448,7 @@ public class CognitoAuthenticatable {
             on: eventLoop
         )
     }
-    
+
     /// update the users attributes
     /// - parameters:
     ///     - username: user name of user

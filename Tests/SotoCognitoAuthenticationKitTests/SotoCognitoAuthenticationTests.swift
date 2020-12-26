@@ -149,10 +149,9 @@ final class SotoCognitoAuthenticationKitTests: XCTestCase {
         ).flatMap { response in
             if case .challenged(let challenged) = response, let session = challenged.session {
                 if challenged.name == "NEW_PASSWORD_REQUIRED" {
-                    return authenticatable.respondToChallenge(
+                    return authenticatable.respondToNewPasswordChallenge(
                         username: testData.username,
-                        name: .newPasswordRequired,
-                        responses: ["NEW_PASSWORD": testData.password],
+                        password: testData.password,
                         session: session,
                         requireAuthenticatedClient: requireAuthenticatedClient,
                         context: context,
