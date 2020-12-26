@@ -30,7 +30,7 @@ jobs:
       run: |
         xcrun llvm-cov export -format="lcov" \
           .build/debug/soto-cognito-authentication-kitPackageTests.xctest/Contents/MacOs/soto-cognito-authentication-kitPackageTests \
-          -ignore-filename-regex="(.build|Tests)" \
+          -ignore-filename-regex="(\/\.build\/|\/Tests\/)" \
           -instr-profile .build/debug/codecov/default.profdata > info.lcov
     - name: Upload to codecov.io
       uses: codecov/codecov-action@v1
@@ -55,10 +55,9 @@ jobs:
       run: swift test --enable-test-discovery --enable-code-coverage --sanitize=thread
     - name: Convert coverage files
       run: |
-        ls .build/debug/soto-cognito-authentication-kitPackageTests.xctest/Contents/
         llvm-cov export -format="lcov" \
           .build/debug/soto-cognito-authentication-kitPackageTests.xctest \
-          -ignore-filename-regex="(.build|Tests)" \
+          -ignore-filename-regex="(\/\.build\/|\/Tests\/)" \
           -instr-profile .build/debug/codecov/default.profdata > info.lcov
     - name: Upload to codecov.io
       uses: codecov/codecov-action@v1
