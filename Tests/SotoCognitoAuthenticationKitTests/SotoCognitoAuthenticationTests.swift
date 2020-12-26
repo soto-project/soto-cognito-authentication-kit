@@ -38,9 +38,10 @@ final class SotoCognitoAuthenticationKitTests: XCTestCase {
     static var awsClient: AWSClient!
     static var cognitoIDP: CognitoIdentityProvider!
     static let userPoolName: String = "aws-cognito-authentication-tests"
-    static let userPoolClientName: String = "aws-cognito-authentication-tests"
+    static let userPoolClientName: String = UUID().uuidString
     static var authenticatable: CognitoAuthenticatable!
-    static var authenticatableUnauthenticated: CognitoAuthenticatable!
+    static var userPoolId: String!
+    static var clientId: String!
 
     static var setUpFailure: String? = nil
 
@@ -48,8 +49,6 @@ final class SotoCognitoAuthenticationKitTests: XCTestCase {
         awsClient = AWSClient(middlewares: Self.middlewares, httpClientProvider: .createNew)
         cognitoIDP = CognitoIdentityProvider(client: awsClient, region: .useast1)
         do {
-            let userPoolId: String
-            let clientId: String
             let clientSecret: String?
             // does userpool exist
             let listRequest = CognitoIdentityProvider.ListUserPoolsRequest(maxResults: 60)
@@ -77,7 +76,7 @@ final class SotoCognitoAuthenticationKitTests: XCTestCase {
                 // create userpool client
                 let createClientRequest = CognitoIdentityProvider.CreateUserPoolClientRequest(
                     clientName: userPoolClientName,
-                    explicitAuthFlows: [.adminNoSrpAuth],
+                    explicitAuthFlows: [.allowAdminUserPasswordAuth, .allowUserPasswordAuth, .allowRefreshTokenAuth],
                     generateSecret: true,
                     userPoolId: userPoolId)
                 let createClientResponse = try cognitoIDP.createUserPoolClient(createClientRequest).wait()
@@ -99,6 +98,9 @@ final class SotoCognitoAuthenticationKitTests: XCTestCase {
     }
 
     class override func tearDown() {
+        // delete client so we need to re-generate
+        let deleteClientRequest = CognitoIdentityProvider.DeleteUserPoolClientRequest(clientId: Self.clientId, userPoolId: Self.userPoolId)
+        XCTAssertNoThrow(try cognitoIDP.deleteUserPoolClient(deleteClientRequest).wait())
         XCTAssertNoThrow(try awsClient.syncShutdown())
     }
 
@@ -136,24 +138,30 @@ final class SotoCognitoAuthenticationKitTests: XCTestCase {
         }
     }
 
-    func login(_ testData: TestData, on eventLoop: EventLoop) -> EventLoopFuture<CognitoAuthenticateResponse> {
+    func login(_ testData: TestData, authenticatable: CognitoAuthenticatable, requireAuthenticatedClient: Bool = true, on eventLoop: EventLoop) -> EventLoopFuture<CognitoAuthenticateResponse> {
         let context = AWSCognitoContextTest()
-        return Self.authenticatable.authenticate(username: testData.username, password: testData.password, context: context, on: eventLoop)
-            .flatMap { response in
-                if case .challenged(let challenged) = response, let session = challenged.session {
-                    if challenged.name == "NEW_PASSWORD_REQUIRED" {
-                        return Self.authenticatable.respondToChallenge(
-                            username: testData.username,
-                            name: .newPasswordRequired,
-                            responses: ["NEW_PASSWORD": testData.password],
-                            session: session,
-                            context: context,
-                            on: eventLoop)
-                    } else {
-                        return eventLoop.makeFailedFuture(AWSCognitoTestError.unrecognisedChallenge)
-                    }
+        return authenticatable.authenticate(
+            username: testData.username,
+            password: testData.password,
+            requireAuthenticatedClient: requireAuthenticatedClient,
+            context: context,
+            on: eventLoop
+        ).flatMap { response in
+            if case .challenged(let challenged) = response, let session = challenged.session {
+                if challenged.name == "NEW_PASSWORD_REQUIRED" {
+                    return authenticatable.respondToChallenge(
+                        username: testData.username,
+                        name: .newPasswordRequired,
+                        responses: ["NEW_PASSWORD": testData.password],
+                        session: session,
+                        requireAuthenticatedClient: requireAuthenticatedClient,
+                        context: context,
+                        on: eventLoop)
+                } else {
+                    return eventLoop.makeFailedFuture(AWSCognitoTestError.unrecognisedChallenge)
                 }
-                return eventLoop.makeSucceededFuture(response)
+            }
+            return eventLoop.makeSucceededFuture(response)
         }
     }
 
@@ -163,7 +171,7 @@ final class SotoCognitoAuthenticationKitTests: XCTestCase {
             let eventLoop = Self.cognitoIDP.client.eventLoopGroup.next()
             let testData = try TestData(#function, on: eventLoop)
 
-            let result = try login(testData, on: eventLoop)
+            let result = try login(testData, authenticatable: Self.authenticatable, on: eventLoop)
                 .flatMap { (response)->EventLoopFuture<CognitoAccessToken> in
                     guard case .authenticated(let authenticated) = response else { return eventLoop.makeFailedFuture(AWSCognitoTestError.notAuthenticated) }
                     guard let accessToken = authenticated.accessToken else { return eventLoop.makeFailedFuture(AWSCognitoTestError.missingToken) }
@@ -193,7 +201,7 @@ final class SotoCognitoAuthenticationKitTests: XCTestCase {
             let attributes = ["given_name": "John", "family_name": "Smith", "email": "johnsmith@email.com"]
             let testData = try TestData(#function, attributes: attributes, on: eventLoop)
 
-            let result = try login(testData, on: eventLoop)
+            let result = try login(testData, authenticatable: Self.authenticatable, on: eventLoop)
                 .flatMap { (response)->EventLoopFuture<User> in
                     guard case .authenticated(let authenticated) = response else { return eventLoop.makeFailedFuture(AWSCognitoTestError.notAuthenticated) }
                     guard let idToken = authenticated.idToken else { return eventLoop.makeFailedFuture(AWSCognitoTestError.missingToken) }
@@ -212,7 +220,7 @@ final class SotoCognitoAuthenticationKitTests: XCTestCase {
             let eventLoop = Self.cognitoIDP.client.eventLoopGroup.next()
             let testData = try TestData(#function, on: eventLoop)
 
-            _ = try login(testData, on: eventLoop)
+            _ = try login(testData, authenticatable: Self.authenticatable, on: eventLoop)
                 .flatMap { (response)->EventLoopFuture<CognitoAuthenticateResponse> in
                     guard case .authenticated(let authenticated) = response else { return eventLoop.makeFailedFuture(AWSCognitoTestError.notAuthenticated) }
                     guard let refreshToken = authenticated.refreshToken else { return eventLoop.makeFailedFuture(AWSCognitoTestError.missingToken) }
@@ -229,10 +237,30 @@ final class SotoCognitoAuthenticationKitTests: XCTestCase {
         }
     }
 
+    func testUnauthenticatdClient() {
+        XCTAssertNil(Self.setUpFailure)
+        attempt {
+            let awsClient = AWSClient(credentialProvider: .empty, httpClientProvider: .shared(Self.awsClient.httpClient))
+            defer { XCTAssertNoThrow(try awsClient.syncShutdown()) }
+            let cognitoIdentityProvider = CognitoIdentityProvider(client: awsClient, region: Self.cognitoIDP.region)
+            let configuration = CognitoConfiguration(
+                userPoolId: Self.authenticatable.configuration.userPoolId,
+                clientId: Self.authenticatable.configuration.clientId,
+                clientSecret: Self.authenticatable.configuration.clientSecret,
+                cognitoIDP: cognitoIdentityProvider
+            )
+            let authenticatable = CognitoAuthenticatable(configuration: configuration)
+            let eventLoop = cognitoIdentityProvider.client.eventLoopGroup.next()
+            let testData = try TestData(#function, on: eventLoop)
 
-    static var allTests = [
-        ("testAccessToken", testAccessToken),
-        ("testIdToken", testIdToken),
-        ("testRefreshToken", testRefreshToken),
-    ]
+            let result = try login(testData, authenticatable: authenticatable, requireAuthenticatedClient: false, on: eventLoop)
+                .flatMap { (response)->EventLoopFuture<CognitoAccessToken> in
+                    guard case .authenticated(let authenticated) = response else { return eventLoop.makeFailedFuture(AWSCognitoTestError.notAuthenticated) }
+                    guard let accessToken = authenticated.accessToken else { return eventLoop.makeFailedFuture(AWSCognitoTestError.missingToken) }
+
+                    return authenticatable.authenticate(accessToken: accessToken, on: eventLoop)
+            }.wait()
+            XCTAssertEqual(result.username, testData.username)
+        }
+    }
 }

@@ -37,16 +37,15 @@ final class SotoCognitoAuthenticationKitTests: XCTestCase {
     static let awsClient = AWSClient(middlewares: middlewares, httpClientProvider: .createNew)
     static let cognitoIDP = CognitoIdentityProvider(client: awsClient, region: .useast1)
     static let userPoolName: String = "aws-cognito-authentication-tests"
-    static let userPoolClientName: String = "aws-cognito-authentication-tests"
+    static let userPoolClientName: String = UUID().uuidString
     static var authenticatable: CognitoAuthenticatable!
-    static var authenticatableUnauthenticated: CognitoAuthenticatable!
+    static var userPoolId: String!
+    static var clientId: String!
 
     static var setUpFailure: String? = nil
 
     class override func setUp() {
         do {
-            let userPoolId: String
-            let clientId: String
             let clientSecret: String?
             // does userpool exist
             let listRequest = CognitoIdentityProvider.ListUserPoolsRequest(maxResults: 60)
@@ -74,7 +73,7 @@ final class SotoCognitoAuthenticationKitTests: XCTestCase {
                 // create userpool client
                 let createClientRequest = CognitoIdentityProvider.CreateUserPoolClientRequest(
                     clientName: userPoolClientName,
-                    explicitAuthFlows: [.adminNoSrpAuth],
+                    explicitAuthFlows: [.allowUserSrpAuth, .allowRefreshTokenAuth],
                     generateSecret: true,
                     userPoolId: userPoolId)
                 let createClientResponse = try cognitoIDP.createUserPoolClient(createClientRequest).wait()
@@ -93,6 +92,13 @@ final class SotoCognitoAuthenticationKitTests: XCTestCase {
         } catch {
             setUpFailure = error.localizedDescription
         }
+    }
+
+    class override func tearDown() {
+        // delete client so we need to re-generate
+        let deleteClientRequest = CognitoIdentityProvider.DeleteUserPoolClientRequest(clientId: Self.clientId, userPoolId: Self.userPoolId)
+        XCTAssertNoThrow(try cognitoIDP.deleteUserPoolClient(deleteClientRequest).wait())
+        XCTAssertNoThrow(try awsClient.syncShutdown())
     }
 
     class TestData {
@@ -217,12 +223,4 @@ final class SotoCognitoAuthenticationKitTests: XCTestCase {
         let sha256Result = SRP<SHA256>.HKDF(seed: password, info: info, salt: salt, count: 16)
         XCTAssertEqual(sha256Result.hexDigest().uppercased(), "398F838A6019FC27D99D90009A1FE0BF")
     }
-
-
-    static var allTests = [
-        ("testAuthenticateSRP", testAuthenticateSRP),
-        ("testSRPAValue", testSRPAValue),
-        ("testSRPKey", testSRPKey),
-        ("testHKDF", testHKDF),
-    ]
 }

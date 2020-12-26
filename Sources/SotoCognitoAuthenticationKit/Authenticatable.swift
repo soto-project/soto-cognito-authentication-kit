@@ -204,13 +204,13 @@ public class CognitoAuthenticatable {
         context: CognitoContextData,
         on eventLoop: EventLoop
     ) -> EventLoopFuture<CognitoAuthenticateResponse> {
+        let authFlow: CognitoIdentityProvider.AuthFlowType = requireAuthenticatedClient ? .adminUserPasswordAuth : .userPasswordAuth
         var authParameters : [String: String] = [
             "USERNAME":username,
             "PASSWORD": password
         ]
         authParameters["SECRET_HASH"] = secretHash(username: username)
-
-        return self.initiateAuthRequest(authFlow: .adminUserPasswordAuth,
+        return self.initiateAuthRequest(authFlow: authFlow,
                                         authParameters: authParameters,
                                         requireAuthenticatedClient: requireAuthenticatedClient,
                                         clientMetadata: clientMetadata,
@@ -275,7 +275,7 @@ public class CognitoAuthenticatable {
         name: CognitoChallengeName,
         responses: [String: String],
         session: String?,
-        requireAuthentication: Bool = true,
+        requireAuthenticatedClient: Bool = true,
         clientMetadata: [String: String]? = nil,
         context: CognitoContextData,
         on eventLoop: EventLoop
@@ -286,7 +286,7 @@ public class CognitoAuthenticatable {
 
         let respondFuture: EventLoopFuture<CognitoIdentityProvider.AdminRespondToAuthChallengeResponse>
         // If authentication required that use admin version of RespondToAuthChallenge
-        if requireAuthentication {
+        if requireAuthenticatedClient {
             guard let context = context.contextData else { return eventLoop.makeFailedFuture(SotoCognitoError.failedToCreateContextData) }
             let request = CognitoIdentityProvider.AdminRespondToAuthChallengeRequest(challengeName: name,
                                                                                      challengeResponses: challengeResponses,
@@ -323,7 +323,7 @@ public class CognitoAuthenticatable {
                                 session: response.session)
                             )
                         }
-                        throw SotoCognitoError.unexpectedResult(reason: "Authenticated response does not authentication tokens or challenge information") // should have either an authenticated result or a challenge
+                        throw SotoCognitoError.unexpectedResult(reason: "Authenticated response is not authentication tokens or challenge information") // should have either an authenticated result or a challenge
                 }
 
                 return .authenticated(.init(
@@ -334,6 +334,29 @@ public class CognitoAuthenticatable {
                 ))
         }
         .hop(to: eventLoop)
+    }
+
+    @available(*, deprecated, message: "requireAuthentication has been renamed to requireAuthenticatedClient")
+    public func respondToChallenge(
+        username: String,
+        name: CognitoChallengeName,
+        responses: [String: String],
+        session: String?,
+        requireAuthentication: Bool,
+        clientMetadata: [String: String]? = nil,
+        context: CognitoContextData,
+        on eventLoop: EventLoop
+    ) -> EventLoopFuture<CognitoAuthenticateResponse> {
+        return respondToChallenge(
+            username: username,
+            name: name,
+            responses: responses,
+            session: session,
+            requireAuthenticatedClient: requireAuthentication,
+            clientMetadata: clientMetadata,
+            context: context,
+            on: eventLoop
+        )
     }
 
     /// respond to new password authentication challenge
@@ -347,7 +370,14 @@ public class CognitoAuthenticatable {
     /// - returns:
     ///     An authentication response. This can contain another challenge which the user has to fulfill before being allowed to login, or authentication access, id and refresh keys
     public func respondToNewPasswordChallenge(username: String, password: String, session: String?, context: CognitoContextData, on eventLoop: EventLoop) -> EventLoopFuture<CognitoAuthenticateResponse> {
-        return respondToChallenge(username: username, name: .newPasswordRequired, responses: ["NEW_PASSWORD":password], session: session, context: context, on: eventLoop)
+        return respondToChallenge(
+            username: username,
+            name: .newPasswordRequired,
+            responses: ["NEW_PASSWORD":password],
+            session: session,
+            context: context,
+            on: eventLoop
+        )
     }
     
     /// respond to MFA token challenge
@@ -361,7 +391,14 @@ public class CognitoAuthenticatable {
     /// - returns:
     ///     An authentication response. This can contain another challenge which the user has to fulfill before being allowed to login, or authentication access, id and refresh keys
     public func respondToMFAChallenge(username: String, token: String, session: String?, context: CognitoContextData, on eventLoop: EventLoop) -> EventLoopFuture<CognitoAuthenticateResponse> {
-        return respondToChallenge(username: username, name: .smsMfa, responses: ["SMS_MFA_CODE":token], session: session, context: context, on: eventLoop)
+        return respondToChallenge(
+            username: username,
+            name: .smsMfa,
+            responses: ["SMS_MFA_CODE":token],
+            session: session,
+            context: context,
+            on: eventLoop
+        )
     }
     
     /// update the users attributes
