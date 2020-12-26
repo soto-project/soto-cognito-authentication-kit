@@ -9,15 +9,17 @@ Amazon Cognito provides authentication, authorization, and user management for y
 ## Configuration
 First you need to create an `CognitoConfiguration` instance that stores all your configuration information and create your `CognitoAuthenticatable` instance
 ```
+let awsClient = AWSClient(httpClientProvider: .createNew)
+let cognitoIdentityProvider = CognitoIdentityProvider(client: awsClient, region: .euwest1)
 let configuration = CognitoConfiguration(
     userPoolId: "eu-west-1_userpoolid",
     clientId: "23432clientId234234",
     clientSecret: "1q9ln4m892j2secreta0dalh9a3aakmpeugiaag8k3cacijlbkrp",
-    cognitoIDP: CognitoIdentityProvider(region: .euwest1)
+    cognitoIDP: cognitoIdentityProvider
 )
 let authenticatable = CognitoAuthenticatable(configuration: configuration)
 ```
-The values `userPoolId`, `clientId` and `clientSecret` can all be find on the Amazon Cognito user pool console. `cognitoIDP` is the client used to communicate with Amazon Web Services. It is provided by the [Soto](https://github.com/soto-project/soto.git) library. Some functions will need you to provide AWS credentials to your `CognitoIdentityProvider`. You can find more details about providing credentials [here](https://soto.codes/user-guides/credential-providers.html). `region` is the AWS server region your user pool is in.
+The values `userPoolId`, `clientId` and `clientSecret` can all be find on the Amazon Cognito user pool console. `AWSClient` is the client used to communicate with Amazon Web Services and `CognitoIdentityProvider` provides the Cognito Identity Provider Userpool API. Both objects are provided by the [Soto](https://github.com/soto-project/soto.git) library. It is worthwhile reading up a little about these [here](https://soto.codes/user-guides/awsclient.html) and [here](https://soto.codes/user-guides/service-objects.html) before continuing. Some functions will need you to provide AWS credentials to your `AWSClient`. You can find more details about providing credentials [here](https://soto.codes/user-guides/credential-providers.html). `region` is the AWS server region your user pool is in.
 
 ## Creating a AWS Cognito user
 Assuming we have the `CognitoAuthenticatable` instance from above the following can be used to create a user. This function requires a `CognitoIdentityProvider` setup with AWS credentials.
@@ -38,13 +40,13 @@ let response = authenticatable.authenticate(
     password: password,
     requireAuthenticatedClient: true,
     context: request,
-    on: request.eventLoop)
-    .flatMap { response in
-        if case .authenticated(let authenticated) = response {
-            let accessToken = authenticated.accessToken
-            let idToken = authenticated.idToken
-            let refreshToken = authenticated.refreshToken
-        ...
+    on: request.eventLoop
+).flatMap { response in
+    if case .authenticated(let authenticated) = response {
+        let accessToken = authenticated.accessToken
+        let idToken = authenticated.idToken
+        let refreshToken = authenticated.refreshToken
+    ...
 }
 ```
 The access token is used just to indicate a user has been granted access. It contains verification information, the username and a subject uuid which can be used to identify the user if you don't want to use the username. The token is valid for 60 minutes. The idToken contains claims about the identity of the user. It should contain all the attributes attached to the user. Again this token is only valid for 60 minutes. If you receive a `challenged` case then you have a login challenge and must respond to it before receiving authentication tokens. See [below](#responding-to-authentication-challenges). 
@@ -96,11 +98,11 @@ let response = authenticatable.refresh(
     username: username, 
     refreshToken: refreshToken, 
     context: request,
-    on: request.eventLoop)
-    .flatMap { response in
-        let accessToken = response.authenticated?.accessToken
-        let idToken = response.authenticated?.idToken
-        ...
+    on: request.eventLoop
+).flatMap { response in
+    let accessToken = response.authenticated?.accessToken
+    let idToken = response.authenticated?.idToken
+    ...
 }
 ```
 
@@ -115,12 +117,12 @@ let response = authenticatable.respondToChallenge(
     responses: challengeResponse, 
     session: session, 
     context: request,
-    on: request.eventLoop)
-    .flatMap { response in
-        let accessToken = response.authenticated?.accessToken
-        let idToken = response.authenticated?.idToken
-        let refreshToken = response.authenticated?.refreshToken
-        ...
+    on: request.eventLoop
+).flatMap { response in
+    let accessToken = response.authenticated?.accessToken
+    let idToken = response.authenticated?.idToken
+    let refreshToken = response.authenticated?.refreshToken
+    ...
 }
 ```
 The `name` parameter is an enum containing all challenges. The `responses` parameter is a dictionary of inputs to the challenge. The `session` parameter was included in the challenge returned to you by the authentication request. If the challenge is successful you will get `response.authenticated` as a response. If another challenge is required then you will get details of that in `response.challenged`. There are custom versions of the `respondToChallenge` function for new password: `respondToNewPasswordChallenge` and for Multi Factor Authentication: `respondToMFAChallenge`.
@@ -138,10 +140,11 @@ Soto Cognito Authentication can be used to interface with Amazon Cognito Federat
 ## Configuration
 First you need to create an `CognitoIdentityConfiguration` instance that stores all your configuration information for interfacing with Amazon Cognito Federated Identities and a `CognitoIdentifiable` instance. 
 ```
+let cognitoIdentity = CognitoIdentity(client: awsClient, region: .euwest1)
 let configuration = CognitoIdentityConfiguration(
-    identityPoolId: String = "eu-west-1_identitypoolid"
-    identityProvider: String = "provider"
-    cognitoIdentity: CognitoIdentity = CognitoIdentity(region: .euwest1)
+    identityPoolId: "eu-west-1_identitypoolid"
+    identityProvider: "provider"
+    cognitoIdentity: cognitoIdentity
 )
 let identifiable = CognitoIdentifiable(configuration: configuration)
 ```
