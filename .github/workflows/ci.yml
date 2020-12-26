@@ -24,15 +24,13 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v2
-      with:
-        fetch-depth: 1
     - name: Test
       run: swift test --enable-code-coverage --sanitize=thread
     - name: Convert coverage files
       run: |
         xcrun llvm-cov export -format="lcov" \
           .build/debug/soto-cognito-authentication-kitPackageTests.xctest/Contents/MacOs/soto-cognito-authentication-kitPackageTests \
-          -ignore-filename-regex="\/Tests\/" \
+          -ignore-filename-regex="(\/\.build\/|\/Tests\/)" \
           -instr-profile .build/debug/codecov/default.profdata > info.lcov
     - name: Upload to codecov.io
       uses: codecov/codecov-action@v1
@@ -49,8 +47,6 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v2
-      with:
-        fetch-depth: 1
     - name: Install dependencies
       run: |
         apt-get update -qq
@@ -61,7 +57,7 @@ jobs:
       run: |
         llvm-cov export -format="lcov" \
           .build/debug/soto-cognito-authentication-kitPackageTests.xctest \
-          -ignore-filename-regex="\/Tests\/" \
+          -ignore-filename-regex="(\/\.build\/|\/Tests\/)" \
           -instr-profile .build/debug/codecov/default.profdata > info.lcov
     - name: Upload to codecov.io
       uses: codecov/codecov-action@v1
