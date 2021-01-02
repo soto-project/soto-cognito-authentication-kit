@@ -457,12 +457,55 @@ public class CognitoAuthenticatable {
     public func updateUserAttributes(username: String, attributes: [String: String], on eventLoop: EventLoop) -> EventLoopFuture<Void> {
         let attributes = attributes.map { CognitoIdentityProvider.AttributeType(name: $0.key, value:  $0.value) }
         let request = CognitoIdentityProvider.AdminUpdateUserAttributesRequest(userAttributes: attributes, username: username, userPoolId: configuration.userPoolId)
-        return configuration.cognitoIDP.adminUpdateUserAttributes(request)
+        return configuration.cognitoIDP.adminUpdateUserAttributes(request, on: eventLoop)
             .flatMapErrorThrowing { error in
                 throw self.translateError(error: error)
             }
         .map { _ in return }
-        .hop(to: eventLoop)
+    }
+
+    /// Start forgot password flow. An email/sms will be sent to the user with a reset code
+    /// - Parameters:
+    ///   - username: user name of user
+    ///   - clientMetadata: A map of custom key-value pairs that you can provide as input for AWS Lambda custom workflows
+    ///   - eventLoop: Event loop request is running on.
+    public func forgotPassword(
+        username: String,
+        clientMetadata: [String: String]? = nil,
+        on eventLoop: EventLoop
+    ) -> EventLoopFuture<Void> {
+        let request = CognitoIdentityProvider.ForgotPasswordRequest(
+            clientId: configuration.clientId,
+            clientMetadata: clientMetadata,
+            secretHash: self.secretHash(username: username),
+            username: username
+        )
+        return configuration.cognitoIDP.forgotPassword(request, on: eventLoop).map { _ in }
+    }
+
+    /// Confirm new password in forgot password flow
+    /// - Parameters:
+    ///   - username: user name of user
+    ///   - newPassword: new password
+    ///   - confirmationCode: confirmation code sent to user
+    ///   - clientMetadata: A map of custom key-value pairs that you can provide as input for AWS Lambda custom workflows
+    ///   - eventLoop: Event loop request is running on.
+    public func confirmForgotPassword(
+        username: String,
+        newPassword: String,
+        confirmationCode: String,
+        clientMetadata: [String: String]? = nil,
+        on eventLoop: EventLoop
+    ) -> EventLoopFuture<Void> {
+        let request = CognitoIdentityProvider.ConfirmForgotPasswordRequest(
+            clientId: configuration.clientId,
+            clientMetadata: clientMetadata,
+            confirmationCode: confirmationCode,
+            password: newPassword,
+            secretHash: self.secretHash(username: username),
+            username: username
+        )
+        return configuration.cognitoIDP.confirmForgotPassword(request, on: eventLoop).map { _ in }
     }
 }
 
