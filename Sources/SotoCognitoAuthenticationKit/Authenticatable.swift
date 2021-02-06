@@ -385,7 +385,7 @@ public class CognitoAuthenticatable {
         username: String,
         password: String,
         session: String?,
-        requireAuthenticatedClient: Bool,
+        requireAuthenticatedClient: Bool = true,
         context: CognitoContextData? = nil,
         on eventLoop: EventLoop? = nil
     ) -> EventLoopFuture<CognitoAuthenticateResponse> {
@@ -395,22 +395,6 @@ public class CognitoAuthenticatable {
             responses: ["NEW_PASSWORD":password],
             session: session,
             requireAuthenticatedClient: requireAuthenticatedClient,
-            context: context,
-            on: eventLoop
-        )
-    }
-    public func respondToNewPasswordChallenge(
-        username: String,
-        password: String,
-        session: String?,
-        context: CognitoContextData? = nil,
-        on eventLoop: EventLoop? = nil
-    ) -> EventLoopFuture<CognitoAuthenticateResponse> {
-        return respondToChallenge(
-            username: username,
-            name: .newPasswordRequired,
-            responses: ["NEW_PASSWORD":password],
-            session: session,
             context: context,
             on: eventLoop
         )
@@ -430,7 +414,7 @@ public class CognitoAuthenticatable {
         username: String,
         token: String,
         session: String?,
-        requireAuthenticatedClient: Bool,
+        requireAuthenticatedClient: Bool = true,
         context: CognitoContextData? = nil,
         on eventLoop: EventLoop? = nil
     ) -> EventLoopFuture<CognitoAuthenticateResponse> {
@@ -440,22 +424,6 @@ public class CognitoAuthenticatable {
             responses: ["SMS_MFA_CODE":token],
             session: session,
             requireAuthenticatedClient: requireAuthenticatedClient,
-            context: context,
-            on: eventLoop
-        )
-    }
-    public func respondToMFAChallenge(
-        username: String,
-        token: String,
-        session: String?,
-        context: CognitoContextData? = nil,
-        on eventLoop: EventLoop? = nil
-    ) -> EventLoopFuture<CognitoAuthenticateResponse> {
-        return respondToChallenge(
-            username: username,
-            name: .smsMfa,
-            responses: ["SMS_MFA_CODE":token],
-            session: session,
             context: context,
             on: eventLoop
         )
