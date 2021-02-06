@@ -96,8 +96,9 @@ public class CognitoAuthenticatable {
         password: String,
         attributes: [String:String],
         clientMetadata: [String: String]? = nil,
-        on eventLoop: EventLoop
+        on eventLoop: EventLoop? = nil
     ) -> EventLoopFuture<CognitoIdentityProvider.SignUpResponse> {
+        let eventLoop = eventLoop ?? configuration.cognitoIDP.eventLoopGroup.next()
         let userAttributes = attributes.map { return CognitoIdentityProvider.AttributeType(name: $0.key, value: $0.value) }
         let request = CognitoIdentityProvider.SignUpRequest(
             clientId: self.configuration.clientId,
@@ -123,7 +124,13 @@ public class CognitoAuthenticatable {
     ///     - on: Event loop request is running on.
     /// - returns:
     ///     Empty EventLoopFuture
-    public func confirmSignUp(username: String, confirmationCode: String, clientMetadata: [String: String]? = nil, on eventLoop: EventLoop) -> EventLoopFuture<Void> {
+    public func confirmSignUp(
+        username: String,
+        confirmationCode: String,
+        clientMetadata: [String: String]? = nil,
+        on eventLoop: EventLoop? = nil
+    ) -> EventLoopFuture<Void> {
+        let eventLoop = eventLoop ?? configuration.cognitoIDP.eventLoopGroup.next()
         let request = CognitoIdentityProvider.ConfirmSignUpRequest(
             clientId: self.configuration.clientId,
             clientMetadata: clientMetadata,
@@ -159,8 +166,9 @@ public class CognitoAuthenticatable {
         temporaryPassword: String? = nil,
         messageAction: CognitoIdentityProvider.MessageActionType? = nil,
         clientMetadata: [String: String]? = nil,
-        on eventLoop: EventLoop
+        on eventLoop: EventLoop? = nil
     ) -> EventLoopFuture<CognitoCreateUserResponse> {
+        let eventLoop = eventLoop ?? configuration.cognitoIDP.eventLoopGroup.next()
         let userAttributes = attributes.map { return CognitoIdentityProvider.AttributeType(name: $0.key, value: $0.value) }
         let request = CognitoIdentityProvider.AdminCreateUserRequest(
             clientMetadata: clientMetadata,
@@ -201,9 +209,10 @@ public class CognitoAuthenticatable {
         password: String,
         requireAuthenticatedClient: Bool = true,
         clientMetadata: [String: String]? = nil,
-        context: CognitoContextData,
-        on eventLoop: EventLoop
+        context: CognitoContextData? = nil,
+        on eventLoop: EventLoop? = nil
     ) -> EventLoopFuture<CognitoAuthenticateResponse> {
+        let eventLoop = eventLoop ?? configuration.cognitoIDP.eventLoopGroup.next()
         let authFlow: CognitoIdentityProvider.AuthFlowType = requireAuthenticatedClient ? .adminUserPasswordAuth : .userPasswordAuth
         var authParameters : [String: String] = [
             "USERNAME":username,
@@ -235,9 +244,10 @@ public class CognitoAuthenticatable {
         refreshToken: String,
         requireAuthenticatedClient: Bool = true,
         clientMetadata: [String: String]? = nil,
-        context: CognitoContextData,
-        on eventLoop: EventLoop
+        context: CognitoContextData? = nil,
+        on eventLoop: EventLoop? = nil
     ) -> EventLoopFuture<CognitoAuthenticateResponse> {
+        let eventLoop = eventLoop ?? configuration.cognitoIDP.eventLoopGroup.next()
         var authParameters : [String: String] = [
             "USERNAME":username,
             "REFRESH_TOKEN":refreshToken
@@ -277,9 +287,10 @@ public class CognitoAuthenticatable {
         session: String?,
         requireAuthenticatedClient: Bool = true,
         clientMetadata: [String: String]? = nil,
-        context: CognitoContextData,
-        on eventLoop: EventLoop
+        context: CognitoContextData? = nil,
+        on eventLoop: EventLoop? = nil
     ) -> EventLoopFuture<CognitoAuthenticateResponse> {
+        let eventLoop = eventLoop ?? configuration.cognitoIDP.eventLoopGroup.next()
         var challengeResponses = responses
         challengeResponses["USERNAME"] = username
         challengeResponses["SECRET_HASH"] = secretHash(username: username)
@@ -287,7 +298,7 @@ public class CognitoAuthenticatable {
         let respondFuture: EventLoopFuture<CognitoIdentityProvider.AdminRespondToAuthChallengeResponse>
         // If authentication required that use admin version of RespondToAuthChallenge
         if requireAuthenticatedClient {
-            guard let context = context.contextData else { return eventLoop.makeFailedFuture(SotoCognitoError.failedToCreateContextData) }
+            let context = context?.contextData
             let request = CognitoIdentityProvider.AdminRespondToAuthChallengeRequest(challengeName: name,
                                                                                      challengeResponses: challengeResponses,
                                                                                      clientId: self.configuration.clientId,
@@ -344,9 +355,10 @@ public class CognitoAuthenticatable {
         session: String?,
         requireAuthentication: Bool,
         clientMetadata: [String: String]? = nil,
-        context: CognitoContextData,
-        on eventLoop: EventLoop
+        context: CognitoContextData? = nil,
+        on eventLoop: EventLoop? = nil
     ) -> EventLoopFuture<CognitoAuthenticateResponse> {
+        let eventLoop = eventLoop ?? configuration.cognitoIDP.eventLoopGroup.next()
         return respondToChallenge(
             username: username,
             name: name,
@@ -374,8 +386,8 @@ public class CognitoAuthenticatable {
         password: String,
         session: String?,
         requireAuthenticatedClient: Bool,
-        context: CognitoContextData,
-        on eventLoop: EventLoop
+        context: CognitoContextData? = nil,
+        on eventLoop: EventLoop? = nil
     ) -> EventLoopFuture<CognitoAuthenticateResponse> {
         return respondToChallenge(
             username: username,
@@ -391,8 +403,8 @@ public class CognitoAuthenticatable {
         username: String,
         password: String,
         session: String?,
-        context: CognitoContextData,
-        on eventLoop: EventLoop
+        context: CognitoContextData? = nil,
+        on eventLoop: EventLoop? = nil
     ) -> EventLoopFuture<CognitoAuthenticateResponse> {
         return respondToChallenge(
             username: username,
@@ -419,8 +431,8 @@ public class CognitoAuthenticatable {
         token: String,
         session: String?,
         requireAuthenticatedClient: Bool,
-        context: CognitoContextData,
-        on eventLoop: EventLoop
+        context: CognitoContextData? = nil,
+        on eventLoop: EventLoop? = nil
     ) -> EventLoopFuture<CognitoAuthenticateResponse> {
         return respondToChallenge(
             username: username,
@@ -436,8 +448,8 @@ public class CognitoAuthenticatable {
         username: String,
         token: String,
         session: String?,
-        context: CognitoContextData,
-        on eventLoop: EventLoop
+        context: CognitoContextData? = nil,
+        on eventLoop: EventLoop? = nil
     ) -> EventLoopFuture<CognitoAuthenticateResponse> {
         return respondToChallenge(
             username: username,
@@ -454,7 +466,12 @@ public class CognitoAuthenticatable {
     ///     - username: user name of user
     ///     - attributes: list of updated attributes for user
     ///     - on: Event loop request is running on.
-    public func updateUserAttributes(username: String, attributes: [String: String], on eventLoop: EventLoop) -> EventLoopFuture<Void> {
+    public func updateUserAttributes(
+        username: String,
+        attributes: [String: String],
+        on eventLoop: EventLoop? = nil
+    ) -> EventLoopFuture<Void> {
+        let eventLoop = eventLoop ?? configuration.cognitoIDP.eventLoopGroup.next()
         let attributes = attributes.map { CognitoIdentityProvider.AttributeType(name: $0.key, value:  $0.value) }
         let request = CognitoIdentityProvider.AdminUpdateUserAttributesRequest(userAttributes: attributes, username: username, userPoolId: configuration.userPoolId)
         return configuration.cognitoIDP.adminUpdateUserAttributes(request, on: eventLoop)
@@ -472,8 +489,9 @@ public class CognitoAuthenticatable {
     public func forgotPassword(
         username: String,
         clientMetadata: [String: String]? = nil,
-        on eventLoop: EventLoop
+        on eventLoop: EventLoop? = nil
     ) -> EventLoopFuture<Void> {
+        let eventLoop = eventLoop ?? configuration.cognitoIDP.eventLoopGroup.next()
         let request = CognitoIdentityProvider.ForgotPasswordRequest(
             clientId: configuration.clientId,
             clientMetadata: clientMetadata,
@@ -495,8 +513,9 @@ public class CognitoAuthenticatable {
         newPassword: String,
         confirmationCode: String,
         clientMetadata: [String: String]? = nil,
-        on eventLoop: EventLoop
+        on eventLoop: EventLoop? = nil
     ) -> EventLoopFuture<Void> {
+        let eventLoop = eventLoop ?? configuration.cognitoIDP.eventLoopGroup.next()
         let request = CognitoIdentityProvider.ConfirmForgotPasswordRequest(
             clientId: configuration.clientId,
             clientMetadata: clientMetadata,
@@ -524,12 +543,12 @@ public extension CognitoAuthenticatable {
         authParameters: [String: String],
         requireAuthenticatedClient: Bool,
         clientMetadata: [String: String]? = nil,
-        context: CognitoContextData,
+        context: CognitoContextData?,
         on eventLoop: EventLoop
     ) -> EventLoopFuture<CognitoAuthenticateResponse> {
         let initAuthFuture: EventLoopFuture<CognitoIdentityProvider.AdminInitiateAuthResponse>
         if requireAuthenticatedClient {
-            guard let context = context.contextData else {return eventLoop.makeFailedFuture(SotoCognitoError.failedToCreateContextData)}
+            let context = context?.contextData
             let request = CognitoIdentityProvider.AdminInitiateAuthRequest(
                 authFlow: authFlow,
                 authParameters: authParameters,

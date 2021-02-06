@@ -15,7 +15,14 @@ public extension CognitoAuthenticatable {
     ///     - on: Eventloop request should run on.
     /// - returns:
     ///     An authentication response. This can contain a challenge which the user has to fulfill before being allowed to login, or authentication access, id and refresh keys
-    func authenticateSRP(username: String, password: String, clientMetadata: [String: String]? = nil, context: CognitoContextData, on eventLoop: EventLoop) -> EventLoopFuture<CognitoAuthenticateResponse> {
+    func authenticateSRP(
+        username: String,
+        password: String,
+        clientMetadata: [String: String]? = nil,
+        context: CognitoContextData? = nil,
+        on eventLoop: EventLoop? = nil
+    ) -> EventLoopFuture<CognitoAuthenticateResponse> {
+        let eventLoop = eventLoop ?? configuration.cognitoIDP.eventLoopGroup.next()
         let srp = SRP<SHA256>()
         var authParameters : [String: String] = [
             "USERNAME":username,
