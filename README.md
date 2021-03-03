@@ -4,6 +4,23 @@
 
 Amazon Cognito provides authentication, authorization, and user management for your web apps. 
 
+Table of Contents
+-----------------
+
+- [Using with Cognito User Pools](#using-with-cognito-user-pools)
+    - [Configuration](#configuration)
+    - [Creating a AWS Cognito user](#creating-a-aws-cognito-user)
+    - [Authenticating with username and password](#authenticating-with-username-and-password)
+    - [Verifying an access token is valid](#verifying-an-access-token-is-valid)
+    - [Verifying the contents of an id token](#verifying-the-contents-of-an-id-token)
+    - [Refreshing id and access tokens](#refreshing-id-and-access-tokens)
+    - [Responding to authentication challenges](#responding-to-authentication-challenges)
+    - [Creating user pools](#creating-user-pools)
+- [Using with Cognito Identity Pools](#using-with-cognito-identity-pools)
+    - [Configuration](#configuration-1)
+    - [Accessing AWS credentials](#accessing-aws-credentials)
+- [Using with unauthenticated client](#using-with-unauthenticated-client)
+
 # Using with Cognito User Pools
 
 ## Configuration
@@ -32,7 +49,7 @@ The attributes you provide should match the attributes you selected when creatin
 
 As an alternative you can use the `signUp` function which takes a `username` and `password`. This will send a confirmation email to the user which includes a confirmation code. You then call `confirmSignUp` with this confirmation code. For this path to be available you need to have the 'Allow users to sign themselves up' flag set in your user pool. 
 
-## Authenticating with a username and a password
+## Authenticating with username and password
 Once your user is created and confirmed in the signUp case. The following will generate JWT authentication tokens from a username and password. This function requires a `CognitoIdentityProvider` setup with AWS credentials, unless you pass the `requireAuthenticatedClient` parameter set to `false`.
 ```
 let response = authenticatable.authenticate(
@@ -150,7 +167,7 @@ let identifiable = CognitoIdentifiable(configuration: configuration)
 ```
 The `identityPoolId` you can get from "Edit Identity Pool" section of the AWS console. `cognitoIdentity` is the client used to communicate with Amazon Web Services. It is provided by the [Soto](https://github.com/soto-project/soto.git) library. The `identityProvider` is whatever you setup in the AWS Cognito Identity Pool for providing authentication details.
 
-## Accessing credentials
+## Accessing AWS credentials
 There are two steps to accessing AWS credentials. First you need to get an identity id and then with that identity id you can get your AWS credentials. This can be done with the following.
 ```
 return identifiable.getIdentityId(idToken: idToken, on: req.eventLoop)
@@ -159,3 +176,23 @@ return identifiable.getIdentityId(idToken: idToken, on: req.eventLoop)
 }
 ```
 In the situation you are using Cognito user pools the `idToken` is the `idToken` returned when you authenticate a user.
+
+# Using with unauthenticated client
+It is possible to use Soto Cognito Authentication Kit without AWS credentials. When you create your `AWSClient` include an empty credential provider.
+```swift
+let awsClient = AWSClient(
+    credentialProvider: .empty, 
+    httpClientProvider: .createNew
+)
+```
+And whenever you call a function on `CognitoAuthenticatable` which has a `requireAuthenticatedClient` parameter, set it to false eg
+```swift
+let response = authenticatable.authenticate(
+    username: username, 
+    password: password,
+    requireAuthenticatedClient: false,
+    context: request,
+    on: request.eventLoop
+)
+```
+Please note that not all functions are available to unauthenticated clients eg `CognitoAuthenticatable.createUser` though. 
