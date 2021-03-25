@@ -18,4 +18,3 @@ import SotoCognitoIdentityProvider
 public protocol CognitoContextData {
     var contextData: CognitoIdentityProvider.ContextDataType? { get }
 }
-

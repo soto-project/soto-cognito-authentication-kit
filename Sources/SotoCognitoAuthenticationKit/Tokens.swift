@@ -21,8 +21,8 @@ struct AccessTokenVerifier: JWTPayload {
     let tokenUse: String
 
     func verify(using signer: JWTSigner) throws {
-        guard expirationTime > Date() else {throw SotoCognitoError.unauthorized(reason:"token expired")}
-        guard tokenUse == "access" else {throw SotoCognitoError.unauthorized(reason:"invalid token")}
+        guard self.expirationTime > Date() else { throw SotoCognitoError.unauthorized(reason: "token expired") }
+        guard self.tokenUse == "access" else { throw SotoCognitoError.unauthorized(reason: "invalid token") }
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -40,8 +40,8 @@ struct IdTokenVerifier: JWTPayload {
     let tokenUse: String
 
     func verify(using signer: JWTSigner) throws {
-        guard expirationTime > Date() else {throw SotoCognitoError.unauthorized(reason:"token expired")}
-        guard tokenUse == "id" else {throw SotoCognitoError.unauthorized(reason:"invalid token")}
+        guard self.expirationTime > Date() else { throw SotoCognitoError.unauthorized(reason: "token expired") }
+        guard self.tokenUse == "id" else { throw SotoCognitoError.unauthorized(reason: "invalid token") }
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -58,11 +58,11 @@ struct VerifiedToken<Token: JWTPayload, Payload: Codable>: JWTPayload {
     let payload: Payload
 
     init(from decoder: Decoder) throws {
-        token = try Token(from: decoder)
-        payload = try Payload(from: decoder)
+        self.token = try Token(from: decoder)
+        self.payload = try Payload(from: decoder)
     }
 
     func verify(using signer: JWTSigner) throws {
-        try token.verify(using: signer)
+        try self.token.verify(using: signer)
     }
 }

@@ -21,7 +21,7 @@ let package = Package(
     name: "soto-cognito-authentication-kit",
     platforms: [
         .macOS(.v10_15),
-        .iOS(.v13)
+        .iOS(.v13),
     ],
     products: [
         .library(name: "SotoCognitoAuthenticationKit", targets: ["SotoCognitoAuthenticationKit"]),
@@ -35,20 +35,22 @@ let package = Package(
         .package(url: "https://github.com/adam-fowler/big-num.git", .upToNextMajor(from: "2.0.0")),
     ],
     targets: [
-        .target(name: "SotoCognitoAuthenticationKit",
-                dependencies: [
-                    .product(name: "SotoCognitoIdentity", package: "soto"),
-                    .product(name: "SotoCognitoIdentityProvider", package: "soto"),
-                    .product(name: "JWTKit", package: "jwt-kit"),
-                    .product(name: "Crypto", package: "swift-crypto")
+        .target(
+            name: "SotoCognitoAuthenticationKit",
+            dependencies: [
+                .product(name: "SotoCognitoIdentity", package: "soto"),
+                .product(name: "SotoCognitoIdentityProvider", package: "soto"),
+                .product(name: "JWTKit", package: "jwt-kit"),
+                .product(name: "Crypto", package: "swift-crypto"),
             ]
         ),
         .testTarget(name: "SotoCognitoAuthenticationKitTests", dependencies: ["SotoCognitoAuthenticationKit"]),
 
-        .target(name: "SotoCognitoAuthenticationSRP",
-                dependencies: [
-                    .product(name: "BigNum", package: "big-num"),
-                    .target(name: "SotoCognitoAuthenticationKit")
+        .target(
+            name: "SotoCognitoAuthenticationSRP",
+            dependencies: [
+                .product(name: "BigNum", package: "big-num"),
+                .target(name: "SotoCognitoAuthenticationKit"),
             ]
         ),
         .testTarget(name: "SotoCognitoAuthenticationSRPTests", dependencies: ["SotoCognitoAuthenticationSRP"]),

@@ -12,18 +12,17 @@
 //
 //===----------------------------------------------------------------------===//
 
-import SotoCognitoIdentity
 import NIO
+import SotoCognitoIdentity
 
 public class CognitoIdentifiable {
-    
     /// configuration
     public let configuration: CognitoIdentityConfiguration
-    
+
     public init(configuration: CognitoIdentityConfiguration) {
         self.configuration = configuration
     }
-    
+
     /// Return an Cognito Identity identity id from an id token
     /// - parameters:
     ///     - idToken: Id token returned from authenticating a user
@@ -31,9 +30,9 @@ public class CognitoIdentifiable {
     /// - returns:
     ///     Event Loop Future returning the identity id as a String
     public func getIdentityId(idToken: String, on eventLoop: EventLoop? = nil) -> EventLoopFuture<String> {
-        let eventLoop = eventLoop ?? configuration.cognitoIdentity.eventLoopGroup.next()
-        let request = CognitoIdentity.GetIdInput(identityPoolId: configuration.identityPoolId, logins: [configuration.identityProvider : idToken])
-        return configuration.cognitoIdentity.getId(request)
+        let eventLoop = eventLoop ?? self.configuration.cognitoIdentity.eventLoopGroup.next()
+        let request = CognitoIdentity.GetIdInput(identityPoolId: self.configuration.identityPoolId, logins: [self.configuration.identityProvider: idToken])
+        return self.configuration.cognitoIdentity.getId(request)
             .flatMapErrorThrowing { error in
                 throw self.translateError(error: error)
             }
@@ -43,7 +42,7 @@ public class CognitoIdentifiable {
             }
             .hop(to: eventLoop)
     }
-    
+
     /// Get aws credentials from an identity id
     /// - parameters:
     ///     - identityId: Identity id returned from `getIdentityId`
@@ -56,9 +55,9 @@ public class CognitoIdentifiable {
         idToken: String,
         on eventLoop: EventLoop? = nil
     ) -> EventLoopFuture<CognitoIdentity.Credentials> {
-        let eventLoop = eventLoop ?? configuration.cognitoIdentity.eventLoopGroup.next()
-        let request = CognitoIdentity.GetCredentialsForIdentityInput(identityId: identityId, logins: [configuration.identityProvider : idToken])
-        return configuration.cognitoIdentity.getCredentialsForIdentity(request)
+        let eventLoop = eventLoop ?? self.configuration.cognitoIdentity.eventLoopGroup.next()
+        let request = CognitoIdentity.GetCredentialsForIdentityInput(identityId: identityId, logins: [self.configuration.identityProvider: idToken])
+        return self.configuration.cognitoIdentity.getCredentialsForIdentity(request)
             .flatMapErrorThrowing { error in
                 throw self.translateError(error: error)
             }
@@ -66,7 +65,7 @@ public class CognitoIdentifiable {
                 guard let credentials = response.credentials else { throw SotoCognitoError.unexpectedResult(reason: "AWS did not supply any credentials") }
                 return credentials
             }
-        .hop(to: eventLoop)
+            .hop(to: eventLoop)
     }
 }
 

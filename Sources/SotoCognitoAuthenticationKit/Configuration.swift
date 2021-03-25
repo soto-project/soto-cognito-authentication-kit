@@ -12,9 +12,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+import JWTKit
 import SotoCognitoIdentity
 import SotoCognitoIdentityProvider
-import JWTKit
 
 /// Struct that includes configuration for AWS Cognito authentication.
 ///
@@ -30,7 +30,7 @@ public struct CognitoConfiguration {
     /// Cognito Identity Provider client
     public let cognitoIDP: CognitoIdentityProvider
     /// region userpool is in, can get this from the client
-    public var region: Region { return cognitoIDP.region }
+    public var region: Region { return self.cognitoIDP.region }
 
     /// initializer
     public init(userPoolId: String, clientId: String, clientSecret: String? = nil, cognitoIDP: CognitoIdentityProvider) {
@@ -59,7 +59,7 @@ public struct CognitoIdentityConfiguration {
         self.identityProvider = identityProvider
         self.cognitoIdentity = cognitoIdentity
     }
-    
+
     /// initializer when using a AWS Cognito user pool for identification
     public init(identityPoolId: String, userPoolId: String, region: Region, cognitoIdentity: CognitoIdentity) {
         self.identityPoolId = identityPoolId

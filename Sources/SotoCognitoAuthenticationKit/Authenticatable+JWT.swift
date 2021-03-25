@@ -24,7 +24,7 @@ public struct CognitoAccessToken: Codable {
     public let expirationTime: Date
 
     private enum CodingKeys: String, CodingKey {
-        case username = "username"
+        case username
         case subject = "sub"
         case expirationTime = "exp"
     }
@@ -49,12 +49,12 @@ public extension CognitoAuthenticatable {
         return loadSigners(region: configuration.region, on: eventLoopGroup)
             .flatMapThrowing { signers in
                 let jwtPayload = try signers.verify(idToken, as: VerifiedToken<IdTokenVerifier, Payload>.self)
-                guard jwtPayload.token.audience == self.configuration.clientId else {throw SotoCognitoError.unauthorized(reason:"invalid token")}
+                guard jwtPayload.token.audience == self.configuration.clientId else { throw SotoCognitoError.unauthorized(reason: "invalid token") }
                 guard jwtPayload.token.issuer == "https://cognito-idp.\(self.configuration.region.rawValue).amazonaws.com/\(self.configuration.userPoolId)" else {
-                    throw SotoCognitoError.unauthorized(reason:"invalid token")
+                    throw SotoCognitoError.unauthorized(reason: "invalid token")
                 }
                 return jwtPayload.payload
-        }
+            }
     }
 
     /// Verify access token JWT and return contents
@@ -70,10 +70,10 @@ public extension CognitoAuthenticatable {
             .flatMapThrowing { signers in
                 let jwtPayload = try signers.verify(accessToken, as: VerifiedToken<AccessTokenVerifier, CognitoAccessToken>.self)
                 guard jwtPayload.token.issuer == "https://cognito-idp.\(self.configuration.region.rawValue).amazonaws.com/\(self.configuration.userPoolId)" else {
-                    throw SotoCognitoError.unauthorized(reason:"invalid token")
+                    throw SotoCognitoError.unauthorized(reason: "invalid token")
                 }
                 return jwtPayload.payload
-        }
+            }
     }
 }
 
@@ -81,7 +81,7 @@ extension CognitoAuthenticatable {
     /// load JSON web keys and create JWT signers from them
     func loadSigners(region: Region, on eventLoopGroup: EventLoopGroup) -> EventLoopFuture<JWTSigners> {
         // check we haven't already loaded the jwt signing key set
-        guard jwtSigners == nil else { return eventLoopGroup.next().makeSucceededFuture(jwtSigners!)}
+        guard jwtSigners == nil else { return eventLoopGroup.next().makeSucceededFuture(jwtSigners!) }
 
         let JWTSignersURL = "https://cognito-idp.\(configuration.region.rawValue).amazonaws.com/\(configuration.userPoolId)/.well-known/jwks.json"
         let httpClient = configuration.cognitoIDP.client.httpClient
@@ -95,7 +95,6 @@ extension CognitoAuthenticatable {
                     try signers.use(jwksJSON: data)
                 }
                 return signers
-        }
-
+            }
     }
 }
