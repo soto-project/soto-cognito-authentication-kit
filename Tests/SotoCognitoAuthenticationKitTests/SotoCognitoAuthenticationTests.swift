@@ -288,6 +288,78 @@ final class SotoCognitoAuthenticationKitTests: XCTestCase {
         }
     }
 
+    func testAdminUpdateUserAttributes() {
+        XCTAssertNil(Self.setUpFailure)
+        struct User: Codable {
+            let email: String
+        }
+
+        attempt {
+            let attributes = ["email": "test@test.com"]
+            let attributes2 = ["email": "test2@test2.com"]
+            let eventLoop = Self.cognitoIDP.client.eventLoopGroup.next()
+            let testData = try TestData(#function, attributes: attributes, on: eventLoop)
+
+            let result = try Self.authenticatable.updateUserAttributes(username: testData.username, attributes: attributes2, on: eventLoop)
+                .flatMap { _ in
+                    self.login(testData, authenticatable: Self.authenticatable, on: eventLoop)
+                }
+                .flatMap { (response) -> EventLoopFuture<User> in
+                    guard case .authenticated(let authenticated) = response else { return eventLoop.makeFailedFuture(AWSCognitoTestError.notAuthenticated) }
+                    guard let idToken = authenticated.idToken else { return eventLoop.makeFailedFuture(AWSCognitoTestError.missingToken) }
+
+                    return Self.authenticatable.authenticate(idToken: idToken, on: eventLoop)
+                }.wait()
+            XCTAssertEqual(result.email, attributes2["email"])
+        }
+    }
+
+    func testNonAdminUpdateUserAttributes() {
+        XCTAssertNil(Self.setUpFailure)
+        struct User: Codable {
+            let email: String
+        }
+
+        attempt {
+            let attributes = ["email": "test@test.com"]
+            let attributes2 = ["email": "test2@test2.com"]
+            let eventLoop = Self.cognitoIDP.client.eventLoopGroup.next()
+            let testData = try TestData(#function, attributes: attributes, on: eventLoop)
+            var storedAccessToken = ""
+
+            let future = login(testData, authenticatable: Self.authenticatable, on: eventLoop)
+                .flatMap { (response) -> EventLoopFuture<User> in
+                    guard case .authenticated(let authenticated) = response else { return eventLoop.makeFailedFuture(AWSCognitoTestError.notAuthenticated) }
+                    guard let accessToken = authenticated.accessToken else { return eventLoop.makeFailedFuture(AWSCognitoTestError.missingToken) }
+                    guard let idToken = authenticated.idToken else { return eventLoop.makeFailedFuture(AWSCognitoTestError.missingToken) }
+                    storedAccessToken = accessToken
+
+                    return Self.authenticatable.authenticate(idToken: idToken, on: eventLoop)
+                }
+                .flatMap { user -> EventLoopFuture<Void> in
+                    XCTAssertEqual(user.email, attributes["email"])
+                    return Self.authenticatable.updateUserAttributes(
+                        accessToken: storedAccessToken,
+                        attributes: attributes2,
+                        on: eventLoop
+                    )
+                }
+                .flatMap { _ -> EventLoopFuture<CognitoAuthenticateResponse> in
+                    self.login(testData, authenticatable: Self.authenticatable, on: eventLoop)
+                }
+                .flatMap { response -> EventLoopFuture<User> in
+                    guard case .authenticated(let authenticated) = response else { return eventLoop.makeFailedFuture(AWSCognitoTestError.notAuthenticated) }
+                    guard let idToken = authenticated.idToken else { return eventLoop.makeFailedFuture(AWSCognitoTestError.missingToken) }
+
+                    return Self.authenticatable.authenticate(idToken: idToken, on: eventLoop)
+                }
+                .map { user in
+                    XCTAssertEqual(user.email, attributes2["email"])
+                }
+            XCTAssertNoThrow(try future.wait())
+        }
+    }
+
     func testUnauthenticatdClient() {
         XCTAssertNil(Self.setUpFailure)
         attempt {
@@ -344,6 +416,7 @@ final class SotoCognitoAuthenticationKitTests: XCTestCase {
         }
     }
 
+    /// test JSON encode/decode of authenticated response
     func testAuthenticatedResponseCodable() throws {
         do {
             let authenticated = CognitoAuthenticateResponse.AuthenticatedResponse(

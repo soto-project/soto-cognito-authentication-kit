@@ -184,7 +184,7 @@ public class CognitoAuthenticatable {
     ) -> EventLoopFuture<CognitoCreateUserResponse> {
         let eventLoop = eventLoop ?? self.configuration.cognitoIDP.eventLoopGroup.next()
         guard self.configuration.adminClient == true else {
-            return eventLoop.makeFailedFuture(SotoCognitoError.unauthorized(reason: "\(#function) requires an admin authenticated AWSClient"))
+            return eventLoop.makeFailedFuture(SotoCognitoError.unauthorized(reason: "\(#function) requires an admin client with authenticated AWSClient"))
         }
         let userAttributes = attributes.map { return CognitoIdentityProvider.AttributeType(name: $0.key, value: $0.value) }
         let request = CognitoIdentityProvider.AdminCreateUserRequest(
@@ -431,7 +431,7 @@ public class CognitoAuthenticatable {
     ) -> EventLoopFuture<Void> {
         let eventLoop = eventLoop ?? self.configuration.cognitoIDP.eventLoopGroup.next()
         guard self.configuration.adminClient == true else {
-            return eventLoop.makeFailedFuture(SotoCognitoError.unauthorized(reason: "\(#function) requires an admin authenticated AWSClient"))
+            return eventLoop.makeFailedFuture(SotoCognitoError.unauthorized(reason: "\(#function) requires an admin client with authenticated AWSClient"))
         }
         let attributes = attributes.map { CognitoIdentityProvider.AttributeType(name: $0.key, value: $0.value) }
         let request = CognitoIdentityProvider.AdminUpdateUserAttributesRequest(userAttributes: attributes, username: username, userPoolId: self.configuration.userPoolId)
@@ -454,9 +454,6 @@ public class CognitoAuthenticatable {
         on eventLoop: EventLoop? = nil
     ) -> EventLoopFuture<Void> {
         let eventLoop = eventLoop ?? self.configuration.cognitoIDP.eventLoopGroup.next()
-        guard self.configuration.adminClient == true else {
-            return eventLoop.makeFailedFuture(SotoCognitoError.unauthorized(reason: "\(#function) requires an admin authenticated AWSClient"))
-        }
         let attributes = attributes.map { CognitoIdentityProvider.AttributeType(name: $0.key, value: $0.value) }
         let request = CognitoIdentityProvider.UpdateUserAttributesRequest(accessToken: accessToken, clientMetadata: clientMetadata, userAttributes: attributes)
         return self.configuration.cognitoIDP.updateUserAttributes(request, on: eventLoop)
