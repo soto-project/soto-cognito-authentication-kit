@@ -165,7 +165,7 @@ public class CognitoAuthenticatable {
     /// create a new AWS Cognito user.
     ///
     /// This uses AdminCreateUser. An invitation email, with a password  is sent to the user. This password requires to be renewed as soon as it is used. As this function uses an Admin
-    /// function it requires a CognitoIdentityProvider with AWS credentials.
+    /// function it requires an `adminClient`.
     /// - parameters:
     ///     - username: user name for new user
     ///     - attributes: user attributes. These should be from the list of standard claims detailed in the [OpenID spec](https://openid.net/specs/openid-connect-core-1_0.html#StandardClaims) . You can include custom attiibutes by prepending them with "custom:".
@@ -183,6 +183,9 @@ public class CognitoAuthenticatable {
         on eventLoop: EventLoop? = nil
     ) -> EventLoopFuture<CognitoCreateUserResponse> {
         let eventLoop = eventLoop ?? self.configuration.cognitoIDP.eventLoopGroup.next()
+        guard self.configuration.adminClient == true else {
+            return eventLoop.makeFailedFuture(SotoCognitoError.unauthorized(reason: "\(#function) requires an admin authenticated AWSClient"))
+        }
         let userAttributes = attributes.map { return CognitoIdentityProvider.AttributeType(name: $0.key, value: $0.value) }
         let request = CognitoIdentityProvider.AdminCreateUserRequest(
             clientMetadata: clientMetadata,
@@ -213,7 +216,6 @@ public class CognitoAuthenticatable {
     /// - parameters:
     ///     - username: user name for user
     ///     - password: password for user
-    ///     - requireAuthenticatedClient: Do we need a CognitoIdentityProvider with AWS credentials
     ///     - clientMetadata: A map of custom key-value pairs that you can provide as input for AWS Lambda custom workflows
     ///     - context: Context data for this request
     ///     - on: Eventloop request should run on.
@@ -222,13 +224,12 @@ public class CognitoAuthenticatable {
     public func authenticate(
         username: String,
         password: String,
-        requireAuthenticatedClient: Bool = true,
         clientMetadata: [String: String]? = nil,
         context: CognitoContextData? = nil,
         on eventLoop: EventLoop? = nil
     ) -> EventLoopFuture<CognitoAuthenticateResponse> {
         let eventLoop = eventLoop ?? self.configuration.cognitoIDP.eventLoopGroup.next()
-        let authFlow: CognitoIdentityProvider.AuthFlowType = requireAuthenticatedClient ? .adminUserPasswordAuth : .userPasswordAuth
+        let authFlow: CognitoIdentityProvider.AuthFlowType = self.configuration.adminClient ? .adminUserPasswordAuth : .userPasswordAuth
         var authParameters: [String: String] = [
             "USERNAME": username,
             "PASSWORD": password,
@@ -237,7 +238,6 @@ public class CognitoAuthenticatable {
         return self.initiateAuthRequest(
             authFlow: authFlow,
             authParameters: authParameters,
-            requireAuthenticatedClient: requireAuthenticatedClient,
             clientMetadata: clientMetadata,
             context: context,
             on: eventLoop
@@ -250,7 +250,6 @@ public class CognitoAuthenticatable {
     /// - parameters:
     ///     - username: user name of user
     ///     - refreshToken: refresh token required to generate new access and id tokens
-    ///     - requireAuthenticatedClient: Do we need a CognitoIdentityProvider with AWS credentials
     ///     - clientMetadata: A map of custom key-value pairs that you can provide as input for AWS Lambda custom workflows
     ///     - context: Context data for this request
     ///     - on: Eventloop request should run on.
@@ -259,7 +258,6 @@ public class CognitoAuthenticatable {
     public func refresh(
         username: String,
         refreshToken: String,
-        requireAuthenticatedClient: Bool = true,
         clientMetadata: [String: String]? = nil,
         context: CognitoContextData? = nil,
         on eventLoop: EventLoop? = nil
@@ -274,7 +272,6 @@ public class CognitoAuthenticatable {
         return self.initiateAuthRequest(
             authFlow: .refreshTokenAuth,
             authParameters: authParameters,
-            requireAuthenticatedClient: requireAuthenticatedClient,
             clientMetadata: clientMetadata,
             context: context,
             on: eventLoop
@@ -292,7 +289,6 @@ public class CognitoAuthenticatable {
     ///     - name: Name of challenge
     ///     - responses: Challenge responses
     ///     - session: Session id returned with challenge
-    ///     - requireAuthentication: Do we need a CognitoIdentityProvider with AWS credentials
     ///     - clientMetadata: A map of custom key-value pairs that you can provide as input for AWS Lambda custom workflows
     ///     - context: Context data for this request
     ///     - on: Eventloop request should run on.
@@ -303,7 +299,6 @@ public class CognitoAuthenticatable {
         name: CognitoChallengeName,
         responses: [String: String],
         session: String?,
-        requireAuthenticatedClient: Bool = true,
         clientMetadata: [String: String]? = nil,
         context: CognitoContextData? = nil,
         on eventLoop: EventLoop? = nil
@@ -315,7 +310,7 @@ public class CognitoAuthenticatable {
 
         let respondFuture: EventLoopFuture<CognitoIdentityProvider.AdminRespondToAuthChallengeResponse>
         // If authentication required that use admin version of RespondToAuthChallenge
-        if requireAuthenticatedClient {
+        if self.configuration.adminClient {
             let context = context?.contextData
             let request = CognitoIdentityProvider.AdminRespondToAuthChallengeRequest(
                 challengeName: name,
@@ -370,30 +365,6 @@ public class CognitoAuthenticatable {
         .hop(to: eventLoop)
     }
 
-    @available(*, deprecated, message: "requireAuthentication has been renamed to requireAuthenticatedClient")
-    public func respondToChallenge(
-        username: String,
-        name: CognitoChallengeName,
-        responses: [String: String],
-        session: String?,
-        requireAuthentication: Bool,
-        clientMetadata: [String: String]? = nil,
-        context: CognitoContextData? = nil,
-        on eventLoop: EventLoop? = nil
-    ) -> EventLoopFuture<CognitoAuthenticateResponse> {
-        let eventLoop = eventLoop ?? self.configuration.cognitoIDP.eventLoopGroup.next()
-        return self.respondToChallenge(
-            username: username,
-            name: name,
-            responses: responses,
-            session: session,
-            requireAuthenticatedClient: requireAuthentication,
-            clientMetadata: clientMetadata,
-            context: context,
-            on: eventLoop
-        )
-    }
-
     /// respond to new password authentication challenge
     ///
     /// - parameters:
@@ -408,7 +379,6 @@ public class CognitoAuthenticatable {
         username: String,
         password: String,
         session: String?,
-        requireAuthenticatedClient: Bool = true,
         context: CognitoContextData? = nil,
         on eventLoop: EventLoop? = nil
     ) -> EventLoopFuture<CognitoAuthenticateResponse> {
@@ -417,7 +387,6 @@ public class CognitoAuthenticatable {
             name: .newPasswordRequired,
             responses: ["NEW_PASSWORD": password],
             session: session,
-            requireAuthenticatedClient: requireAuthenticatedClient,
             context: context,
             on: eventLoop
         )
@@ -437,7 +406,6 @@ public class CognitoAuthenticatable {
         username: String,
         token: String,
         session: String?,
-        requireAuthenticatedClient: Bool = true,
         context: CognitoContextData? = nil,
         on eventLoop: EventLoop? = nil
     ) -> EventLoopFuture<CognitoAuthenticateResponse> {
@@ -446,13 +414,12 @@ public class CognitoAuthenticatable {
             name: .smsMfa,
             responses: ["SMS_MFA_CODE": token],
             session: session,
-            requireAuthenticatedClient: requireAuthenticatedClient,
             context: context,
             on: eventLoop
         )
     }
 
-    /// update the users attributes
+    /// update the users attributes. This requires an `adminClient`
     /// - parameters:
     ///     - username: user name of user
     ///     - attributes: list of updated attributes for user
@@ -463,9 +430,36 @@ public class CognitoAuthenticatable {
         on eventLoop: EventLoop? = nil
     ) -> EventLoopFuture<Void> {
         let eventLoop = eventLoop ?? self.configuration.cognitoIDP.eventLoopGroup.next()
+        guard self.configuration.adminClient == true else {
+            return eventLoop.makeFailedFuture(SotoCognitoError.unauthorized(reason: "\(#function) requires an admin authenticated AWSClient"))
+        }
         let attributes = attributes.map { CognitoIdentityProvider.AttributeType(name: $0.key, value: $0.value) }
         let request = CognitoIdentityProvider.AdminUpdateUserAttributesRequest(userAttributes: attributes, username: username, userPoolId: self.configuration.userPoolId)
         return self.configuration.cognitoIDP.adminUpdateUserAttributes(request, on: eventLoop)
+            .flatMapErrorThrowing { error in
+                throw self.translateError(error: error)
+            }
+            .map { _ in return }
+    }
+
+    /// update the users attributes, given an access token
+    /// - parameters:
+    ///     - accessToken: user name of user
+    ///     - attributes: list of updated attributes for user
+    ///     - on: Event loop request is running on.
+    public func updateUserAttributes(
+        accessToken: String,
+        attributes: [String: String],
+        clientMetadata: [String: String]? = nil,
+        on eventLoop: EventLoop? = nil
+    ) -> EventLoopFuture<Void> {
+        let eventLoop = eventLoop ?? self.configuration.cognitoIDP.eventLoopGroup.next()
+        guard self.configuration.adminClient == true else {
+            return eventLoop.makeFailedFuture(SotoCognitoError.unauthorized(reason: "\(#function) requires an admin authenticated AWSClient"))
+        }
+        let attributes = attributes.map { CognitoIdentityProvider.AttributeType(name: $0.key, value: $0.value) }
+        let request = CognitoIdentityProvider.UpdateUserAttributesRequest(accessToken: accessToken, clientMetadata: clientMetadata, userAttributes: attributes)
+        return self.configuration.cognitoIDP.updateUserAttributes(request, on: eventLoop)
             .flatMapErrorThrowing { error in
                 throw self.translateError(error: error)
             }
@@ -532,13 +526,12 @@ public extension CognitoAuthenticatable {
     func initiateAuthRequest(
         authFlow: CognitoIdentityProvider.AuthFlowType,
         authParameters: [String: String],
-        requireAuthenticatedClient: Bool,
         clientMetadata: [String: String]? = nil,
         context: CognitoContextData?,
         on eventLoop: EventLoop
     ) -> EventLoopFuture<CognitoAuthenticateResponse> {
         let initAuthFuture: EventLoopFuture<CognitoIdentityProvider.AdminInitiateAuthResponse>
-        if requireAuthenticatedClient {
+        if self.configuration.adminClient {
             let context = context?.contextData
             let request = CognitoIdentityProvider.AdminInitiateAuthRequest(
                 authFlow: authFlow,

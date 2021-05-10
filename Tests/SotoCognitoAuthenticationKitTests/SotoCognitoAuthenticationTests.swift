@@ -77,7 +77,8 @@ final class SotoCognitoAuthenticationKitTests: XCTestCase {
                 userPoolId: userPoolId,
                 clientId: clientId,
                 clientSecret: clientSecret,
-                cognitoIDP: self.cognitoIDP
+                cognitoIDP: self.cognitoIDP,
+                adminClient: true
             )
             Self.authenticatable = CognitoAuthenticatable(configuration: configuration)
 
@@ -190,12 +191,11 @@ final class SotoCognitoAuthenticationKitTests: XCTestCase {
         Self.identityPoolId = createResponse.identityPoolId
     }
 
-    func login(_ testData: TestData, authenticatable: CognitoAuthenticatable, requireAuthenticatedClient: Bool = true, on eventLoop: EventLoop) -> EventLoopFuture<CognitoAuthenticateResponse> {
+    func login(_ testData: TestData, authenticatable: CognitoAuthenticatable, on eventLoop: EventLoop) -> EventLoopFuture<CognitoAuthenticateResponse> {
         let context = AWSCognitoContextTest()
         return authenticatable.authenticate(
             username: testData.username,
             password: testData.password,
-            requireAuthenticatedClient: requireAuthenticatedClient,
             context: context,
             on: eventLoop
         ).flatMap { response in
@@ -205,7 +205,6 @@ final class SotoCognitoAuthenticationKitTests: XCTestCase {
                         username: testData.username,
                         password: testData.password,
                         session: session,
-                        requireAuthenticatedClient: requireAuthenticatedClient,
                         context: context,
                         on: eventLoop
                     )
@@ -299,13 +298,14 @@ final class SotoCognitoAuthenticationKitTests: XCTestCase {
                 userPoolId: Self.authenticatable.configuration.userPoolId,
                 clientId: Self.authenticatable.configuration.clientId,
                 clientSecret: Self.authenticatable.configuration.clientSecret,
-                cognitoIDP: cognitoIdentityProvider
+                cognitoIDP: cognitoIdentityProvider,
+                adminClient: false
             )
             let authenticatable = CognitoAuthenticatable(configuration: configuration)
             let eventLoop = cognitoIdentityProvider.client.eventLoopGroup.next()
             let testData = try TestData(#function, on: eventLoop)
 
-            let result = try login(testData, authenticatable: authenticatable, requireAuthenticatedClient: false, on: eventLoop)
+            let result = try login(testData, authenticatable: authenticatable, on: eventLoop)
                 .flatMap { (response) -> EventLoopFuture<CognitoAccessToken> in
                     guard case .authenticated(let authenticated) = response else { return eventLoop.makeFailedFuture(AWSCognitoTestError.notAuthenticated) }
                     guard let accessToken = authenticated.accessToken else { return eventLoop.makeFailedFuture(AWSCognitoTestError.missingToken) }
@@ -326,13 +326,14 @@ final class SotoCognitoAuthenticationKitTests: XCTestCase {
                 userPoolId: Self.authenticatable.configuration.userPoolId,
                 clientId: Self.authenticatable.configuration.clientId,
                 clientSecret: Self.authenticatable.configuration.clientSecret,
-                cognitoIDP: cognitoIdentityProvider
+                cognitoIDP: cognitoIdentityProvider,
+                adminClient: true
             )
             let authenticatable = CognitoAuthenticatable(configuration: configuration)
             let eventLoop = cognitoIdentityProvider.client.eventLoopGroup.next()
             let testData = try TestData(#function, on: eventLoop)
 
-            XCTAssertThrowsError(try login(testData, authenticatable: authenticatable, requireAuthenticatedClient: true, on: eventLoop).wait()) { error in
+            XCTAssertThrowsError(try login(testData, authenticatable: authenticatable, on: eventLoop).wait()) { error in
                 switch error {
                 case SotoCognitoError.unauthorized:
                     break
