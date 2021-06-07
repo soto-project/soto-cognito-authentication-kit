@@ -23,7 +23,7 @@ import SotoCognitoIdentityProvider
 public struct CognitoConfiguration {
     /// user pool id
     public let userPoolId: String
-    /// app client it
+    /// app client id
     public let clientId: String
     /// app client secret
     public let clientSecret: String?
@@ -31,13 +31,28 @@ public struct CognitoConfiguration {
     public let cognitoIDP: CognitoIdentityProvider
     /// region userpool is in, can get this from the client
     public var region: Region { return self.cognitoIDP.region }
+    /// whether a client with  AWS credentials is required
+    public var adminClient: Bool
 
     /// initializer
-    public init(userPoolId: String, clientId: String, clientSecret: String? = nil, cognitoIDP: CognitoIdentityProvider) {
+    /// - Parameters:
+    ///   - userPoolId: user pool id
+    ///   - clientId: app client id
+    ///   - clientSecret: app client secret or nil if it doesnt exist
+    ///   - cognitoIDP: Cognito Identity Provider client
+    ///   - adminClient: whether a client with  AWS credentials is required
+    public init(
+        userPoolId: String,
+        clientId: String,
+        clientSecret: String? = nil,
+        cognitoIDP: CognitoIdentityProvider,
+        adminClient: Bool
+    ) {
         self.userPoolId = userPoolId
         self.clientId = clientId
         self.clientSecret = clientSecret
         self.cognitoIDP = cognitoIDP
+        self.adminClient = adminClient
     }
 }
 

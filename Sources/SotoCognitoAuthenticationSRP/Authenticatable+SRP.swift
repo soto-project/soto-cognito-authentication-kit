@@ -48,7 +48,6 @@ public extension CognitoAuthenticatable {
         return self.initiateAuthRequest(
             authFlow: .userSrpAuth,
             authParameters: authParameters,
-            requireAuthenticatedClient: false,
             clientMetadata: clientMetadata,
             context: context,
             on: eventLoop
@@ -95,7 +94,6 @@ public extension CognitoAuthenticatable {
                 name: .passwordVerifier,
                 responses: authResponse,
                 session: challenge.session,
-                requireAuthenticatedClient: false,
                 context: context,
                 on: eventLoop
             )
