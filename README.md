@@ -21,6 +21,7 @@ Table of Contents
     - [Accessing AWS credentials](#accessing-aws-credentials)
 - [Using with unauthenticated client](#using-with-unauthenticated-client)
 - [Secure Remote Password](#secure-remote-password)
+- [Reference](#reference)
 
 ## Using with Cognito User Pools
 
@@ -209,3 +210,7 @@ let response = authenticatable.authenticateSRP(
     requireAuthenticatedClient: false
 )
 ```
+
+### Reference
+
+Reference documentation for SotoCognitoAuthenticationKit can be found [here](https://soto-project.github.io/soto-cognito-authentication-kit/index.html).
