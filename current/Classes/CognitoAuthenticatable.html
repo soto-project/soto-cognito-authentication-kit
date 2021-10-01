@@ -1,0 +1,1777 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>CognitoAuthenticatable Class Reference</title>
+    <link rel="stylesheet" type="text/css" href="../css/jazzy.css" />
+    <link rel="stylesheet" type="text/css" href="../css/highlight.css" />
+    <meta charset='utf-8'>
+    <script src="../js/jquery.min.js" defer></script>
+    <script src="../js/jazzy.js" defer></script>
+    
+  </head>
+  <body>
+    <a name="//apple_ref/swift/Class/CognitoAuthenticatable" class="dashAnchor"></a>
+    <a title="CognitoAuthenticatable Class Reference"></a>
+    <header>
+      <div class="content-wrapper">
+        <p><a href="../index.html"> Docs</a> (84% documented)</p>
+      </div>
+    </header>
+    <div class="content-wrapper">
+      <p id="breadcrumbs">
+        <a href="../index.html"> Reference</a>
+        <img id="carat" src="../img/carat.png" />
+        CognitoAuthenticatable Class Reference
+      </p>
+    </div>
+    <div class="content-wrapper">
+      <nav class="sidebar">
+        <ul class="nav-groups">
+          <li class="nav-group-name">
+            <a href="../Classes.html">Classes</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../Classes/CognitoAuthenticatable.html">CognitoAuthenticatable</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/CognitoIdentifiable.html">CognitoIdentifiable</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="../Enums.html">Enumerations</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../Enums/CognitoAuthenticateResponse.html">CognitoAuthenticateResponse</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Enums/CognitoAuthenticateResponse/AuthenticatedResponse.html">– AuthenticatedResponse</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Enums/CognitoAuthenticateResponse/ChallengedResponse.html">– ChallengedResponse</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Enums/SotoCognitoError.html">SotoCognitoError</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="../Extensions.html">Extensions</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../Extensions/Array.html">Array</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="../Protocols.html">Protocols</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../Protocols/CognitoContextData.html">CognitoContextData</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="../Structs.html">Structures</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../Structs/CognitoAccessToken.html">CognitoAccessToken</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Structs/CognitoConfiguration.html">CognitoConfiguration</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Structs/CognitoCreateUserResponse.html">CognitoCreateUserResponse</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Structs/CognitoIdentityConfiguration.html">CognitoIdentityConfiguration</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="../Typealiases.html">Type Aliases</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../Typealiases.html#/s:28SotoCognitoAuthenticationKit0B13ChallengeNamea">CognitoChallengeName</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Typealiases.html#/s:28SotoCognitoAuthenticationKit0B14UserStatusTypea">CognitoUserStatusType</a>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </nav>
+      <article class="main-content">
+        <section>
+          <section class="section">
+            <h1>CognitoAuthenticatable</h1>
+              <div class="declaration">
+                <div class="language">
+                  <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">class</span> <span class="kt">CognitoAuthenticatable</span></code></pre>
+
+                </div>
+              </div>
+            <p>Public interface functions for authenticating with CognitoIdentityProvider and generating access and id tokens.</p>
+
+          </section>
+          <section class="section task-group-section">
+            <div class="task-group">
+              <div class="task-name-container">
+                <a name="/Member%20variables"></a>
+                <a name="//apple_ref/swift/Section/Member variables" class="dashAnchor"></a>
+                <div class="section-name-container">
+                  <a class="section-name-link" href="#/Member%20variables"></a>
+                  <h3 class="section-name"><p>Member variables</p>
+</h3>
+                </div>
+              </div>
+              <ul>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:28SotoCognitoAuthenticationKit0B15AuthenticatableC13configurationAA0B13ConfigurationVvp"></a>
+                    <a name="//apple_ref/swift/Property/configuration" class="dashAnchor"></a>
+                    <a class="token" href="#/s:28SotoCognitoAuthenticationKit0B15AuthenticatableC13configurationAA0B13ConfigurationVvp">configuration</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Configuration</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="k">let</span> <span class="nv">configuration</span><span class="p">:</span> <span class="kt"><a href="../Structs/CognitoConfiguration.html">CognitoConfiguration</a></span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="task-group">
+              <div class="task-name-container">
+                <a name="/Initialization"></a>
+                <a name="//apple_ref/swift/Section/Initialization" class="dashAnchor"></a>
+                <div class="section-name-container">
+                  <a class="section-name-link" href="#/Initialization"></a>
+                  <h3 class="section-name"><p>Initialization</p>
+</h3>
+                </div>
+              </div>
+              <ul>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:28SotoCognitoAuthenticationKit0B15AuthenticatableC13configurationAcA0B13ConfigurationV_tcfc"></a>
+                    <a name="//apple_ref/swift/Method/init(configuration:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:28SotoCognitoAuthenticationKit0B15AuthenticatableC13configurationAcA0B13ConfigurationV_tcfc">init(configuration:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Initialize <code>CognitoAuthenticatable</code></p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="nf">init</span><span class="p">(</span><span class="nv">configuration</span><span class="p">:</span> <span class="kt"><a href="../Structs/CognitoConfiguration.html">CognitoConfiguration</a></span><span class="p">)</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>configuration</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>cognito authentication configuration</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="task-group">
+              <div class="task-name-container">
+                <a name="/Methods"></a>
+                <a name="//apple_ref/swift/Section/Methods" class="dashAnchor"></a>
+                <div class="section-name-container">
+                  <a class="section-name-link" href="#/Methods"></a>
+                  <h3 class="section-name"><p>Methods</p>
+</h3>
+                </div>
+              </div>
+              <ul>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:28SotoCognitoAuthenticationKit0B15AuthenticatableC6signUp8username8password10attributes14clientMetadata2on7NIOCore15EventLoopFutureCy0aB16IdentityProvider0brS0V04SignG8ResponseVGSS_SSSDyS2SGASSgAJ0oP0_pSgtF"></a>
+                    <a name="//apple_ref/swift/Method/signUp(username:password:attributes:clientMetadata:on:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:28SotoCognitoAuthenticationKit0B15AuthenticatableC6signUp8username8password10attributes14clientMetadata2on7NIOCore15EventLoopFutureCy0aB16IdentityProvider0brS0V04SignG8ResponseVGSS_SSSDyS2SGASSgAJ0oP0_pSgtF">signUp(username:password:attributes:clientMetadata:on:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Sign up as AWS Cognito user.</p>
+
+<p>An email will be sent out with either a confirmation code or a link to confirm the user.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">signUp</span><span class="p">(</span>
+    <span class="nv">username</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span>
+    <span class="nv">password</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span>
+    <span class="nv">attributes</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">:</span> <span class="kt">String</span><span class="p">],</span>
+    <span class="nv">clientMetadata</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">:</span> <span class="kt">String</span><span class="p">]?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span>
+    <span class="n">on</span> <span class="nv">eventLoop</span><span class="p">:</span> <span class="kt">EventLoop</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">EventLoopFuture</span><span class="o">&lt;</span><span class="kt">CognitoIdentityProvider</span><span class="o">.</span><span class="kt">SignUpResponse</span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>username</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>user name for new user</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>attributes</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>user attributes. These should be from the list of standard claims detailed in the <a href="https://openid.net/specs/openid-connect-core-1_0.html#StandardClaims">OpenID spec</a>. You can include custom attiibutes by prepending them with &ldquo;custom:&rdquo;.</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>clientMetadata</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>A map of custom key-value pairs that you can provide as input for AWS Lambda custom workflows</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>on</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Event loop request is running on.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>EventLoopFuture holding the sign up response</p>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:28SotoCognitoAuthenticationKit0B15AuthenticatableC13confirmSignUp8username16confirmationCode14clientMetadata2on7NIOCore15EventLoopFutureCyytGSS_SSSDyS2SGSgAI0pQ0_pSgtF"></a>
+                    <a name="//apple_ref/swift/Method/confirmSignUp(username:confirmationCode:clientMetadata:on:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:28SotoCognitoAuthenticationKit0B15AuthenticatableC13confirmSignUp8username16confirmationCode14clientMetadata2on7NIOCore15EventLoopFutureCyytGSS_SSSDyS2SGSgAI0pQ0_pSgtF">confirmSignUp(username:confirmationCode:clientMetadata:on:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Confirm sign up of user</p>
+
+<p>If user was created through signUp and they were sent an email containing a confirmation code the creation of the user can be confirm using this function along with the confirmation code</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">confirmSignUp</span><span class="p">(</span>
+    <span class="nv">username</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span>
+    <span class="nv">confirmationCode</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span>
+    <span class="nv">clientMetadata</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">:</span> <span class="kt">String</span><span class="p">]?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span>
+    <span class="n">on</span> <span class="nv">eventLoop</span><span class="p">:</span> <span class="kt">EventLoop</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">EventLoopFuture</span><span class="o">&lt;</span><span class="kt">Void</span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>username</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>user name for user</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>confirmationCode</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Confirmation code in email</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>clientMetadata</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>A map of custom key-value pairs that you can provide as input for AWS Lambda custom workflows</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>on</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Event loop request is running on.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>Empty EventLoopFuture</p>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:28SotoCognitoAuthenticationKit0B15AuthenticatableC10createUser8username10attributes17temporaryPassword13messageAction14clientMetadata2on7NIOCore15EventLoopFutureCyAA0b6CreateG8ResponseVGSS_SDyS2SGSSSg0aB16IdentityProvider0bwX0V07MessageM4TypeOSgAQSgAK0rS0_pSgtF"></a>
+                    <a name="//apple_ref/swift/Method/createUser(username:attributes:temporaryPassword:messageAction:clientMetadata:on:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:28SotoCognitoAuthenticationKit0B15AuthenticatableC10createUser8username10attributes17temporaryPassword13messageAction14clientMetadata2on7NIOCore15EventLoopFutureCyAA0b6CreateG8ResponseVGSS_SDyS2SGSSSg0aB16IdentityProvider0bwX0V07MessageM4TypeOSgAQSgAK0rS0_pSgtF">createUser(username:attributes:temporaryPassword:messageAction:clientMetadata:on:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>create a new AWS Cognito user.</p>
+
+<p>This uses AdminCreateUser. An invitation email, with a password  is sent to the user. This password requires to be renewed as soon as it is used. As this function uses an Admin
+function it requires an <code>adminClient</code>.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">createUser</span><span class="p">(</span>
+    <span class="nv">username</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span>
+    <span class="nv">attributes</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">:</span> <span class="kt">String</span><span class="p">],</span>
+    <span class="nv">temporaryPassword</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span>
+    <span class="nv">messageAction</span><span class="p">:</span> <span class="kt">CognitoIdentityProvider</span><span class="o">.</span><span class="kt">MessageActionType</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span>
+    <span class="nv">clientMetadata</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">:</span> <span class="kt">String</span><span class="p">]?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span>
+    <span class="n">on</span> <span class="nv">eventLoop</span><span class="p">:</span> <span class="kt">EventLoop</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">EventLoopFuture</span><span class="o">&lt;</span><span class="kt"><a href="../Structs/CognitoCreateUserResponse.html">CognitoCreateUserResponse</a></span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>username</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>user name for new user</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>attributes</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>user attributes. These should be from the list of standard claims detailed in the <a href="https://openid.net/specs/openid-connect-core-1_0.html#StandardClaims">OpenID spec</a> . You can include custom attiibutes by prepending them with &ldquo;custom:&rdquo;.</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>messageAction</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>If this is set to <code>.resend</code> this will resend the message for an existing user. If this is set to <code>.suppress</code> the message sending is suppressed.</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>clientMetadata</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>A map of custom key-value pairs that you can provide as input for AWS Lambda custom workflows</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>on</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Event loop request is running on.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>EventLoopFuture holding the create user response</p>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:28SotoCognitoAuthenticationKit0B15AuthenticatableC12authenticate8username8password14clientMetadata7context2on7NIOCore15EventLoopFutureCyAA0B20AuthenticateResponseOGSS_SSSDyS2SGSgAA0B11ContextData_pSgAJ0nO0_pSgtF"></a>
+                    <a name="//apple_ref/swift/Method/authenticate(username:password:clientMetadata:context:on:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:28SotoCognitoAuthenticationKit0B15AuthenticatableC12authenticate8username8password14clientMetadata7context2on7NIOCore15EventLoopFutureCyAA0B20AuthenticateResponseOGSS_SSSDyS2SGSgAA0B11ContextData_pSgAJ0nO0_pSgtF">authenticate(username:password:clientMetadata:context:on:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Authenticate using a username and password.
+This function uses the Admin version of the initiateAuthRequest so your CognitoIdentityProvider should be setup with AWS credentials.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">authenticate</span><span class="p">(</span>
+    <span class="nv">username</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span>
+    <span class="nv">password</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span>
+    <span class="nv">clientMetadata</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">:</span> <span class="kt">String</span><span class="p">]?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span>
+    <span class="nv">context</span><span class="p">:</span> <span class="kt"><a href="../Protocols/CognitoContextData.html">CognitoContextData</a></span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span>
+    <span class="n">on</span> <span class="nv">eventLoop</span><span class="p">:</span> <span class="kt">EventLoop</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">EventLoopFuture</span><span class="o">&lt;</span><span class="kt"><a href="../Enums/CognitoAuthenticateResponse.html">CognitoAuthenticateResponse</a></span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>username</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>user name for user</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>password</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>password for user</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>clientMetadata</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>A map of custom key-value pairs that you can provide as input for AWS Lambda custom workflows</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>context</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Context data for this request</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>on</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Eventloop request should run on.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>An authentication response. This can contain a challenge which the user has to fulfill before being allowed to login, or authentication access, id and refresh keys</p>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:28SotoCognitoAuthenticationKit0B15AuthenticatableC7refresh8username0F5Token14clientMetadata7context2on7NIOCore15EventLoopFutureCyAA0B20AuthenticateResponseOGSS_SSSDyS2SGSgAA0B11ContextData_pSgAJ0nO0_pSgtF"></a>
+                    <a name="//apple_ref/swift/Method/refresh(username:refreshToken:clientMetadata:context:on:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:28SotoCognitoAuthenticationKit0B15AuthenticatableC7refresh8username0F5Token14clientMetadata7context2on7NIOCore15EventLoopFutureCyAA0B20AuthenticateResponseOGSS_SSSDyS2SGSgAA0B11ContextData_pSgAJ0nO0_pSgtF">refresh(username:refreshToken:clientMetadata:context:on:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Get new access and id tokens from a refresh token</p>
+
+<p>The username you provide here has to be the real username of the user not an alias like an email. You can get the real username by authenticing an access token</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">refresh</span><span class="p">(</span>
+    <span class="nv">username</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span>
+    <span class="nv">refreshToken</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span>
+    <span class="nv">clientMetadata</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">:</span> <span class="kt">String</span><span class="p">]?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span>
+    <span class="nv">context</span><span class="p">:</span> <span class="kt"><a href="../Protocols/CognitoContextData.html">CognitoContextData</a></span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span>
+    <span class="n">on</span> <span class="nv">eventLoop</span><span class="p">:</span> <span class="kt">EventLoop</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">EventLoopFuture</span><span class="o">&lt;</span><span class="kt"><a href="../Enums/CognitoAuthenticateResponse.html">CognitoAuthenticateResponse</a></span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>username</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>user name of user</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>refreshToken</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>refresh token required to generate new access and id tokens</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>clientMetadata</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>A map of custom key-value pairs that you can provide as input for AWS Lambda custom workflows</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>context</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Context data for this request</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>on</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Eventloop request should run on.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p><ul>
+<li>An authentication result which should include an id and status token</li>
+</ul></p>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:28SotoCognitoAuthenticationKit0B15AuthenticatableC18respondToChallenge8username4name9responses7session14clientMetadata7context2on7NIOCore15EventLoopFutureCyAA0B20AuthenticateResponseOGSS_0aB16IdentityProvider0bwX0V0H8NameTypeOSDyS2SGSSSgAWSgAA0B11ContextData_pSgAL0rS0_pSgtF"></a>
+                    <a name="//apple_ref/swift/Method/respondToChallenge(username:name:responses:session:clientMetadata:context:on:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:28SotoCognitoAuthenticationKit0B15AuthenticatableC18respondToChallenge8username4name9responses7session14clientMetadata7context2on7NIOCore15EventLoopFutureCyAA0B20AuthenticateResponseOGSS_0aB16IdentityProvider0bwX0V0H8NameTypeOSDyS2SGSSSgAWSgAA0B11ContextData_pSgAL0rS0_pSgtF">respondToChallenge(username:name:responses:session:clientMetadata:context:on:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>respond to authentication challenge</p>
+
+<p>In some situations when logging in Cognito will respond with a challenge before you are allowed to login. These could be supplying a new password for a new account,
+supply an MFA code. This is used to respond to those challenges. You respond with the challenge name, the session id return in the challenge and the response values required.
+If successful you will be returned an authenticated response which includes the access, id and refresh tokens.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">respondToChallenge</span><span class="p">(</span>
+    <span class="nv">username</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span>
+    <span class="nv">name</span><span class="p">:</span> <span class="kt"><a href="../Typealiases.html#/s:28SotoCognitoAuthenticationKit0B13ChallengeNamea">CognitoChallengeName</a></span><span class="p">,</span>
+    <span class="nv">responses</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">:</span> <span class="kt">String</span><span class="p">],</span>
+    <span class="nv">session</span><span class="p">:</span> <span class="kt">String</span><span class="p">?,</span>
+    <span class="nv">clientMetadata</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">:</span> <span class="kt">String</span><span class="p">]?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span>
+    <span class="nv">context</span><span class="p">:</span> <span class="kt"><a href="../Protocols/CognitoContextData.html">CognitoContextData</a></span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span>
+    <span class="n">on</span> <span class="nv">eventLoop</span><span class="p">:</span> <span class="kt">EventLoop</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">EventLoopFuture</span><span class="o">&lt;</span><span class="kt"><a href="../Enums/CognitoAuthenticateResponse.html">CognitoAuthenticateResponse</a></span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>username</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>User name of user</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>name</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Name of challenge</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>responses</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Challenge responses</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>session</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Session id returned with challenge</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>clientMetadata</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>A map of custom key-value pairs that you can provide as input for AWS Lambda custom workflows</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>context</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Context data for this request</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>on</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Eventloop request should run on.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>An authentication response. This can contain another challenge which the user has to fulfill before being allowed to login, or authentication access, id and refresh keys</p>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:28SotoCognitoAuthenticationKit0B15AuthenticatableC29respondToNewPasswordChallenge8username8password7session7context2on7NIOCore15EventLoopFutureCyAA0B20AuthenticateResponseOGSS_S2SSgAA0B11ContextData_pSgAJ0qR0_pSgtF"></a>
+                    <a name="//apple_ref/swift/Method/respondToNewPasswordChallenge(username:password:session:context:on:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:28SotoCognitoAuthenticationKit0B15AuthenticatableC29respondToNewPasswordChallenge8username8password7session7context2on7NIOCore15EventLoopFutureCyAA0B20AuthenticateResponseOGSS_S2SSgAA0B11ContextData_pSgAJ0qR0_pSgtF">respondToNewPasswordChallenge(username:password:session:context:on:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>respond to new password authentication challenge</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">respondToNewPasswordChallenge</span><span class="p">(</span>
+    <span class="nv">username</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span>
+    <span class="nv">password</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span>
+    <span class="nv">session</span><span class="p">:</span> <span class="kt">String</span><span class="p">?,</span>
+    <span class="nv">context</span><span class="p">:</span> <span class="kt"><a href="../Protocols/CognitoContextData.html">CognitoContextData</a></span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span>
+    <span class="n">on</span> <span class="nv">eventLoop</span><span class="p">:</span> <span class="kt">EventLoop</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">EventLoopFuture</span><span class="o">&lt;</span><span class="kt"><a href="../Enums/CognitoAuthenticateResponse.html">CognitoAuthenticateResponse</a></span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>username</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>User name of user</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>password</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>new password</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>session</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Session id returned with challenge</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>context</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Context data for this request</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>on</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Eventloop request should run on.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>An authentication response. This can contain another challenge which the user has to fulfill before being allowed to login, or authentication access, id and refresh keys</p>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:28SotoCognitoAuthenticationKit0B15AuthenticatableC21respondToMFAChallenge8username5token7session7context2on7NIOCore15EventLoopFutureCyAA0B20AuthenticateResponseOGSS_S2SSgAA0B11ContextData_pSgAJ0oP0_pSgtF"></a>
+                    <a name="//apple_ref/swift/Method/respondToMFAChallenge(username:token:session:context:on:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:28SotoCognitoAuthenticationKit0B15AuthenticatableC21respondToMFAChallenge8username5token7session7context2on7NIOCore15EventLoopFutureCyAA0B20AuthenticateResponseOGSS_S2SSgAA0B11ContextData_pSgAJ0oP0_pSgtF">respondToMFAChallenge(username:token:session:context:on:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>respond to MFA token challenge</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">respondToMFAChallenge</span><span class="p">(</span>
+    <span class="nv">username</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span>
+    <span class="nv">token</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span>
+    <span class="nv">session</span><span class="p">:</span> <span class="kt">String</span><span class="p">?,</span>
+    <span class="nv">context</span><span class="p">:</span> <span class="kt"><a href="../Protocols/CognitoContextData.html">CognitoContextData</a></span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span>
+    <span class="n">on</span> <span class="nv">eventLoop</span><span class="p">:</span> <span class="kt">EventLoop</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">EventLoopFuture</span><span class="o">&lt;</span><span class="kt"><a href="../Enums/CognitoAuthenticateResponse.html">CognitoAuthenticateResponse</a></span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>username</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>User name of user</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>password</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>new password</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>session</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Session id returned with challenge</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>context</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Context data for this request</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>on</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Eventloop request should run on.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>An authentication response. This can contain another challenge which the user has to fulfill before being allowed to login, or authentication access, id and refresh keys</p>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:28SotoCognitoAuthenticationKit0B15AuthenticatableC20updateUserAttributes8username10attributes2on7NIOCore15EventLoopFutureCyytGSS_SDyS2SGAH0mN0_pSgtF"></a>
+                    <a name="//apple_ref/swift/Method/updateUserAttributes(username:attributes:on:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:28SotoCognitoAuthenticationKit0B15AuthenticatableC20updateUserAttributes8username10attributes2on7NIOCore15EventLoopFutureCyytGSS_SDyS2SGAH0mN0_pSgtF">updateUserAttributes(username:attributes:on:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>update the users attributes. This requires an <code>adminClient</code></p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">updateUserAttributes</span><span class="p">(</span>
+    <span class="nv">username</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span>
+    <span class="nv">attributes</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">:</span> <span class="kt">String</span><span class="p">],</span>
+    <span class="n">on</span> <span class="nv">eventLoop</span><span class="p">:</span> <span class="kt">EventLoop</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">EventLoopFuture</span><span class="o">&lt;</span><span class="kt">Void</span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>username</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>user name of user</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>attributes</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>list of updated attributes for user</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>on</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Event loop request is running on.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:28SotoCognitoAuthenticationKit0B15AuthenticatableC20updateUserAttributes11accessToken10attributes14clientMetadata2on7NIOCore15EventLoopFutureCyytGSS_SDyS2SGAMSgAI0pQ0_pSgtF"></a>
+                    <a name="//apple_ref/swift/Method/updateUserAttributes(accessToken:attributes:clientMetadata:on:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:28SotoCognitoAuthenticationKit0B15AuthenticatableC20updateUserAttributes11accessToken10attributes14clientMetadata2on7NIOCore15EventLoopFutureCyytGSS_SDyS2SGAMSgAI0pQ0_pSgtF">updateUserAttributes(accessToken:attributes:clientMetadata:on:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>update the users attributes, given an access token</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">updateUserAttributes</span><span class="p">(</span>
+    <span class="nv">accessToken</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span>
+    <span class="nv">attributes</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">:</span> <span class="kt">String</span><span class="p">],</span>
+    <span class="nv">clientMetadata</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">:</span> <span class="kt">String</span><span class="p">]?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span>
+    <span class="n">on</span> <span class="nv">eventLoop</span><span class="p">:</span> <span class="kt">EventLoop</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">EventLoopFuture</span><span class="o">&lt;</span><span class="kt">Void</span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>accessToken</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>user name of user</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>attributes</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>list of updated attributes for user</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>on</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Event loop request is running on.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:28SotoCognitoAuthenticationKit0B15AuthenticatableC14forgotPassword8username14clientMetadata2on7NIOCore15EventLoopFutureCyytGSS_SDyS2SGSgAH0mN0_pSgtF"></a>
+                    <a name="//apple_ref/swift/Method/forgotPassword(username:clientMetadata:on:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:28SotoCognitoAuthenticationKit0B15AuthenticatableC14forgotPassword8username14clientMetadata2on7NIOCore15EventLoopFutureCyytGSS_SDyS2SGSgAH0mN0_pSgtF">forgotPassword(username:clientMetadata:on:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Start forgot password flow. An email/sms will be sent to the user with a reset code</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">forgotPassword</span><span class="p">(</span>
+    <span class="nv">username</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span>
+    <span class="nv">clientMetadata</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">:</span> <span class="kt">String</span><span class="p">]?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span>
+    <span class="n">on</span> <span class="nv">eventLoop</span><span class="p">:</span> <span class="kt">EventLoop</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">EventLoopFuture</span><span class="o">&lt;</span><span class="kt">Void</span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>username</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>user name of user</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>clientMetadata</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>A map of custom key-value pairs that you can provide as input for AWS Lambda custom workflows</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>eventLoop</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Event loop request is running on.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:28SotoCognitoAuthenticationKit0B15AuthenticatableC21confirmForgotPassword8username03newH016confirmationCode14clientMetadata2on7NIOCore15EventLoopFutureCyytGSS_S2SSDyS2SGSgAJ0qR0_pSgtF"></a>
+                    <a name="//apple_ref/swift/Method/confirmForgotPassword(username:newPassword:confirmationCode:clientMetadata:on:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:28SotoCognitoAuthenticationKit0B15AuthenticatableC21confirmForgotPassword8username03newH016confirmationCode14clientMetadata2on7NIOCore15EventLoopFutureCyytGSS_S2SSDyS2SGSgAJ0qR0_pSgtF">confirmForgotPassword(username:newPassword:confirmationCode:clientMetadata:on:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Confirm new password in forgot password flow</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">confirmForgotPassword</span><span class="p">(</span>
+    <span class="nv">username</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span>
+    <span class="nv">newPassword</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span>
+    <span class="nv">confirmationCode</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span>
+    <span class="nv">clientMetadata</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">:</span> <span class="kt">String</span><span class="p">]?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span>
+    <span class="n">on</span> <span class="nv">eventLoop</span><span class="p">:</span> <span class="kt">EventLoop</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">EventLoopFuture</span><span class="o">&lt;</span><span class="kt">Void</span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>username</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>user name of user</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>newPassword</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>new password</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>confirmationCode</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>confirmation code sent to user</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>clientMetadata</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>A map of custom key-value pairs that you can provide as input for AWS Lambda custom workflows</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>eventLoop</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Event loop request is running on.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:28SotoCognitoAuthenticationKit0B15AuthenticatableC12authenticate7idToken2on7NIOCore15EventLoopFutureCyxGSS_AG0kL5Group_ptSeRzSERzlF"></a>
+                    <a name="//apple_ref/swift/Method/authenticate(idToken:on:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:28SotoCognitoAuthenticationKit0B15AuthenticatableC12authenticate7idToken2on7NIOCore15EventLoopFutureCyxGSS_AG0kL5Group_ptSeRzSERzlF">authenticate(idToken:on:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Verify id Token JWT and return contents</p>
+
+<p>This function verifies the id token signature, verifies it was issued by your user pool, it was generated for your application client, that it hasn&rsquo;t
+expired and that it is an id token.
+Then it fills out the placeholder type <code>Payload</code>with values from the id token. The list of standard list of claims found in an id token are
+detailed in the <a href="https://openid.net/specs/openid-connect-core-1_0.html#StandardClaims">OpenID spec</a> . Your
+<code>Payload</code> type needs to decode using these tags, plus the AWS specific &ldquo;cognito:username&rdquo; tag and any custom tags you have setup
+for the user pool.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="n">authenticate</span><span class="o">&lt;</span><span class="kt">Payload</span><span class="o">&gt;</span><span class="p">(</span><span class="nv">idToken</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="n">on</span> <span class="nv">eventLoopGroup</span><span class="p">:</span> <span class="kt">EventLoopGroup</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">EventLoopFuture</span><span class="o">&lt;</span><span class="kt">Payload</span><span class="o">&gt;</span> <span class="k">where</span> <span class="kt">Payload</span> <span class="p">:</span> <span class="kt">Decodable</span><span class="p">,</span> <span class="kt">Payload</span> <span class="p">:</span> <span class="kt">Encodable</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>idToken</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Id token, returned from login</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>on</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Event loop to run on</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>An event loop future containing the payload structure.</p>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:28SotoCognitoAuthenticationKit0B15AuthenticatableC12authenticate11accessToken2on7NIOCore15EventLoopFutureCyAA0b6AccessH0VGSS_AG0kL5Group_ptF"></a>
+                    <a name="//apple_ref/swift/Method/authenticate(accessToken:on:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:28SotoCognitoAuthenticationKit0B15AuthenticatableC12authenticate11accessToken2on7NIOCore15EventLoopFutureCyAA0b6AccessH0VGSS_AG0kL5Group_ptF">authenticate(accessToken:on:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Verify access token JWT and return contents</p>
+
+<p>This function verifies the access token signature, verifies it was issued by your user pool, that it hasn&rsquo;t expired and that it is an access token.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">authenticate</span><span class="p">(</span><span class="nv">accessToken</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="n">on</span> <span class="nv">eventLoopGroup</span><span class="p">:</span> <span class="kt">EventLoopGroup</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">EventLoopFuture</span><span class="o">&lt;</span><span class="kt"><a href="../Structs/CognitoAccessToken.html">CognitoAccessToken</a></span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>accessToken</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Access token, returned from login</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>on</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Event loop to run on</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>An event loop future returning a structure with the username and UUID for the user.</p>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:28SotoCognitoAuthenticationKit0B15AuthenticatableC11loadSigners6region2on7NIOCore15EventLoopFutureCy6JWTKit10JWTSignersCG0A4Core6RegionV_AG0kL5Group_ptF"></a>
+                    <a name="//apple_ref/swift/Method/loadSigners(region:on:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:28SotoCognitoAuthenticationKit0B15AuthenticatableC11loadSigners6region2on7NIOCore15EventLoopFutureCy6JWTKit10JWTSignersCG0A4Core6RegionV_AG0kL5Group_ptF">loadSigners(region:on:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>load JSON web keys and create JWT signers from them</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">loadSigners</span><span class="p">(</span><span class="nv">region</span><span class="p">:</span> <span class="kt">Region</span><span class="p">,</span> <span class="n">on</span> <span class="nv">eventLoopGroup</span><span class="p">:</span> <span class="kt">EventLoopGroup</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">EventLoopFuture</span><span class="o">&lt;</span><span class="kt">JWTSigners</span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:28SotoCognitoAuthenticationKit0B15AuthenticatableC10secretHash8usernameSSSgSS_tF"></a>
+                    <a name="//apple_ref/swift/Method/secretHash(username:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:28SotoCognitoAuthenticationKit0B15AuthenticatableC10secretHash8usernameSSSgSS_tF">secretHash(username:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Return secret hash to include in cognito identity provider calls. This is an internal function and shouldn&rsquo;t need to be called</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">secretHash</span><span class="p">(</span><span class="nv">username</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">String</span><span class="p">?</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:28SotoCognitoAuthenticationKit0B15AuthenticatableC19initiateAuthRequest8authFlow0I10Parameters14clientMetadata7context2on7NIOCore15EventLoopFutureCyAA0B20AuthenticateResponseOG0aB16IdentityProvider0bvW0V0gJ4TypeO_SDyS2SGAUSgAA0B11ContextData_pSgAJ0qR0_ptF"></a>
+                    <a name="//apple_ref/swift/Method/initiateAuthRequest(authFlow:authParameters:clientMetadata:context:on:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:28SotoCognitoAuthenticationKit0B15AuthenticatableC19initiateAuthRequest8authFlow0I10Parameters14clientMetadata7context2on7NIOCore15EventLoopFutureCyAA0B20AuthenticateResponseOG0aB16IdentityProvider0bvW0V0gJ4TypeO_SDyS2SGAUSgAA0B11ContextData_pSgAJ0qR0_ptF">initiateAuthRequest(authFlow:authParameters:clientMetadata:context:on:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Return an authorization request future. This is an internal function and shouldn&rsquo;t need to be called</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">initiateAuthRequest</span><span class="p">(</span>
+    <span class="nv">authFlow</span><span class="p">:</span> <span class="kt">CognitoIdentityProvider</span><span class="o">.</span><span class="kt">AuthFlowType</span><span class="p">,</span>
+    <span class="nv">authParameters</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">:</span> <span class="kt">String</span><span class="p">],</span>
+    <span class="nv">clientMetadata</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">:</span> <span class="kt">String</span><span class="p">]?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span>
+    <span class="nv">context</span><span class="p">:</span> <span class="kt"><a href="../Protocols/CognitoContextData.html">CognitoContextData</a></span><span class="p">?,</span>
+    <span class="n">on</span> <span class="nv">eventLoop</span><span class="p">:</span> <span class="kt">EventLoop</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">EventLoopFuture</span><span class="o">&lt;</span><span class="kt"><a href="../Enums/CognitoAuthenticateResponse.html">CognitoAuthenticateResponse</a></span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:28SotoCognitoAuthenticationKit0B15AuthenticatableC14translateError5errors0G0_psAF_p_tF"></a>
+                    <a name="//apple_ref/swift/Method/translateError(error:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:28SotoCognitoAuthenticationKit0B15AuthenticatableC14translateError5errors0G0_psAF_p_tF">translateError(error:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Translate error from one thrown by Soto. This is an internal function and shouldn&rsquo;t need to be called</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">translateError</span><span class="p">(</span><span class="nv">error</span><span class="p">:</span> <span class="kt">Error</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Error</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="task-group">
+              <div class="task-name-container">
+                <a name="/Secure%20Remote%20Password"></a>
+                <a name="//apple_ref/swift/Section/Secure Remote Password" class="dashAnchor"></a>
+                <div class="section-name-container">
+                  <a class="section-name-link" href="#/Secure%20Remote%20Password"></a>
+                  <h3 class="section-name"><p>Secure Remote Password</p>
+</h3>
+                </div>
+              </div>
+              <ul>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:28SotoCognitoAuthenticationKit0B15AuthenticatableC0abC3SRPE012authenticateF08username8password14clientMetadata7context2on7NIOCore15EventLoopFutureCyAA0B20AuthenticateResponseOGSS_SSSDyS2SGSgAA0B11ContextData_pSgAK0oP0_pSgtF"></a>
+                    <a name="//apple_ref/swift/Method/authenticateSRP(username:password:clientMetadata:context:on:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:28SotoCognitoAuthenticationKit0B15AuthenticatableC0abC3SRPE012authenticateF08username8password14clientMetadata7context2on7NIOCore15EventLoopFutureCyAA0B20AuthenticateResponseOGSS_SSSDyS2SGSgAA0B11ContextData_pSgAK0oP0_pSgtF">authenticateSRP(username:password:clientMetadata:context:on:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>authenticate using SRP</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">authenticateSRP</span><span class="p">(</span>
+    <span class="nv">username</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span>
+    <span class="nv">password</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span>
+    <span class="nv">clientMetadata</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">:</span> <span class="kt">String</span><span class="p">]?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span>
+    <span class="nv">context</span><span class="p">:</span> <span class="kt"><a href="../Protocols/CognitoContextData.html">CognitoContextData</a></span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span>
+    <span class="n">on</span> <span class="nv">eventLoop</span><span class="p">:</span> <span class="kt">EventLoop</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">EventLoopFuture</span><span class="o">&lt;</span><span class="kt"><a href="../Enums/CognitoAuthenticateResponse.html">CognitoAuthenticateResponse</a></span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>username</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>user name for user</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>password</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>password for user</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>clientMetadata</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>A map of custom key-value pairs that you can provide as input for AWS Lambda custom workflows</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>context</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Context data for this request</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>on</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Eventloop request should run on.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>An authentication response. This can contain a challenge which the user has to fulfill before being allowed to login, or authentication access, id and refresh keys</p>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </section>
+        </section>
+        <section id="footer">
+          <p>&copy; 2021 <a class="link" href="" target="_blank" rel="external"></a>. All rights reserved. (Last updated: 2021-10-01)</p>
+          <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external">jazzy ♪♫ v0.13.1</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external">Realm</a> project.</p>
+        </section>
+      </article>
+    </div>
+  </body>
+</div>
+</html>

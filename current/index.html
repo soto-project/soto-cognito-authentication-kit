@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>  Reference</title>
+    <link rel="stylesheet" type="text/css" href="css/jazzy.css" />
+    <link rel="stylesheet" type="text/css" href="css/highlight.css" />
+    <meta charset='utf-8'>
+    <script src="js/jquery.min.js" defer></script>
+    <script src="js/jazzy.js" defer></script>
+    
+  </head>
+  <body>
+    <a title="  Reference"></a>
+    <header>
+      <div class="content-wrapper">
+        <p><a href="index.html"> Docs</a> (84% documented)</p>
+      </div>
+    </header>
+    <div class="content-wrapper">
+      <p id="breadcrumbs">
+        <a href="index.html"> Reference</a>
+        <img id="carat" src="img/carat.png" />
+          Reference
+      </p>
+    </div>
+    <div class="content-wrapper">
+      <nav class="sidebar">
+        <ul class="nav-groups">
+          <li class="nav-group-name">
+            <a href="Classes.html">Classes</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="Classes/CognitoAuthenticatable.html">CognitoAuthenticatable</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Classes/CognitoIdentifiable.html">CognitoIdentifiable</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="Enums.html">Enumerations</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="Enums/CognitoAuthenticateResponse.html">CognitoAuthenticateResponse</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Enums/CognitoAuthenticateResponse/AuthenticatedResponse.html">– AuthenticatedResponse</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Enums/CognitoAuthenticateResponse/ChallengedResponse.html">– ChallengedResponse</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Enums/SotoCognitoError.html">SotoCognitoError</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="Extensions.html">Extensions</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="Extensions/Array.html">Array</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="Protocols.html">Protocols</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="Protocols/CognitoContextData.html">CognitoContextData</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="Structs.html">Structures</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="Structs/CognitoAccessToken.html">CognitoAccessToken</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Structs/CognitoConfiguration.html">CognitoConfiguration</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Structs/CognitoCreateUserResponse.html">CognitoCreateUserResponse</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Structs/CognitoIdentityConfiguration.html">CognitoIdentityConfiguration</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="Typealiases.html">Type Aliases</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="Typealiases.html#/s:28SotoCognitoAuthenticationKit0B13ChallengeNamea">CognitoChallengeName</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Typealiases.html#/s:28SotoCognitoAuthenticationKit0B14UserStatusTypea">CognitoUserStatusType</a>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </nav>
+      <article class="main-content">
+        <section>
+          <section class="section">
+            
+            <h1 id='soto-cognito-authentication-kit' class='heading'>Soto Cognito Authentication Kit</h1>
+
+<p><a href="https://swift.org"><img src="http://img.shields.io/badge/swift-5.1-brightgreen.svg" alt="Swift 5.1" /></a>
+<a href="https://github.com/adam-fowler/soto-cognito-authentication-kit/actions?query=workflow%3ASwift"><img src="https://github.com/adam-fowler/soto-cognito-authentication-kit/workflows/Swift/badge.svg" /></a></p>
+
+<p>Amazon Cognito provides authentication, authorization, and user management for your web apps. Soto Cognito Authentication Kit is a Swift interface to Cognito.</p>
+<h2 id='table-of-contents' class='heading'>Table of Contents</h2>
+
+<ul>
+<li><a href="#using-with-cognito-user-pools">Using with Cognito User Pools</a>
+
+<ul>
+<li><a href="#configuration">Configuration</a></li>
+<li><a href="#creating-a-aws-cognito-user">Creating a AWS Cognito user</a></li>
+<li><a href="#authenticating-with-username-and-password">Authenticating with username and password</a></li>
+<li><a href="#verifying-an-access-token-is-valid">Verifying an access token is valid</a></li>
+<li><a href="#verifying-the-contents-of-an-id-token">Verifying the contents of an id token</a></li>
+<li><a href="#refreshing-id-and-access-tokens">Refreshing id and access tokens</a></li>
+<li><a href="#responding-to-authentication-challenges">Responding to authentication challenges</a></li>
+<li><a href="#creating-user-pools">Creating user pools</a></li>
+</ul></li>
+<li><a href="#using-with-cognito-identity-pools">Using with Cognito Identity Pools</a>
+
+<ul>
+<li><a href="#configuration-1">Configuration</a></li>
+<li><a href="#accessing-aws-credentials">Accessing AWS credentials</a></li>
+</ul></li>
+<li><a href="#using-with-unauthenticated-client">Using with unauthenticated client</a></li>
+<li><a href="#secure-remote-password">Secure Remote Password</a></li>
+</ul>
+<h2 id='using-with-cognito-user-pools' class='heading'>Using with Cognito User Pools</h2>
+<h3 id='configuration' class='heading'>Configuration</h3>
+
+<p>First you need to create an <code><a href="Structs/CognitoConfiguration.html">CognitoConfiguration</a></code> instance that stores all your configuration information and create your <code><a href="Classes/CognitoAuthenticatable.html">CognitoAuthenticatable</a></code> instance. </p>
+<pre class="highlight plaintext"><code>let awsClient = AWSClient(httpClientProvider: .createNew)
+let cognitoIdentityProvider = CognitoIdentityProvider(client: awsClient, region: .euwest1)
+let configuration = CognitoConfiguration(
+    userPoolId: "eu-west-1_userpoolid",
+    clientId: "23432clientId234234",
+    clientSecret: "1q9ln4m892j2secreta0dalh9a3aakmpeugiaag8k3cacijlbkrp",
+    cognitoIDP: cognitoIdentityProvider,
+    adminClient: true
+)
+let authenticatable = CognitoAuthenticatable(configuration: configuration)
+</code></pre>
+
+<p>The values <code>userPoolId</code>, <code>clientId</code> and <code>clientSecret</code> can all be found on the Amazon Cognito user pool <a href="https://console.aws.amazon.com/cognito/users">console</a>. <code>AWSClient</code> is the client used to communicate with Amazon Web Services and <code>CognitoIdentityProvider</code> provides the Cognito Identity Provider Userpool API. Both objects are provided by the <a href="https://github.com/soto-project/soto.git">Soto</a> library. It is worthwhile reading up a little about these <a href="https://soto.codes/user-guides/awsclient.html">here</a> and <a href="https://soto.codes/user-guides/service-objects.html">here</a> before continuing. </p>
+
+<p>The <code>adminClient</code> parameter decides which set of <code>CognitoIdentityProvider</code> commands will be used. If set to <code>true</code> then the admin versions of the commands will be used. These require an <code>AWSClient</code> with AWS credentials. You can find more details about providing credentials <a href="https://soto.codes/user-guides/credential-providers.html">here</a>. Also a few commands like <code>createUser</code> are only available when <code>adminClient</code> is set to <code>true</code>. Whether you need to use an <code>adminClient</code> or not will be defined by the <code>authFlow</code> setup for your App client in the AWS console. If you are going to set <code>adminClient</code> to false then you can create your <code>AWSClient</code> as follows as you do not need AWS credentials.</p>
+<pre class="highlight swift"><code><span class="k">let</span> <span class="nv">awsClient</span> <span class="o">=</span> <span class="kt">AWSClient</span><span class="p">(</span>
+    <span class="nv">credentialProvider</span><span class="p">:</span> <span class="o">.</span><span class="n">empty</span><span class="p">,</span> 
+    <span class="nv">httpClientProvider</span><span class="p">:</span> <span class="o">.</span><span class="n">createNew</span>
+<span class="p">)</span>
+</code></pre>
+
+<p>In general the admin versions of the commands are used by servers and the non-admin versions are used by client software.</p>
+<h3 id='creating-a-aws-cognito-user' class='heading'>Creating a AWS Cognito user</h3>
+
+<p>Assuming we have the <code><a href="Classes/CognitoAuthenticatable.html">CognitoAuthenticatable</a></code> instance from above the following can be used to create a user. As indicated above this function needs a configuration with <code>adminClient</code> set to <code>true</code>.</p>
+<pre class="highlight plaintext"><code>let username = "johndoe"
+let attributes: [String: String] = ["email": "user@email.com", "name": "John Doe", "gender": "male"]
+return authenticatable.createUser(username: username, attributes: attributes, on: request.eventLoop)
+</code></pre>
+
+<p>The attributes you provide should match the attributes you selected when creating the user pool in the AWS Cognito console. Once you&rsquo;ve created a user an email is sent to them detailing their username and randomly generated password. The <code>on:</code> parameter is an eventLoop to do the work on.</p>
+
+<p>As an alternative you can use the <code>signUp</code> function which takes a <code>username</code> and <code>password</code>. This will send a confirmation email to the user which includes a confirmation code. You then call <code>confirmSignUp</code> with this confirmation code. For this path to be available you need to have the &lsquo;Allow users to sign themselves up&rsquo; flag set in your user pool. </p>
+<h3 id='authenticating-with-username-and-password' class='heading'>Authenticating with username and password</h3>
+
+<p>Once your user is created and confirmed in the signUp case. The following will generate JWT authentication tokens from a username and password. This function requires a <code>CognitoIdentityProvider</code> setup with AWS credentials, unless you pass the <code>requireAuthenticatedClient</code> parameter set to <code>false</code>.</p>
+<pre class="highlight plaintext"><code>let response = authenticatable.authenticate(
+    username: username, 
+    password: password,
+    context: request,
+    on: request.eventLoop
+).flatMap { response in
+    if case .authenticated(let authenticated) = response {
+        let accessToken = authenticated.accessToken
+        let idToken = authenticated.idToken
+        let refreshToken = authenticated.refreshToken
+    ...
+}
+</code></pre>
+
+<p>The access token is used just to indicate a user has been granted access. It contains verification information, the username and a subject uuid which can be used to identify the user if you don&rsquo;t want to use the username. The token is valid for 60 minutes. The idToken contains claims about the identity of the user. It should contain all the attributes attached to the user. Again this token is only valid for 60 minutes. If you receive a <code>challenged</code> case then you have a login challenge and must respond to it before receiving authentication tokens. See <a href="#responding-to-authentication-challenges">below</a>. </p>
+<h3 id='verifying-an-access-token-is-valid' class='heading'>Verifying an access token is valid</h3>
+
+<p>The following will verify whether a token gives access.</p>
+<pre class="highlight plaintext"><code>let response = authenticatable.authenticate(accessToken: token, on: request.eventLoop)
+    .flatMap { response in
+        let username = response.username
+        let subject = response.subject
+        ...
+}
+</code></pre>
+
+<p>If the access token has expired, was not issued by the user pool or not created for the app client this call will return a failed <code>Future</code> with a unauthorized error.</p>
+<h3 id='verifying-the-contents-of-an-id-token' class='heading'>Verifying the contents of an id token</h3>
+
+<p>Id tokens contain the attributes of a user. As this varies between projects you have to provide a custom class to be filled out with these. The class needs to inherit from <code>Codable</code> and the <code>CodingKeys</code> need to reflect the keys provided by Amazon Web Services. These are defined in <a href="https://openid.net/specs/openid-connect-core-1_0.html#Claims">OIDC Standard Claims</a>. If you have custom attributes attached to your user these will be prefixed by &ldquo;custom:&rdquo;. The following will extract the username, email, name and gender from an id token.</p>
+<pre class="highlight plaintext"><code>struct IdResponse: Codable {
+    let email: String
+    let username: String
+    let name: String
+    let gender: String
+
+    private enum CodingKeys: String, CodingKey {
+        case email = "email"
+        case username = "cognito:username"
+        case name = "name"
+        case gender = "gender"
+    }
+}
+let response = authenticatable.authenticate(idToken: token, on: req.eventLoop)
+    .map { (response: IdResponse)-&gt;IdResponse in
+        let email = response.email
+        let username = response.username
+        let name = response.name
+        let gender = response.gender
+        ...
+        return response
+}
+</code></pre>
+
+<p>NB The username tag in an ID Token is &ldquo;cognito:username&rdquo;</p>
+<h3 id='refreshing-id-and-access-tokens' class='heading'>Refreshing id and access tokens</h3>
+
+<p>To avoid having to ask the user for their username and password every 60 minutes a refresh token is also provided. You can use this to generate new id and access tokens whenever they have expired or are about to expire. The refresh token is valid for 30 days. Although you can edit the length of this in the Cognito console. </p>
+<pre class="highlight plaintext"><code>let response = authenticatable.refresh(
+    username: username, 
+    refreshToken: refreshToken, 
+    context: request,
+    on: request.eventLoop
+).flatMap { response in
+    let accessToken = response.authenticated?.accessToken
+    let idToken = response.authenticated?.idToken
+    ...
+}
+</code></pre>
+<h3 id='responding-to-authentication-challenges' class='heading'>Responding to authentication challenges</h3>
+
+<p>Sometimes when you try to authenticate a username and password or a refresh token you will be returned a challenge instead of the authentication tokens. An example of being when someone logs in for the first time they are required to change their password before they can continue. In this situation AWS Cognito returns a new password challenge. When you respond to this with a new password it provides you with the authentication tokens. Other situations would include Multi Factor Authentication. The following is responding to a change password request</p>
+<pre class="highlight plaintext"><code>let challengeName: CognitoChallengeName = .newPasswordRequired 
+let challengeResponse: [String: String] = ["NEW_PASSWORD":"MyNewPassword1"]
+let response = authenticatable.respondToChallenge(
+    username: username, 
+    name: challengeName, 
+    responses: challengeResponse, 
+    session: session, 
+    context: request,
+    on: request.eventLoop
+).flatMap { response in
+    let accessToken = response.authenticated?.accessToken
+    let idToken = response.authenticated?.idToken
+    let refreshToken = response.authenticated?.refreshToken
+    ...
+}
+</code></pre>
+
+<p>The <code>name</code> parameter is an enum containing all challenges. The <code>responses</code> parameter is a dictionary of inputs to the challenge. The <code>session</code> parameter was included in the challenge returned to you by the authentication request. If the challenge is successful you will get <code>response.authenticated</code> as a response. If another challenge is required then you will get details of that in <code>response.challenged</code>. There are custom versions of the <code>respondToChallenge</code> function for new password: <code>respondToNewPasswordChallenge</code> and for Multi Factor Authentication: <code>respondToMFAChallenge</code>.</p>
+<h3 id='creating-user-pools' class='heading'>Creating user pools</h3>
+
+<p>There are a few settings that are required when creating your Cognito user pool, if you want to use it with the Soto Cognito Authentication library. Because the library uses the Admin level service calls device tracking is unavailable so ensure you set device remembering to off. Otherwise your refresh tokens will not work. </p>
+
+<p>When creating the app client for your user pool ensure you have &lsquo;Generate client secret&rsquo; enabled. The Soto Cognito Authentication library automatically creates the secret hash required for user pools that have a client secret. It would be sensible to take advantage of this. As the library is designed to work on secured backend servers it uses the Admin no SRP authorization flow to authenticate users. You will also need to tick &lsquo;Enable username password auth for admin APIs for authentication (ALLOW_ADMIN_USER_PASSWORD_AUTH)&rsquo; to ensure authentiation works. </p>
+
+<p>For more details on AWS Cognito User Pools you can find Amazon&rsquo;s documentation <a href="https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-identity-pools.html">here</a></p>
+<h2 id='using-with-cognito-identity-pools' class='heading'>Using with Cognito Identity Pools</h2>
+
+<p>Soto Cognito Authentication can be used to interface with Amazon Cognito Federated Identities, allowing you to create temporary credentials for accessing AWS services.</p>
+<h3 id='configuration' class='heading'>Configuration</h3>
+
+<p>First you need to create an <code><a href="Structs/CognitoIdentityConfiguration.html">CognitoIdentityConfiguration</a></code> instance that stores all your configuration information for interfacing with Amazon Cognito Federated Identities and a <code><a href="Classes/CognitoIdentifiable.html">CognitoIdentifiable</a></code> instance. </p>
+<pre class="highlight plaintext"><code>let cognitoIdentity = CognitoIdentity(client: awsClient, region: .euwest1)
+let configuration = CognitoIdentityConfiguration(
+    identityPoolId: "eu-west-1_identitypoolid"
+    identityProvider: "provider"
+    cognitoIdentity: cognitoIdentity
+)
+let identifiable = CognitoIdentifiable(configuration: configuration)
+</code></pre>
+
+<p>The <code>identityPoolId</code> you can get from &ldquo;Edit Identity Pool&rdquo; section of the AWS console. <code>cognitoIdentity</code> is the client used to communicate with Amazon Web Services. It is provided by the <a href="https://github.com/soto-project/soto.git">Soto</a> library. The <code>identityProvider</code> is whatever you setup in the AWS Cognito Identity Pool for providing authentication details.</p>
+<h3 id='accessing-aws-credentials' class='heading'>Accessing AWS credentials</h3>
+
+<p>There are two steps to accessing AWS credentials. First you need to get an identity id and then with that identity id you can get your AWS credentials. This can be done with the following.</p>
+<pre class="highlight plaintext"><code>return identifiable.getIdentityId(idToken: idToken, on: req.eventLoop)
+    .flatMap { identity in
+        return identifiable.getCredentialForIdentity(identityId: identity, idToken: token, on: req.eventLoop)
+}
+</code></pre>
+
+<p>In the situation you are using Cognito user pools the <code>idToken</code> is the <code>idToken</code> returned when you authenticate a user.</p>
+<h2 id='secure-remote-password' class='heading'>Secure Remote Password</h2>
+
+<p>If you are using username/password authentication from a client it preferable you use Secure Remote Password to do your authentication. SRP is a secure password-based authentication and key-exchange protocol. It requires the client to show the server it knows of the user&rsquo;s password without actually passing the password to the server. Also the server does not store a copy of the password, instead it stores a verifier that can be used to verify the password is correct. A version of this is implemented in AWS Cognito and you can use it as follows</p>
+<pre class="highlight swift"><code><span class="kd">import</span> <span class="kt">SotoCognitoAuthenticationSRP</span>
+
+<span class="k">let</span> <span class="nv">response</span> <span class="o">=</span> <span class="n">authenticatable</span><span class="o">.</span><span class="nf">authenticateSRP</span><span class="p">(</span>
+    <span class="nv">username</span><span class="p">:</span> <span class="n">username</span><span class="p">,</span> 
+    <span class="nv">password</span><span class="p">:</span> <span class="n">password</span><span class="p">,</span>
+    <span class="nv">requireAuthenticatedClient</span><span class="p">:</span> <span class="kc">false</span>
+<span class="p">)</span>
+</code></pre>
+
+          </section>
+        </section>
+        <section id="footer">
+          <p>&copy; 2021 <a class="link" href="" target="_blank" rel="external"></a>. All rights reserved. (Last updated: 2021-10-01)</p>
+          <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external">jazzy ♪♫ v0.13.1</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external">Realm</a> project.</p>
+        </section>
+      </article>
+    </div>
+  </body>
+</div>
+</html>
