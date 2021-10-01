@@ -10,6 +10,7 @@ needs to be listed here.
 ### Contributors
 
 - Adam Fowler <adamfowler71@gmail.com>
+- mbutan <m.butan@gmail.com>
 
 **Updating this list**
 
