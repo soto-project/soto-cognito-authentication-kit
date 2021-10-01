@@ -19,6 +19,8 @@ import NIO
 import SotoCognitoAuthenticationKit
 
 public extension CognitoAuthenticatable {
+    // MARK: Secure Remote Password
+
     /// authenticate using SRP
     ///
     /// - parameters:

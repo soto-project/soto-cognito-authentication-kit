@@ -61,21 +61,21 @@ public struct CognitoConfiguration {
 /// See [Cognito Identity Pools](https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-identity.html)
 /// documention for more information.
 public struct CognitoIdentityConfiguration {
-    /// cognito identity pool id
+    /// Cognito identity pool id
     public let identityPoolId: String
-    /// identity provider
+    /// Identity provider
     public let identityProvider: String
     /// Cognito Identity client
     public let cognitoIdentity: CognitoIdentity
 
-    /// initializer
+    /// Initializer
     public init(identityPoolId: String, identityProvider: String, cognitoIdentity: CognitoIdentity) {
         self.identityPoolId = identityPoolId
         self.identityProvider = identityProvider
         self.cognitoIdentity = cognitoIdentity
     }
 
-    /// initializer when using a AWS Cognito user pool for identification
+    /// Initializer when using a AWS Cognito user pool for identification
     public init(identityPoolId: String, userPoolId: String, region: Region, cognitoIdentity: CognitoIdentity) {
         self.identityPoolId = identityPoolId
         self.identityProvider = "cognito-idp.\(region.rawValue).amazonaws.com/\(userPoolId)"

@@ -17,7 +17,7 @@ import Foundation
 import JWTKit
 import NIO
 
-/// struct returned when authenticating an access token
+/// Struct returned when authenticating an access token
 public struct CognitoAccessToken: Codable {
     public let username: String
     public let subject: UUID

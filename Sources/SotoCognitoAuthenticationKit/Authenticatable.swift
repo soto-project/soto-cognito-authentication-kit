@@ -18,29 +18,37 @@ import JWTKit
 import NIO
 @_exported import SotoCognitoIdentityProvider
 
+/// Authentication challenge returned by Cognito
 public typealias CognitoChallengeName = CognitoIdentityProvider.ChallengeNameType
+/// Cognito user status
 public typealias CognitoUserStatusType = CognitoIdentityProvider.UserStatusType
 
+/// Errors thrown by `CognitoAuthenticateResponse`
 public enum SotoCognitoError: Error {
-    case failedToCreateContextData
+    /// Unexpected result return from AWS
     case unexpectedResult(reason: String?)
+    /// Unauthorized to run this command
     case unauthorized(reason: String?)
+    /// Public key returned by Soto is invalid please try again
     case invalidPublicKey
 }
 
-/// Response to create user
+/// Response to `createUser`
 public struct CognitoCreateUserResponse: Codable {
+    /// name of user
     public var userName: String
+    /// status of user account
     public var userStatus: CognitoUserStatusType
 }
 
 /// Authentication response
 public enum CognitoAuthenticateResponse: Codable {
-    /// response with authentication details
+    /// Response with authentication details
     case authenticated(AuthenticatedResponse)
-    /// response containing a challenge
+    /// Response containing a challenge
     case challenged(ChallengedResponse)
 
+    /// Authenticated Response
     public struct AuthenticatedResponse: Codable {
         public let accessToken: String?
         public let idToken: String?
@@ -48,9 +56,13 @@ public enum CognitoAuthenticateResponse: Codable {
         public let expiresIn: Date?
     }
 
+    /// Response containing an authentication challenge
     public struct ChallengedResponse: Codable {
+        /// Name of challenge
         public let name: String?
+        /// Challenge parameters
         public let parameters: [String: String]?
+        /// Session id to include in challenge response
         public let session: String?
     }
 
@@ -83,15 +95,23 @@ public enum CognitoAuthenticateResponse: Codable {
 
 /// Public interface functions for authenticating with CognitoIdentityProvider and generating access and id tokens.
 public class CognitoAuthenticatable {
-    /// configuration
+    // MARK: Member variables
+
+    /// Configuration
     public let configuration: CognitoConfiguration
     /// JWT SIgners
     var jwtSigners: JWTSigners?
 
+    // MARK: Initialization
+    
+    /// Initialize `CognitoAuthenticatable`
+    /// - Parameter configuration: cognito authentication configuration
     public init(configuration: CognitoConfiguration) {
         self.configuration = configuration
         self.jwtSigners = nil
     }
+
+    // MARK: Methods
 
     /// Sign up as AWS Cognito user.
     ///
@@ -511,7 +531,7 @@ public class CognitoAuthenticatable {
 }
 
 public extension CognitoAuthenticatable {
-    /// return secret hash to include in cognito identity provider calls
+    /// Return secret hash to include in cognito identity provider calls. This is an internal function and shouldn't need to be called
     func secretHash(username: String) -> String? {
         guard let clientSecret = configuration.clientSecret else { return nil }
         let message = username + self.configuration.clientId
@@ -519,7 +539,7 @@ public extension CognitoAuthenticatable {
         return Data(messageHmac).base64EncodedString()
     }
 
-    /// return an authorization request future
+    /// Return an authorization request future. This is an internal function and shouldn't need to be called
     func initiateAuthRequest(
         authFlow: CognitoIdentityProvider.AuthFlowType,
         authParameters: [String: String],
@@ -579,7 +599,7 @@ public extension CognitoAuthenticatable {
         .hop(to: eventLoop)
     }
 
-    /// translate error from one thrown by aws-sdk-swift to vapor error
+    /// Translate error from one thrown by Soto. This is an internal function and shouldn't need to be called
     func translateError(error: Error) -> Error {
         switch error {
         case let error as CognitoIdentityProviderErrorType where error == .notAuthorizedException:

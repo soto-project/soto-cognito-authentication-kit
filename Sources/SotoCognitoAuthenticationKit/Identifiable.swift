@@ -16,12 +16,18 @@ import NIO
 import SotoCognitoIdentity
 
 public class CognitoIdentifiable {
-    /// configuration
+    // MARK: Member variables
+
+    /// Configuration
     public let configuration: CognitoIdentityConfiguration
+
+    // MARK: Initialization
 
     public init(configuration: CognitoIdentityConfiguration) {
         self.configuration = configuration
     }
+
+    // MARK: Methods
 
     /// Return an Cognito Identity identity id from an id token
     /// - parameters:
@@ -43,7 +49,7 @@ public class CognitoIdentifiable {
             .hop(to: eventLoop)
     }
 
-    /// Get aws credentials from an identity id
+    /// Get AWS credentials from an identity id
     /// - parameters:
     ///     - identityId: Identity id returned from `getIdentityId`
     ///     - idToken: Id token returned from authenticating a user
@@ -70,7 +76,7 @@ public class CognitoIdentifiable {
 }
 
 extension CognitoIdentifiable {
-    /// translate error from one thrown by aws-sdk-swift to vapor error
+    /// Translate error from one thrown by Soto
     func translateError(error: Error) -> Error {
         switch error {
         case let error as CognitoIdentityErrorType where error == .notAuthorizedException:
