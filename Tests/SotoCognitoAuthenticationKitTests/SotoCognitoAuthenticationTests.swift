@@ -499,4 +499,36 @@ final class SotoCognitoAuthenticationKitTests: XCTestCase {
             }
         }
     }
+    
+    func testCredentialProvider() {
+        XCTAssertNil(Self.setUpFailure)
+        attempt {
+            let eventLoop = Self.cognitoIDP.client.eventLoopGroup.next()
+            let testData = try TestData(#function, on: eventLoop)
+            let credentialProvider: CredentialProviderFactory = .cognitoUserPool(
+                userName: testData.username,
+                authentication: .password(testData.password),
+                userPoolId: Self.userPoolId,
+                clientId: Self.clientId,
+                clientSecret: Self.clientSecret,
+                identityPoolId: Self.identityPoolId,
+                region: Self.region,
+                respondToChallenge: { challenge, parameters, eventLoop in
+                    switch challenge {
+                    case .newPasswordRequired:
+                        return eventLoop.makeSucceededFuture(["NEW_PASSWORD": "NewPassword123!"])
+                    default:
+                        return eventLoop.makeFailedFuture(SotoCognitoError.unauthorized(reason: "Did not respond to challenge \(challenge.rawValue)"))
+                    }
+                }
+            )
+            let client = AWSClient(credentialProvider: credentialProvider, httpClientProvider: .createNew)
+            defer { XCTAssertNoThrow(try client.syncShutdown()) }
+            let credentialFuture = client.credentialProvider.getCredential(on: eventLoop, logger: AWSClient.loggingDisabled)
+                .map { credential in
+                    print(credential)
+                }
+            XCTAssertNoThrow(try credentialFuture.wait())
+        }
+    }
 }
