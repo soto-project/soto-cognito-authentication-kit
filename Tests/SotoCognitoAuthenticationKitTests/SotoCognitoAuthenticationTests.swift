@@ -528,7 +528,14 @@ final class SotoCognitoAuthenticationKitTests: XCTestCase {
                 .map { credential in
                     print(credential)
                 }
-            XCTAssertNoThrow(try credentialFuture.wait())
+            XCTAssertThrowsError(try credentialFuture.wait()) { error in
+                switch error {
+                case let error as CognitoIdentityErrorType where error == .invalidIdentityPoolConfigurationException:
+                    break
+                default:
+                    XCTFail("\(error)")
+                }
+            }
         }
     }
 }

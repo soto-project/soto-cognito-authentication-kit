@@ -2,7 +2,7 @@
 //
 // This source file is part of the Soto for AWS open source project
 //
-// Copyright (c) 2020-2021 the Soto project authors
+// Copyright (c) 2021 the Soto project authors
 // Licensed under Apache License v2.0
 //
 // See LICENSE.txt for license information
@@ -15,11 +15,17 @@
 import SotoCognitoIdentity
 import SotoCognitoIdentityProvider
 
-public struct AuthenticationMethod {
-    let authenticate: (CognitoAuthenticatable, String, EventLoop) -> EventLoopFuture<CognitoAuthenticateResponse>
+/// Cognito authentication method used by `CredentialProviderFactory.cognitoUserPool`.
+public struct CognitoAuthenticationMethod {
+    public typealias Method = (CognitoAuthenticatable, String, EventLoop) -> EventLoopFuture<CognitoAuthenticateResponse>
+    let authenticate: Method
+    
+    public init(authenticate: @escaping Method) {
+        self.authenticate = authenticate
+    }
 }
 
-extension AuthenticationMethod {
+extension CognitoAuthenticationMethod {
     /// Authenticate with password
     public static func password(_ password: String) -> Self {
         return .init { authenticatable, userName, eventLoop in
@@ -50,7 +56,7 @@ extension AuthenticationMethod {
 extension IdentityProviderFactory {
     public static func cognitoUserPool(
         userName: String,
-        authentication: AuthenticationMethod,
+        authentication: CognitoAuthenticationMethod,
         userPoolId: String,
         clientId: String,
         clientSecret: String? = nil,
@@ -109,7 +115,7 @@ extension IdentityProviderFactory {
 extension CredentialProviderFactory {
     public static func cognitoUserPool(
         userName: String,
-        authentication: AuthenticationMethod,
+        authentication: CognitoAuthenticationMethod,
         userPoolId: String,
         clientId: String,
         clientSecret: String? = nil,
