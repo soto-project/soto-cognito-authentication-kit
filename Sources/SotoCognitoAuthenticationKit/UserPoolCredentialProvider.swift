@@ -54,7 +54,8 @@ extension CognitoAuthenticationMethod {
 }
 
 extension IdentityProviderFactory {
-    public static func cognitoUserPool(
+    /// Identity provider using Cognito userpools
+    static func cognitoUserPool(
         userName: String,
         authentication: CognitoAuthenticationMethod,
         userPoolId: String,
@@ -113,6 +114,29 @@ extension IdentityProviderFactory {
 }
 
 extension CredentialProviderFactory {
+    /// Credential provider using Cognito userpool authentication
+    ///
+    /// You can authenticate with Cognito UserPools with various methods. Options available
+    /// include `.password` and `.refreshToken`. If you import `SotoCognitoAuthenticationSRP`
+    /// you also get secure remote password authentication with `.srp`.
+    ///
+    /// When authenticating, Cognito might respond with a challenge. Many of these challenges
+    /// require user input. The `respondToChallenge` closure allows you to provide challenge
+    /// response parameters. Below is a list of common challenges with the expected parameters
+    /// to be returned.
+    /// `.newPasswordRequired`: requires `NEW_PASSWORD`
+    /// `.smsMfa`: `SMS_MFA_CODE`
+    ///
+    /// - Parameters:
+    ///   - userName: user name to use for authentication
+    ///   - authentication: Authentication method.
+    ///   - userPoolId: Cognito UserPool ID
+    ///   - clientId: Cognito UserPool client ID
+    ///   - clientSecret: Cognito UserPool client secret
+    ///   - identityPoolId: Cognito Identity pool if
+    ///   - region: Region userpool and identity pool are in
+    ///   - respondToChallenge: Respond to login challenge method
+    ///   - logger: Logger
     public static func cognitoUserPool(
         userName: String,
         authentication: CognitoAuthenticationMethod,
