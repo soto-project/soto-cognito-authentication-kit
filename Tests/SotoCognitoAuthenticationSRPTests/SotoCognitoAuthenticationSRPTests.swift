@@ -181,7 +181,7 @@ final class SotoCognitoAuthenticationKitTests: XCTestCase {
             identityPoolName: self.identityPoolName
         )
         let createResponse = try cognitoIdentity.createIdentityPool(createRequest).wait()
-        
+
         Self.identityPoolId = createResponse.identityPoolId
     }
 
@@ -274,8 +274,7 @@ final class SotoCognitoAuthenticationKitTests: XCTestCase {
         let sha256Result = SRP<SHA256>.HKDF(seed: password, info: info, salt: salt, count: 16)
         XCTAssertEqual(sha256Result.hexDigest().uppercased(), "398F838A6019FC27D99D90009A1FE0BF")
     }
-    
-    
+
     func testCredentialProvider() {
         XCTAssertNil(Self.setUpFailure)
         attempt {
@@ -288,7 +287,7 @@ final class SotoCognitoAuthenticationKitTests: XCTestCase {
                 clientId: Self.clientId,
                 identityPoolId: Self.identityPoolId,
                 region: Self.region,
-                respondToChallenge: { challenge, parameters, eventLoop in
+                respondToChallenge: { challenge, _, eventLoop in
                     switch challenge {
                     case .newPasswordRequired:
                         return eventLoop.makeSucceededFuture(["NEW_PASSWORD": "NewPassword123!"])
@@ -313,5 +312,4 @@ final class SotoCognitoAuthenticationKitTests: XCTestCase {
             }
         }
     }
-
 }

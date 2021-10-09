@@ -19,7 +19,7 @@ import SotoCognitoIdentityProvider
 public struct CognitoAuthenticationMethod {
     public typealias Method = (CognitoAuthenticatable, String, EventLoop) -> EventLoopFuture<CognitoAuthenticateResponse>
     let authenticate: Method
-    
+
     public init(authenticate: @escaping Method) {
         self.authenticate = authenticate
     }
@@ -75,7 +75,7 @@ extension IdentityProviderFactory {
             )
             let authenticatable = CognitoAuthenticatable(configuration: configuration)
             let tokenPromise = context.eventLoop.makePromise(of: String.self)
-            
+
             func respond(to result: Result<CognitoAuthenticateResponse, Error>) {
                 switch result {
                 case .success(.authenticated(let response)):
@@ -87,7 +87,8 @@ extension IdentityProviderFactory {
 
                 case .success(.challenged(let response)):
                     guard let challengeName = response.name,
-                          let challenge = CognitoChallengeName(rawValue: challengeName) else {
+                          let challenge = CognitoChallengeName(rawValue: challengeName)
+                    else {
                         tokenPromise.fail(SotoCognitoError.unexpectedResult(reason: "Challenge response does not have valid challenge name"))
                         return
                     }
@@ -145,7 +146,7 @@ extension CredentialProviderFactory {
         clientSecret: String? = nil,
         identityPoolId: String,
         region: Region,
-        respondToChallenge: ((CognitoChallengeName, [String: String]?, EventLoop) -> EventLoopFuture<[String: String]>)? = nil ,
+        respondToChallenge: ((CognitoChallengeName, [String: String]?, EventLoop) -> EventLoopFuture<[String: String]>)? = nil,
         logger: Logger = AWSClient.loggingDisabled
     ) -> CredentialProviderFactory {
         let identityProvider = IdentityProviderFactory.cognitoUserPool(
@@ -163,5 +164,4 @@ extension CredentialProviderFactory {
             logger: logger
         )
     }
-
 }

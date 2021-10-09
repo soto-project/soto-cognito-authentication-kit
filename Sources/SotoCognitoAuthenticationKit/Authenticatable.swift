@@ -103,7 +103,7 @@ public class CognitoAuthenticatable {
     var jwtSigners: JWTSigners?
 
     // MARK: Initialization
-    
+
     /// Initialize `CognitoAuthenticatable`
     /// - Parameter configuration: cognito authentication configuration
     public init(configuration: CognitoConfiguration) {

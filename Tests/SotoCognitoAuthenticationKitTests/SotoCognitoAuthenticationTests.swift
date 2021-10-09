@@ -499,7 +499,7 @@ final class SotoCognitoAuthenticationKitTests: XCTestCase {
             }
         }
     }
-    
+
     func testCredentialProvider() {
         XCTAssertNil(Self.setUpFailure)
         attempt {
@@ -513,7 +513,7 @@ final class SotoCognitoAuthenticationKitTests: XCTestCase {
                 clientSecret: Self.clientSecret,
                 identityPoolId: Self.identityPoolId,
                 region: Self.region,
-                respondToChallenge: { challenge, parameters, eventLoop in
+                respondToChallenge: { challenge, _, eventLoop in
                     switch challenge {
                     case .newPasswordRequired:
                         return eventLoop.makeSucceededFuture(["NEW_PASSWORD": "NewPassword123!"])
