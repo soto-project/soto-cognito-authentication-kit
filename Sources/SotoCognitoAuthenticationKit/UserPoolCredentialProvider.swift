@@ -63,6 +63,7 @@ extension IdentityProviderFactory {
         clientSecret: String? = nil,
         respondToChallenge: ((CognitoChallengeName, [String: String]?, EventLoop) -> EventLoopFuture<[String: String]>)? = nil
     ) -> Self {
+        var currentAuthentication = authentication
         return externalIdentityProvider { context in
             let userPoolIdentityProvider = "cognito-idp.\(context.region).amazonaws.com/\(userPoolId)"
             let cognitoIdentityProvider = CognitoIdentityProvider(client: context.client, region: context.region)
@@ -79,6 +80,9 @@ extension IdentityProviderFactory {
             func respond(to result: Result<CognitoAuthenticateResponse, Error>) {
                 switch result {
                 case .success(.authenticated(let response)):
+                    if let refreshToken = response.refreshToken {
+                        currentAuthentication = .refreshToken(refreshToken)
+                    }
                     guard let idToken = response.idToken else {
                         tokenPromise.fail(SotoCognitoError.unexpectedResult(reason: "Authenticated response does not authentication tokens"))
                         return
@@ -106,7 +110,7 @@ extension IdentityProviderFactory {
                     tokenPromise.fail(error)
                 }
             }
-            authentication.authenticate(authenticatable, userName, context.eventLoop).whenComplete { result in
+            currentAuthentication.authenticate(authenticatable, userName, context.eventLoop).whenComplete { result in
                 respond(to: result)
             }
             return tokenPromise.futureResult.map { [userPoolIdentityProvider: $0] }
