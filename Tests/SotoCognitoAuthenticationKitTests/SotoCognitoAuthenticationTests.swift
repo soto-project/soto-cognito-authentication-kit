@@ -520,7 +520,7 @@ final class SotoCognitoAuthenticationKitTests: XCTestCase {
                             return eventLoop.makeSucceededFuture(["NEW_PASSWORD": "NewPassword123!"])
                         }
                     default:
-                        return eventLoop.makeFailedFuture(SotoCognitoError.unauthorized(reason: "Did not respond to challenge \(challenge.rawValue)"))
+                        return eventLoop.makeSucceededFuture(nil)
                     }
                 }
             )

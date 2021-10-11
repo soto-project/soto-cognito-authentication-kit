@@ -107,7 +107,7 @@ extension IdentityProviderFactory {
                         _respond(to: result, challenge: challenge)
                     }
             }
-            
+
             func _respond(to result: Result<CognitoAuthenticateResponse, Error>, challenge: CognitoAuthenticateResponse.ChallengedResponse?) {
                 switch result {
                 case .success(.authenticated(let response)):
@@ -148,8 +148,10 @@ extension CredentialProviderFactory {
     ///
     /// When authenticating, Cognito might respond with a challenge. Many of these challenges
     /// require user input. The `respondToChallenge` closure allows you to provide challenge
-    /// response parameters. Below is a list of common challenges with the expected parameters
-    /// to be returned.
+    /// response parameters. The respond to challenge closure is called with a challenge type
+    /// the related input parameters, an error is the last challenge response produced an error and
+    /// the `EventLoop` everything is running on. Below is a list of common challenges with the
+    /// expected parameters to be returned.
     /// `.newPasswordRequired`: requires `NEW_PASSWORD`
     /// `.smsMfa`: `SMS_MFA_CODE`
     ///

@@ -285,7 +285,7 @@ final class SotoCognitoAuthenticationKitTests: XCTestCase {
                 clientId: Self.clientId,
                 identityPoolId: Self.identityPoolId,
                 region: Self.region,
-                respondToChallenge: { challenge, _, error, eventLoop in
+                respondToChallenge: { challenge, _, _, eventLoop in
                     switch challenge {
                     case .newPasswordRequired:
                         return eventLoop.makeSucceededFuture(["NEW_PASSWORD": "NewPassword123!"])
