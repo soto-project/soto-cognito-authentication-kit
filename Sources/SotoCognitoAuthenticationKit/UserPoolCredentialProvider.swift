@@ -61,9 +61,11 @@ extension IdentityProviderFactory {
         userPoolId: String,
         clientId: String,
         clientSecret: String? = nil,
-        respondToChallenge: ((CognitoChallengeName, [String: String]?, EventLoop) -> EventLoopFuture<[String: String]>)? = nil
+        respondToChallenge: ((CognitoChallengeName, [String: String]?, Error?, EventLoop) -> EventLoopFuture<[String: String]?>)? = nil,
+        maxChallengeResponseAttempts: Int = 4
     ) -> Self {
         var currentAuthentication = authentication
+        var challengeResponseAttempts = 0
         return externalIdentityProvider { context in
             let userPoolIdentityProvider = "cognito-idp.\(context.region).amazonaws.com/\(userPoolId)"
             let cognitoIdentityProvider = CognitoIdentityProvider(client: context.client, region: context.region)
@@ -77,7 +79,36 @@ extension IdentityProviderFactory {
             let authenticatable = CognitoAuthenticatable(configuration: configuration)
             let tokenPromise = context.eventLoop.makePromise(of: String.self)
 
-            func respond(to result: Result<CognitoAuthenticateResponse, Error>) {
+            func _respond(to challenge: CognitoAuthenticateResponse.ChallengedResponse, error: Error?) {
+                guard let challengeName = challenge.name,
+                      let challengeId = CognitoChallengeName(rawValue: challengeName)
+                else {
+                    tokenPromise.fail(SotoCognitoError.unexpectedResult(reason: "Challenge response does not have valid challenge name"))
+                    return
+                }
+                guard let respondToChallenge = respondToChallenge else {
+                    tokenPromise.fail(SotoCognitoError.unauthorized(reason: "Did not respond to challenge \(challengeName)"))
+                    return
+                }
+                guard challengeResponseAttempts < maxChallengeResponseAttempts else {
+                    tokenPromise.fail(SotoCognitoError.unauthorized(reason: "Failed to produce valid response to challenge \(challengeName)"))
+                    return
+                }
+                respondToChallenge(challengeId, challenge.parameters, error, context.eventLoop)
+                    .flatMap { parameters in
+                        // if nil parameters is sent then throw did not respond error
+                        guard let parameters = parameters else {
+                            return context.eventLoop.makeFailedFuture(SotoCognitoError.unauthorized(reason: "Did not respond to challenge \(challengeName)"))
+                        }
+                        return authenticatable.respondToChallenge(username: userName, name: challengeId, responses: parameters, session: challenge.session)
+                    }
+                    .whenComplete { (result: Result<CognitoAuthenticateResponse, Error>) -> Void in
+                        challengeResponseAttempts += 1
+                        _respond(to: result, challenge: challenge)
+                    }
+            }
+            
+            func _respond(to result: Result<CognitoAuthenticateResponse, Error>, challenge: CognitoAuthenticateResponse.ChallengedResponse?) {
                 switch result {
                 case .success(.authenticated(let response)):
                     if let refreshToken = response.refreshToken {
@@ -89,29 +120,19 @@ extension IdentityProviderFactory {
                     }
                     tokenPromise.succeed(idToken)
 
-                case .success(.challenged(let response)):
-                    guard let challengeName = response.name,
-                          let challenge = CognitoChallengeName(rawValue: challengeName)
-                    else {
-                        tokenPromise.fail(SotoCognitoError.unexpectedResult(reason: "Challenge response does not have valid challenge name"))
-                        return
-                    }
-                    guard let respondToChallenge = respondToChallenge else {
-                        tokenPromise.fail(SotoCognitoError.unauthorized(reason: "Did not respond to challenge \(challengeName)"))
-                        return
-                    }
-                    respondToChallenge(challenge, response.parameters, context.eventLoop)
-                        .flatMap { parameters in
-                            return authenticatable.respondToChallenge(username: userName, name: challenge, responses: parameters, session: response.session)
-                        }
-                        .whenComplete(respond)
+                case .success(.challenged(let challenge)):
+                    _respond(to: challenge, error: nil)
 
                 case .failure(let error):
-                    tokenPromise.fail(error)
+                    if let error = error as? CognitoIdentityProviderErrorType, let prevChallenge = challenge {
+                        _respond(to: prevChallenge, error: error)
+                    } else {
+                        tokenPromise.fail(error)
+                    }
                 }
             }
             currentAuthentication.authenticate(authenticatable, userName, context.eventLoop).whenComplete { result in
-                respond(to: result)
+                _respond(to: result, challenge: nil)
             }
             return tokenPromise.futureResult.map { [userPoolIdentityProvider: $0] }
         }
@@ -150,7 +171,8 @@ extension CredentialProviderFactory {
         clientSecret: String? = nil,
         identityPoolId: String,
         region: Region,
-        respondToChallenge: ((CognitoChallengeName, [String: String]?, EventLoop) -> EventLoopFuture<[String: String]>)? = nil,
+        respondToChallenge: ((CognitoChallengeName, [String: String]?, Error?, EventLoop) -> EventLoopFuture<[String: String]?>)? = nil,
+        maxChallengeResponseAttempts: Int = 4,
         logger: Logger = AWSClient.loggingDisabled
     ) -> CredentialProviderFactory {
         let identityProvider = IdentityProviderFactory.cognitoUserPool(
@@ -159,7 +181,8 @@ extension CredentialProviderFactory {
             userPoolId: userPoolId,
             clientId: clientId,
             clientSecret: clientSecret,
-            respondToChallenge: respondToChallenge
+            respondToChallenge: respondToChallenge,
+            maxChallengeResponseAttempts: maxChallengeResponseAttempts
         )
         return .cognitoIdentity(
             identityPoolId: identityPoolId,

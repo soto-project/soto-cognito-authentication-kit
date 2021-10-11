@@ -88,10 +88,8 @@ final class SotoCognitoAuthenticationKitTests: XCTestCase {
                 cognitoIdentity: Self.cognitoIdentity
             )
             Self.identifiable = CognitoIdentifiable(configuration: identityConfiguration)
-        } catch let error as AWSErrorType {
-            setUpFailure = error.description
         } catch {
-            self.setUpFailure = error.localizedDescription
+            self.setUpFailure = "\(error)"
         }
     }
 
@@ -287,7 +285,7 @@ final class SotoCognitoAuthenticationKitTests: XCTestCase {
                 clientId: Self.clientId,
                 identityPoolId: Self.identityPoolId,
                 region: Self.region,
-                respondToChallenge: { challenge, _, eventLoop in
+                respondToChallenge: { challenge, _, error, eventLoop in
                     switch challenge {
                     case .newPasswordRequired:
                         return eventLoop.makeSucceededFuture(["NEW_PASSWORD": "NewPassword123!"])
