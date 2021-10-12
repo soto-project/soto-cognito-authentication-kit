@@ -266,7 +266,8 @@ public class CognitoAuthenticatable {
 
     /// Get new access and id tokens from a refresh token
     ///
-    /// The username you provide here has to be the real username of the user not an alias like an email. You can get the real username by authenticing an access token
+    /// The username you provide here has to be the real username of the user not an alias like an email. You can get the real username
+    /// by authenticing an access token, or extracting it found the return value of `createUser` or `signUp`.
     /// - parameters:
     ///     - username: user name of user
     ///     - refreshToken: refresh token required to generate new access and id tokens

@@ -150,7 +150,8 @@ extension CredentialProviderFactory {
     /// require user input. The `respondToChallenge` closure allows you to provide challenge
     /// response parameters. The respond to challenge closure is called with a challenge type
     /// the related input parameters, an error is the last challenge response produced an error and
-    /// the `EventLoop` everything is running on. Below is a list of common challenges with the
+    /// the `EventLoop` everything is running on. If you return `nil` that is considered a failed
+    /// challenge and an error will be thrown. Below is a list of common challenges with the
     /// expected parameters to be returned.
     /// `.newPasswordRequired`: requires `NEW_PASSWORD`
     /// `.smsMfa`: `SMS_MFA_CODE`
