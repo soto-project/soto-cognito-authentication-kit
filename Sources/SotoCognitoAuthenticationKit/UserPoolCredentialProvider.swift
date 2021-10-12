@@ -65,6 +65,7 @@ extension IdentityProviderFactory {
         maxChallengeResponseAttempts: Int = 4
     ) -> Self {
         var currentAuthentication = authentication
+        var currentUserName = userName
         var challengeResponseAttempts = 0
         return externalIdentityProvider { context in
             let userPoolIdentityProvider = "cognito-idp.\(context.region).amazonaws.com/\(userPoolId)"
@@ -100,7 +101,7 @@ extension IdentityProviderFactory {
                         guard let parameters = parameters else {
                             return context.eventLoop.makeFailedFuture(SotoCognitoError.unauthorized(reason: "Did not respond to challenge \(challengeName)"))
                         }
-                        return authenticatable.respondToChallenge(username: userName, name: challengeId, responses: parameters, session: challenge.session)
+                        return authenticatable.respondToChallenge(username: currentUserName, name: challengeId, responses: parameters, session: challenge.session)
                     }
                     .whenComplete { (result: Result<CognitoAuthenticateResponse, Error>) -> Void in
                         challengeResponseAttempts += 1
@@ -111,14 +112,31 @@ extension IdentityProviderFactory {
             func _respond(to result: Result<CognitoAuthenticateResponse, Error>, challenge: CognitoAuthenticateResponse.ChallengedResponse?) {
                 switch result {
                 case .success(.authenticated(let response)):
-                    if let refreshToken = response.refreshToken {
-                        currentAuthentication = .refreshToken(refreshToken)
-                    }
                     guard let idToken = response.idToken else {
                         tokenPromise.fail(SotoCognitoError.unexpectedResult(reason: "Authenticated response does not authentication tokens"))
                         return
                     }
-                    tokenPromise.succeed(idToken)
+                    // if we received a refresh token then this is not via a refresh authentication and we should attempt to get
+                    // the username from the access token to ensure we have the correct username
+                    if let refreshToken = response.refreshToken {
+                        currentAuthentication = .refreshToken(refreshToken)
+                        if let accessToken = response.accessToken {
+                            authenticatable.authenticate(accessToken: accessToken, on: context.eventLoop)
+                                .whenComplete { result in
+                                    switch result {
+                                    case .success(let response):
+                                        currentUserName = response.username
+                                        tokenPromise.succeed(idToken)
+                                    case .failure(let error):
+                                        tokenPromise.fail(error)
+                                    }
+                                }
+                        } else {
+                            tokenPromise.succeed(idToken)
+                        }
+                    } else {
+                        tokenPromise.succeed(idToken)
+                    }
 
                 case .success(.challenged(let challenge)):
                     _respond(to: challenge, error: nil)
@@ -131,7 +149,7 @@ extension IdentityProviderFactory {
                     }
                 }
             }
-            currentAuthentication.authenticate(authenticatable, userName, context.eventLoop).whenComplete { result in
+            currentAuthentication.authenticate(authenticatable, currentUserName, context.eventLoop).whenComplete { result in
                 _respond(to: result, challenge: nil)
             }
             return tokenPromise.futureResult.map { [userPoolIdentityProvider: $0] }

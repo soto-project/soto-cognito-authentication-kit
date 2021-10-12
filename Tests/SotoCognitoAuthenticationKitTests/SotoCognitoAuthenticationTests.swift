@@ -149,7 +149,8 @@ final class SotoCognitoAuthenticationKitTests: XCTestCase {
             // create userpool
             let createRequest = CognitoIdentityProvider.CreateUserPoolRequest(
                 adminCreateUserConfig: CognitoIdentityProvider.AdminCreateUserConfigType(allowAdminCreateUserOnly: true),
-                poolName: self.userPoolName
+                poolName: self.userPoolName,
+                usernameConfiguration: .init(caseSensitive: false)
             )
             let createResponse = try cognitoIDP.createUserPool(createRequest).wait()
             self.userPoolId = createResponse.userPool!.id!
