@@ -12,6 +12,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+#if compiler(>=5.5) && canImport(_Concurrency)
+
 import AsyncHTTPClient
 import Foundation
 import JWTKit
@@ -85,3 +87,5 @@ extension CognitoAuthenticatable {
         return signers
     }
 }
+
+#endif // compiler(>=5.5) && canImport(_Concurrency)

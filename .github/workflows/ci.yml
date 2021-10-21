@@ -40,7 +40,7 @@ jobs:
   linux:
     strategy:
       matrix:
-        image: ["swift:5.2", "swift:5.3"]
+        image: ["swift:5.2", "swift:5.3", "swift:5.4", "swift:5.5"]
     runs-on: ubuntu-latest
     container:
       image: ${{ matrix.image }}
