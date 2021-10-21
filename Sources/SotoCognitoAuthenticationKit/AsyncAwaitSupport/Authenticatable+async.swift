@@ -42,7 +42,6 @@ extension CognitoAuthenticatable {
         clientMetadata: [String: String]? = nil,
         on eventLoop: EventLoop? = nil
     ) async throws -> CognitoIdentityProvider.SignUpResponse {
-        let eventLoop = eventLoop ?? self.configuration.cognitoIDP.eventLoopGroup.next()
         let userAttributes = attributes.map { return CognitoIdentityProvider.AttributeType(name: $0.key, value: $0.value) }
         let request = CognitoIdentityProvider.SignUpRequest(
             clientId: self.configuration.clientId,
@@ -75,7 +74,6 @@ extension CognitoAuthenticatable {
         clientMetadata: [String: String]? = nil,
         on eventLoop: EventLoop? = nil
     ) async throws {
-        let eventLoop = eventLoop ?? self.configuration.cognitoIDP.eventLoopGroup.next()
         let request = CognitoIdentityProvider.ConfirmSignUpRequest(
             clientId: self.configuration.clientId,
             clientMetadata: clientMetadata,
@@ -111,7 +109,6 @@ extension CognitoAuthenticatable {
         clientMetadata: [String: String]? = nil,
         on eventLoop: EventLoop? = nil
     ) async throws -> CognitoCreateUserResponse {
-        let eventLoop = eventLoop ?? self.configuration.cognitoIDP.eventLoopGroup.next()
         guard self.configuration.adminClient == true else {
             throw SotoCognitoError.unauthorized(reason: "\(#function) requires an admin client with authenticated AWSClient")
         }
@@ -155,7 +152,6 @@ extension CognitoAuthenticatable {
         context: CognitoContextData? = nil,
         on eventLoop: EventLoop? = nil
     ) async throws -> CognitoAuthenticateResponse {
-        let eventLoop = eventLoop ?? self.configuration.cognitoIDP.eventLoopGroup.next()
         let authFlow: CognitoIdentityProvider.AuthFlowType = self.configuration.adminClient ? .adminUserPasswordAuth : .userPasswordAuth
         var authParameters: [String: String] = [
             "USERNAME": username,
@@ -168,7 +164,7 @@ extension CognitoAuthenticatable {
             clientMetadata: clientMetadata,
             context: context,
             on: eventLoop
-        ).get()
+        )
     }
 
     /// Get new access and id tokens from a refresh token
@@ -189,7 +185,6 @@ extension CognitoAuthenticatable {
         context: CognitoContextData? = nil,
         on eventLoop: EventLoop? = nil
     ) async throws -> CognitoAuthenticateResponse {
-        let eventLoop = eventLoop ?? self.configuration.cognitoIDP.eventLoopGroup.next()
         var authParameters: [String: String] = [
             "USERNAME": username,
             "REFRESH_TOKEN": refreshToken,
@@ -202,7 +197,7 @@ extension CognitoAuthenticatable {
             clientMetadata: clientMetadata,
             context: context,
             on: eventLoop
-        ).get()
+        )
     }
 
     /// respond to authentication challenge
@@ -230,7 +225,6 @@ extension CognitoAuthenticatable {
         context: CognitoContextData? = nil,
         on eventLoop: EventLoop? = nil
     ) async throws -> CognitoAuthenticateResponse {
-        let eventLoop = eventLoop ?? self.configuration.cognitoIDP.eventLoopGroup.next()
         var challengeResponses = responses
         challengeResponses["USERNAME"] = username
         challengeResponses["SECRET_HASH"] = secretHash(username: username)
@@ -356,7 +350,6 @@ extension CognitoAuthenticatable {
         attributes: [String: String],
         on eventLoop: EventLoop? = nil
     ) async throws {
-        let eventLoop = eventLoop ?? self.configuration.cognitoIDP.eventLoopGroup.next()
         guard self.configuration.adminClient == true else {
             throw SotoCognitoError.unauthorized(reason: "\(#function) requires an admin client with authenticated AWSClient")
         }
@@ -380,7 +373,6 @@ extension CognitoAuthenticatable {
         clientMetadata: [String: String]? = nil,
         on eventLoop: EventLoop? = nil
     ) async throws {
-        let eventLoop = eventLoop ?? self.configuration.cognitoIDP.eventLoopGroup.next()
         let attributes = attributes.map { CognitoIdentityProvider.AttributeType(name: $0.key, value: $0.value) }
         let request = CognitoIdentityProvider.UpdateUserAttributesRequest(accessToken: accessToken, clientMetadata: clientMetadata, userAttributes: attributes)
         do {
@@ -400,7 +392,6 @@ extension CognitoAuthenticatable {
         clientMetadata: [String: String]? = nil,
         on eventLoop: EventLoop? = nil
     ) async throws {
-        let eventLoop = eventLoop ?? self.configuration.cognitoIDP.eventLoopGroup.next()
         let request = CognitoIdentityProvider.ForgotPasswordRequest(
             clientId: self.configuration.clientId,
             clientMetadata: clientMetadata,
@@ -424,7 +415,6 @@ extension CognitoAuthenticatable {
         clientMetadata: [String: String]? = nil,
         on eventLoop: EventLoop? = nil
     ) async throws {
-        let eventLoop = eventLoop ?? self.configuration.cognitoIDP.eventLoopGroup.next()
         let request = CognitoIdentityProvider.ConfirmForgotPasswordRequest(
             clientId: self.configuration.clientId,
             clientMetadata: clientMetadata,
@@ -445,7 +435,7 @@ public extension CognitoAuthenticatable {
         authParameters: [String: String],
         clientMetadata: [String: String]? = nil,
         context: CognitoContextData?,
-        on eventLoop: EventLoop
+        on eventLoop: EventLoop?
     ) async throws -> CognitoAuthenticateResponse {
         do {
             let initAuthResponse: CognitoIdentityProvider.AdminInitiateAuthResponse

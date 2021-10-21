@@ -22,6 +22,9 @@ import NIO
 /// Public interface functions for authenticating with CognitoIdentityProvider access and id tokens
 @available(macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0, *)
 public extension CognitoAuthenticatable {
+    
+    // MARK: Async/Await Methods
+    
     /// Verify id Token JWT and return contents
     ///
     /// This function verifies the id token signature, verifies it was issued by your user pool, it was generated for your application client, that it hasn't
