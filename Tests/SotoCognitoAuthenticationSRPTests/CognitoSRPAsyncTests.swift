@@ -142,8 +142,10 @@ final class CognitoSRPAsyncTests: XCTestCase {
         }
 
         deinit {
-            let deleteUserRequest = CognitoIdentityProvider.AdminDeleteUserRequest(username: username, userPoolId: CognitoSRPAsyncTests.authenticatable.configuration.userPoolId)
-            try? CognitoSRPAsyncTests.cognitoIDP.adminDeleteUser(deleteUserRequest).wait()
+            XCTRunAsyncAndBlock {
+                let deleteUserRequest = CognitoIdentityProvider.AdminDeleteUserRequest(username: self.username, userPoolId: CognitoSRPAsyncTests.authenticatable.configuration.userPoolId)
+                try? await CognitoSRPAsyncTests.cognitoIDP.adminDeleteUser(deleteUserRequest)
+            }
         }
 
         static func randomString() -> String {
