@@ -44,7 +44,7 @@ public class AWSCognitoContextTest: CognitoContextData {
     }
 }
 
-final class SotoCognitoAuthenticationKitTests: XCTestCase {
+final class CognitoSRPTests: XCTestCase {
     static var middlewares: [AWSServiceMiddleware] {
         ProcessInfo.processInfo.environment["CI"] == "true" ? [] : [AWSLoggingMiddleware()]
     }
@@ -110,11 +110,11 @@ final class SotoCognitoAuthenticationKitTests: XCTestCase {
             self.username = testName + Self.randomString()
             let messageHmac: HashedAuthenticationCode<SHA256> = HMAC.authenticationCode(
                 for: Data(testName.utf8),
-                using: SymmetricKey(data: Data(SotoCognitoAuthenticationKitTests.authenticatable.configuration.userPoolId.utf8))
+                using: SymmetricKey(data: Data(CognitoSRPTests.authenticatable.configuration.userPoolId.utf8))
             )
             self.password = messageHmac.description + "1!A"
 
-            let create = SotoCognitoAuthenticationKitTests.authenticatable.createUser(username: self.username, attributes: attributes, temporaryPassword: self.password, messageAction: .suppress, on: eventloop)
+            let create = CognitoSRPTests.authenticatable.createUser(username: self.username, attributes: attributes, temporaryPassword: self.password, messageAction: .suppress)
                 .map { _ in return }
                 // deal with user already existing
                 .flatMapErrorThrowing { error in
@@ -123,12 +123,13 @@ final class SotoCognitoAuthenticationKitTests: XCTestCase {
                     }
                     throw error
                 }
+                .hop(to: eventloop)
             _ = try create.wait()
         }
 
         deinit {
-            let deleteUserRequest = CognitoIdentityProvider.AdminDeleteUserRequest(username: username, userPoolId: SotoCognitoAuthenticationKitTests.authenticatable.configuration.userPoolId)
-            try? SotoCognitoAuthenticationKitTests.cognitoIDP.adminDeleteUser(deleteUserRequest).wait()
+            let deleteUserRequest = CognitoIdentityProvider.AdminDeleteUserRequest(username: username, userPoolId: CognitoSRPTests.authenticatable.configuration.userPoolId)
+            try? CognitoSRPTests.cognitoIDP.adminDeleteUser(deleteUserRequest).wait()
         }
 
         static func randomString() -> String {
@@ -199,9 +200,9 @@ final class SotoCognitoAuthenticationKitTests: XCTestCase {
         let authenticatable = CognitoAuthenticatable(configuration: configuration)
 
         attempt {
-            let eventLoop = Self.cognitoIDP.client.eventLoopGroup.next()
+            let eventLoop = awsClient.eventLoopGroup.next()
             let context = AWSCognitoContextTest()
-            let testData = try TestData(#function, on: eventLoop)
+            let testData = try TestData(#function, on: Self.cognitoIDP.eventLoopGroup.next())
 
             _ = try authenticatable.authenticateSRP(username: testData.username, password: testData.password, context: context, on: eventLoop).wait()
         }
