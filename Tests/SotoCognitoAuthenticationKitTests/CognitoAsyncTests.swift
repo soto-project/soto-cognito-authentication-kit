@@ -184,7 +184,7 @@ final class CognitoAsyncTests: XCTestCase {
     func test(
         _ testName: String,
         attributes: [String: String] = [:],
-        _ work: @escaping (String, String) async throws -> ()
+        _ work: @escaping (String, String) async throws -> Void
     ) {
         XCTRunAsyncAndBlock {
             let username = testName + Self.randomString()
@@ -204,23 +204,23 @@ final class CognitoAsyncTests: XCTestCase {
             } catch let error as CognitoIdentityProviderErrorType where error == .usernameExistsException {
                 return
             }
-            
+
             try await work(username, password)
 
             let deleteUserRequest = CognitoIdentityProvider.AdminDeleteUserRequest(username: username, userPoolId: Self.authenticatable.configuration.userPoolId)
             try? await Self.cognitoIDP.adminDeleteUser(deleteUserRequest)
         }
     }
-    
+
     static func randomString() -> String {
         return String((0...7).map { _ in "abcdefghijklmnopqrstuvwxyz".randomElement()! })
     }
 
     // MARK: Tests
-    
+
     func testAccessToken() {
         XCTAssertNil(Self.setUpFailure)
-        test(#function) { username, password in
+        self.test(#function) { username, password in
             let eventLoop = Self.cognitoIDP.client.eventLoopGroup.next()
 
             let response = try await self.login(username: username, password: password, authenticatable: Self.authenticatable, on: eventLoop)
@@ -263,13 +263,13 @@ final class CognitoAsyncTests: XCTestCase {
 
     func testRefreshToken() {
         XCTAssertNil(Self.setUpFailure)
-        test(#function) { username, password in
+        self.test(#function) { username, password in
             let eventLoop = Self.cognitoIDP.client.eventLoopGroup.next()
 
             let response = try await self.login(username: username, password: password, authenticatable: Self.authenticatable, on: eventLoop)
             guard case .authenticated(let authenticated) = response else { throw AWSCognitoTestError.notAuthenticated }
             guard let refreshToken = authenticated.refreshToken else { throw AWSCognitoTestError.missingToken }
-            
+
             let response2 = try await Self.authenticatable.refresh(username: username, refreshToken: refreshToken, on: eventLoop)
             guard case .authenticated(let authenticated) = response2 else { throw AWSCognitoTestError.notAuthenticated }
             guard let accessToken = authenticated.accessToken else { throw AWSCognitoTestError.missingToken }
@@ -316,7 +316,7 @@ final class CognitoAsyncTests: XCTestCase {
             guard let idToken = authenticated.idToken else { throw AWSCognitoTestError.missingToken }
 
             let user: User = try await Self.authenticatable.authenticate(idToken: idToken, on: eventLoop)
-            
+
             XCTAssertEqual(user.email, attributes["email"])
             _ = try await Self.authenticatable.updateUserAttributes(
                 accessToken: accessToken,
@@ -327,14 +327,14 @@ final class CognitoAsyncTests: XCTestCase {
             guard case .authenticated(let authenticated) = response2 else { throw AWSCognitoTestError.notAuthenticated }
             guard let idToken = authenticated.idToken else { throw AWSCognitoTestError.missingToken }
             let user2: User = try await Self.authenticatable.authenticate(idToken: idToken, on: eventLoop)
-            
+
             XCTAssertEqual(user2.email, attributes2["email"])
         }
     }
 
     func testUnauthenticatdClient() {
         XCTAssertNil(Self.setUpFailure)
-        test(#function) { username, password in
+        self.test(#function) { username, password in
             let awsClient = AWSClient(credentialProvider: .empty, httpClientProvider: .shared(Self.awsClient.httpClient))
             defer { XCTAssertNoThrow(try awsClient.syncShutdown()) }
             let cognitoIdentityProvider = CognitoIdentityProvider(client: awsClient, region: Self.cognitoIDP.region)
@@ -352,14 +352,14 @@ final class CognitoAsyncTests: XCTestCase {
             guard case .authenticated(let authenticated) = response else { throw AWSCognitoTestError.notAuthenticated }
             guard let accessToken = authenticated.accessToken else { throw AWSCognitoTestError.missingToken }
 
-            let result = try await  authenticatable.authenticate(accessToken: accessToken, on: eventLoop)
+            let result = try await authenticatable.authenticate(accessToken: accessToken, on: eventLoop)
             XCTAssertEqual(result.username, username)
         }
     }
 
     func testRequireAuthenticatedClient() {
         XCTAssertNil(Self.setUpFailure)
-        test(#function) { username, password in
+        self.test(#function) { username, password in
             let awsClient = AWSClient(credentialProvider: .empty, httpClientProvider: .shared(Self.awsClient.httpClient))
             defer { XCTAssertNoThrow(try awsClient.syncShutdown()) }
             let cognitoIdentityProvider = CognitoIdentityProvider(client: awsClient, region: Self.cognitoIDP.region)
@@ -376,15 +376,13 @@ final class CognitoAsyncTests: XCTestCase {
             do {
                 _ = try await self.login(username: username, password: password, authenticatable: authenticatable, on: eventLoop)
                 XCTFail("Login should fail")
-            } catch SotoCognitoError.unauthorized {
-            }
+            } catch SotoCognitoError.unauthorized {}
         }
     }
 
-
     func testAuthenticateFail() {
         XCTAssertNil(Self.setUpFailure)
-        test(#function) { username, password in
+        self.test(#function) { username, password in
             let eventLoop = Self.cognitoIDP.client.eventLoopGroup.next()
 
             do {
@@ -394,14 +392,13 @@ final class CognitoAsyncTests: XCTestCase {
                     on: eventLoop
                 )
                 XCTFail("Login should fail")
-            } catch SotoCognitoError.unauthorized {
-            }
+            } catch SotoCognitoError.unauthorized {}
         }
     }
 
     func testIdentity() {
         XCTAssertNil(Self.setUpFailure)
-        test(#function) { username, password in
+        self.test(#function) { username, password in
             let eventLoop = Self.cognitoIDP.client.eventLoopGroup.next()
 
             let response = try await self.login(username: username, password: password, authenticatable: Self.authenticatable, on: eventLoop)

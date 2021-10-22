@@ -121,7 +121,7 @@ final class CognitoSRPAsyncTests: XCTestCase {
     func test(
         _ testName: String,
         attributes: [String: String] = [:],
-        _ work: @escaping (String, String) async throws -> ()
+        _ work: @escaping (String, String) async throws -> Void
     ) {
         XCTRunAsyncAndBlock {
             let username = testName + Self.randomString()
@@ -141,20 +141,20 @@ final class CognitoSRPAsyncTests: XCTestCase {
             } catch let error as CognitoIdentityProviderErrorType where error == .usernameExistsException {
                 return
             }
-            
+
             try await work(username, password)
 
             let deleteUserRequest = CognitoIdentityProvider.AdminDeleteUserRequest(username: username, userPoolId: Self.authenticatable.configuration.userPoolId)
             try? await Self.cognitoIDP.adminDeleteUser(deleteUserRequest)
         }
     }
-    
+
     static func randomString() -> String {
         return String((0...7).map { _ in "abcdefghijklmnopqrstuvwxyz".randomElement()! })
     }
 
     // MARK: Tests
-    
+
     func testAuthenticateSRP() {
         XCTAssertNil(Self.setUpFailure)
 

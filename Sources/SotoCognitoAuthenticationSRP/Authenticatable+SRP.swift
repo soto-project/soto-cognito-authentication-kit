@@ -102,4 +102,3 @@ public extension CognitoAuthenticatable {
         }
     }
 }
-

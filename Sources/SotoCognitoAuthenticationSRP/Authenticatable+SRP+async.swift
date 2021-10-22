@@ -56,7 +56,7 @@ public extension CognitoAuthenticatable {
             context: context,
             on: eventLoop
         )
-        
+
         // print("Response \(response)")
         guard case .challenged(let challenge) = response,
               let parameters = challenge.parameters,
@@ -64,9 +64,10 @@ public extension CognitoAuthenticatable {
               let salt = BigNum(hex: saltHex)?.bytes,
               let secretBlockBase64 = parameters["SECRET_BLOCK"],
               let secretBlock = Data(base64Encoded: secretBlockBase64),
-              let dataB = parameters["SRP_B"] else {
-                  throw SotoCognitoError.unexpectedResult(reason: "AWS did not provide all the data required to do SRP authentication")
-              }
+              let dataB = parameters["SRP_B"]
+        else {
+            throw SotoCognitoError.unexpectedResult(reason: "AWS did not provide all the data required to do SRP authentication")
+        }
 
         let srpUsername = parameters["USER_ID_FOR_SRP"] ?? username
         let userPoolName = self.configuration.userPoolId.split(separator: "_")[1]
