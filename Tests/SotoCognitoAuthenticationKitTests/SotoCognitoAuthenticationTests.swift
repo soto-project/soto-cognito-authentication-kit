@@ -91,10 +91,8 @@ final class SotoCognitoAuthenticationKitTests: XCTestCase {
                 cognitoIdentity: Self.cognitoIdentity
             )
             Self.identifiable = CognitoIdentifiable(configuration: identityConfiguration)
-        } catch let error as AWSErrorType {
-            setUpFailure = error.description
         } catch {
-            self.setUpFailure = error.localizedDescription
+            self.setUpFailure = "\(error)"
         }
     }
 
@@ -151,7 +149,8 @@ final class SotoCognitoAuthenticationKitTests: XCTestCase {
             // create userpool
             let createRequest = CognitoIdentityProvider.CreateUserPoolRequest(
                 adminCreateUserConfig: CognitoIdentityProvider.AdminCreateUserConfigType(allowAdminCreateUserOnly: true),
-                poolName: self.userPoolName
+                poolName: self.userPoolName,
+                usernameConfiguration: .init(caseSensitive: false)
             )
             let createResponse = try cognitoIDP.createUserPool(createRequest).wait()
             self.userPoolId = createResponse.userPool!.id!
@@ -491,6 +490,49 @@ final class SotoCognitoAuthenticationKitTests: XCTestCase {
                 switch error {
                 // should get an invalid identity pool configuration error as the identity pool authentication provider
                 // is setup as cognito userpools, but we havent set up a role to return
+                case let error as CognitoIdentityErrorType where error == .invalidIdentityPoolConfigurationException:
+                    break
+                default:
+                    XCTFail("\(error)")
+                }
+            }
+        }
+    }
+
+    func testCredentialProvider() {
+        XCTAssertNil(Self.setUpFailure)
+        attempt {
+            let eventLoop = Self.cognitoIDP.client.eventLoopGroup.next()
+            let testData = try TestData(#function, on: eventLoop)
+            let credentialProvider: CredentialProviderFactory = .cognitoUserPool(
+                userName: testData.username,
+                authentication: .password(testData.password),
+                userPoolId: Self.userPoolId,
+                clientId: Self.clientId,
+                clientSecret: Self.clientSecret,
+                identityPoolId: Self.identityPoolId,
+                region: Self.region,
+                respondToChallenge: { challenge, _, error, eventLoop in
+                    switch challenge {
+                    case .newPasswordRequired:
+                        if error == nil {
+                            return eventLoop.makeSucceededFuture(["NEW_PASSWORD": "NewPassword123"])
+                        } else {
+                            return eventLoop.makeSucceededFuture(["NEW_PASSWORD": "NewPassword123!"])
+                        }
+                    default:
+                        return eventLoop.makeSucceededFuture(nil)
+                    }
+                }
+            )
+            let client = AWSClient(credentialProvider: credentialProvider, httpClientProvider: .createNew)
+            defer { XCTAssertNoThrow(try client.syncShutdown()) }
+            let credentialFuture = client.credentialProvider.getCredential(on: eventLoop, logger: AWSClient.loggingDisabled)
+                .map { credential in
+                    print(credential)
+                }
+            XCTAssertThrowsError(try credentialFuture.wait()) { error in
+                switch error {
                 case let error as CognitoIdentityErrorType where error == .invalidIdentityPoolConfigurationException:
                     break
                 default:
