@@ -36,7 +36,7 @@ public extension CognitoAuthenticatable {
     ///     - idToken: Id token, returned from login
     ///     - on: Event loop to run on
     /// - returns:
-    ///     An event loop future containing the payload structure.
+    ///     Payload structure.
     func authenticate<Payload: Codable>(idToken: String, on eventLoop: EventLoop) async throws -> Payload {
         let signers = try await loadSigners(region: configuration.region, on: eventLoop)
         let jwtPayload = try signers.verify(idToken, as: VerifiedToken<IdTokenVerifier, Payload>.self)
@@ -54,7 +54,7 @@ public extension CognitoAuthenticatable {
     ///     - accessToken: Access token, returned from login
     ///     - on: Event loop to run on
     /// - returns:
-    ///     An event loop future returning a structure with the username and UUID for the user.
+    ///     Structure with the username and UUID for the user.
     func authenticate(accessToken: String, on eventLoop: EventLoop) async throws -> CognitoAccessToken {
         let signers = try await loadSigners(region: configuration.region, on: eventLoop)
         let jwtPayload = try signers.verify(accessToken, as: VerifiedToken<AccessTokenVerifier, CognitoAccessToken>.self)

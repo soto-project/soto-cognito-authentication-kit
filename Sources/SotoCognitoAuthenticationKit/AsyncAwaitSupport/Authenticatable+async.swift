@@ -34,7 +34,7 @@ extension CognitoAuthenticatable {
     ///     - clientMetadata: A map of custom key-value pairs that you can provide as input for AWS Lambda custom workflows
     ///     - on: Event loop request is running on.
     /// - returns:
-    ///     EventLoopFuture holding the sign up response
+    ///     Sign up response
     public func signUp(
         username: String,
         password: String,
@@ -66,8 +66,6 @@ extension CognitoAuthenticatable {
     ///     - confirmationCode: Confirmation code in email
     ///     - clientMetadata: A map of custom key-value pairs that you can provide as input for AWS Lambda custom workflows
     ///     - on: Event loop request is running on.
-    /// - returns:
-    ///     Empty EventLoopFuture
     public func confirmSignUp(
         username: String,
         confirmationCode: String,
@@ -100,7 +98,7 @@ extension CognitoAuthenticatable {
     ///     - clientMetadata: A map of custom key-value pairs that you can provide as input for AWS Lambda custom workflows
     ///     - on: Event loop request is running on.
     /// - returns:
-    ///     EventLoopFuture holding the create user response
+    ///     Create user response
     public func createUser(
         username: String,
         attributes: [String: String],

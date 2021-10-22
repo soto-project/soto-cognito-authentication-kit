@@ -27,7 +27,7 @@ extension CognitoIdentifiable {
     ///     - idToken: Id token returned from authenticating a user
     ///     - on: Event loop request is running on.
     /// - returns:
-    ///     Event Loop Future returning the identity id as a String
+    ///     Identity id
     public func getIdentityId(idToken: String, on eventLoop: EventLoop? = nil) async throws -> String {
         do {
             let request = CognitoIdentity.GetIdInput(identityPoolId: self.configuration.identityPoolId, logins: [self.configuration.identityProvider: idToken])
@@ -45,7 +45,7 @@ extension CognitoIdentifiable {
     ///     - idToken: Id token returned from authenticating a user
     ///     - on: Event loop request is running on.
     /// - returns:
-    ///     Event loop future returning AWS credentials
+    ///     AWS credentials
     public func getCredentialForIdentity(
         identityId: String,
         idToken: String,
