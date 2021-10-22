@@ -117,42 +117,44 @@ final class CognitoSRPAsyncTests: XCTestCase {
         }
     }
 
-    class TestData {
-        let username: String
-        let password: String
-
-        init(_ testName: String, attributes: [String: String] = [:]) async throws {
-            self.username = testName + Self.randomString()
+    /// create new user for test, run test and delete user
+    func test(
+        _ testName: String,
+        attributes: [String: String] = [:],
+        _ work: @escaping (String, String) async throws -> ()
+    ) {
+        XCTRunAsyncAndBlock {
+            let username = testName + Self.randomString()
             let messageHmac: HashedAuthenticationCode<SHA256> = HMAC.authenticationCode(
                 for: Data(testName.utf8),
-                using: SymmetricKey(data: Data(CognitoSRPAsyncTests.authenticatable.configuration.userPoolId.utf8))
+                using: SymmetricKey(data: Data(Self.authenticatable.configuration.userPoolId.utf8))
             )
-            self.password = messageHmac.description + "1!A"
+            let password = messageHmac.description + "1!A"
 
             do {
-                _ = try await CognitoSRPAsyncTests.authenticatable.createUser(
-                    username: self.username,
+                _ = try await Self.authenticatable.createUser(
+                    username: username,
                     attributes: attributes,
-                    temporaryPassword: self.password,
+                    temporaryPassword: password,
                     messageAction: .suppress
                 )
             } catch let error as CognitoIdentityProviderErrorType where error == .usernameExistsException {
                 return
             }
-        }
+            
+            try await work(username, password)
 
-        deinit {
-            XCTRunAsyncAndBlock {
-                let deleteUserRequest = CognitoIdentityProvider.AdminDeleteUserRequest(username: self.username, userPoolId: CognitoSRPAsyncTests.authenticatable.configuration.userPoolId)
-                try? await CognitoSRPAsyncTests.cognitoIDP.adminDeleteUser(deleteUserRequest)
-            }
-        }
-
-        static func randomString() -> String {
-            return String((0...7).map { _ in "abcdefghijklmnopqrstuvwxyz".randomElement()! })
+            let deleteUserRequest = CognitoIdentityProvider.AdminDeleteUserRequest(username: username, userPoolId: Self.authenticatable.configuration.userPoolId)
+            try? await Self.cognitoIDP.adminDeleteUser(deleteUserRequest)
         }
     }
+    
+    static func randomString() -> String {
+        return String((0...7).map { _ in "abcdefghijklmnopqrstuvwxyz".randomElement()! })
+    }
 
+    // MARK: Tests
+    
     func testAuthenticateSRP() {
         XCTAssertNil(Self.setUpFailure)
 
@@ -168,12 +170,11 @@ final class CognitoSRPAsyncTests: XCTestCase {
         )
         let authenticatable = CognitoAuthenticatable(configuration: configuration)
 
-        XCTRunAsyncAndBlock {
+        test(#function) { username, password in
             let eventLoop = awsClient.eventLoopGroup.next()
             let context = AWSCognitoContextTest()
-            let testData = try await TestData(#function)
 
-            _ = try await authenticatable.authenticateSRP(username: testData.username, password: testData.password, context: context, on: eventLoop)
+            _ = try await authenticatable.authenticateSRP(username: username, password: password, context: context, on: eventLoop)
         }
     }
 }
