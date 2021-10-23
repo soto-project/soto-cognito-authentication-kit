@@ -45,7 +45,7 @@ class AWSCognitoContextTest: CognitoContextData {
     }
 }
 
-final class SotoCognitoAuthenticationKitTests: XCTestCase {
+final class CognitoTests: XCTestCase {
     static var middlewares: [AWSServiceMiddleware] {
         ProcessInfo.processInfo.environment["CI"] == "true" ? [] : [AWSLoggingMiddleware()]
     }
@@ -113,11 +113,11 @@ final class SotoCognitoAuthenticationKitTests: XCTestCase {
             self.username = testName + Self.randomString()
             let messageHmac: HashedAuthenticationCode<SHA256> = HMAC.authenticationCode(
                 for: Data(testName.utf8),
-                using: SymmetricKey(data: Data(SotoCognitoAuthenticationKitTests.authenticatable.configuration.userPoolId.utf8))
+                using: SymmetricKey(data: Data(CognitoTests.authenticatable.configuration.userPoolId.utf8))
             )
             self.password = messageHmac.description + "1!A"
 
-            let create = SotoCognitoAuthenticationKitTests.authenticatable.createUser(username: self.username, attributes: attributes, temporaryPassword: self.password, messageAction: .suppress, on: eventloop)
+            let create = CognitoTests.authenticatable.createUser(username: self.username, attributes: attributes, temporaryPassword: self.password, messageAction: .suppress, on: eventloop)
                 .map { _ in return }
                 // deal with user already existing
                 .flatMapErrorThrowing { error in
@@ -130,8 +130,8 @@ final class SotoCognitoAuthenticationKitTests: XCTestCase {
         }
 
         deinit {
-            let deleteUserRequest = CognitoIdentityProvider.AdminDeleteUserRequest(username: username, userPoolId: SotoCognitoAuthenticationKitTests.authenticatable.configuration.userPoolId)
-            try? SotoCognitoAuthenticationKitTests.cognitoIDP.adminDeleteUser(deleteUserRequest).wait()
+            let deleteUserRequest = CognitoIdentityProvider.AdminDeleteUserRequest(username: username, userPoolId: CognitoTests.authenticatable.configuration.userPoolId)
+            try? CognitoTests.cognitoIDP.adminDeleteUser(deleteUserRequest).wait()
         }
 
         static func randomString() -> String {

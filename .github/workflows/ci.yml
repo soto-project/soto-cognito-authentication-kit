@@ -40,7 +40,7 @@ jobs:
   linux:
     strategy:
       matrix:
-        image: ["swift:5.2", "swift:5.3"]
+        image: ["swift:5.2", "swift:5.3", "swift:5.4", "swift:5.5"]
     runs-on: ubuntu-latest
     container:
       image: ${{ matrix.image }}
@@ -52,7 +52,7 @@ jobs:
         apt-get update -qq
         apt-get install -q -y tzdata zlib1g-dev curl
     - name: Test
-      run: swift test --enable-test-discovery --enable-code-coverage --sanitize=thread
+      run: swift test --enable-test-discovery --enable-code-coverage
     - name: Convert coverage files
       run: |
         llvm-cov export -format="lcov" \
