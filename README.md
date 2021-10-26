@@ -21,6 +21,7 @@ Table of Contents
     - [Accessing AWS credentials](#accessing-aws-credentials)
 - [Using with unauthenticated client](#using-with-unauthenticated-client)
 - [Secure Remote Password](#secure-remote-password)
+- [Credential Provider](#credential-provider)
 - [Reference](#reference)
 
 ## Using with Cognito User Pools
@@ -210,6 +211,37 @@ let response = authenticatable.authenticateSRP(
     requireAuthenticatedClient: false
 )
 ```
+
+## Credential Provider
+
+Soto Cognito Authentication Kit provides a credential provider that combines Cognito userpool authentication and Cognito Identity to generate credentials. It will refresh the credentials using the returned refresh token when required. It is setup as follows
+```swift
+let credentialProvider: CredentialProviderFactory = .cognitoUserPool(
+    userName: username,
+    authentication: .password(password),
+    userPoolId: userPoolId,
+    clientId: clientId,
+    clientSecret: clientSecret,
+    identityPoolId: identityPoolId,
+    region: region,
+    respondToChallenge: { challenge, parameters, error, eventLoop in
+        // Respond to any challenges returned by userpool authentication
+        // function parameters are
+        // challenge: Challange type
+        // parameters: Challenge parameters
+        // error: Error returned from a previous respondToChallenge response
+        // eventLoop: EventLoop to run everything on
+        switch challenge {
+        case .newPasswordRequired:
+            return respondToNewPassword()
+        default:
+            return eventLoop.makeSucceededFuture(nil)
+        }
+    }
+)
+let client = AWSClient(credentialProvider: credentialProvider, httpClientProvider: .createNew)
+```
+The `authentication` parameter allows you to define how you want to authenticate with userpools. Possible option are `.password` which requires a password, `.refreshToken` which requires a refresh token you have already generated and if you have imported `SotoAuthenticationKitSRP` `.srp` gives you Secure Remote Password authentication.
 
 ### Reference
 
