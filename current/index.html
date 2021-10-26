@@ -8,12 +8,20 @@
     <script src="js/jquery.min.js" defer></script>
     <script src="js/jazzy.js" defer></script>
     
+    <script src="js/lunr.min.js" defer></script>
+    <script src="js/typeahead.jquery.js" defer></script>
+    <script src="js/jazzy.search.js" defer></script>
   </head>
   <body>
     <a title="  Reference"></a>
     <header>
       <div class="content-wrapper">
-        <p><a href="index.html"> Docs</a> (84% documented)</p>
+        <p><a href="index.html"> Docs</a> (87% documented)</p>
+        <p class="header-right">
+          <form role="search" action="search.json">
+            <input type="text" placeholder="Search documentation" data-typeahead>
+          </form>
+        </p>
       </div>
     </header>
     <div class="content-wrapper">
@@ -58,7 +66,7 @@
             <a href="Extensions.html">Extensions</a>
             <ul class="nav-group-tasks">
               <li class="nav-group-task">
-                <a href="Extensions/Array.html">Array</a>
+                <a href="Extensions/CredentialProviderFactory.html">CredentialProviderFactory</a>
               </li>
             </ul>
           </li>
@@ -75,6 +83,9 @@
             <ul class="nav-group-tasks">
               <li class="nav-group-task">
                 <a href="Structs/CognitoAccessToken.html">CognitoAccessToken</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Structs/CognitoAuthenticationMethod.html">CognitoAuthenticationMethod</a>
               </li>
               <li class="nav-group-task">
                 <a href="Structs/CognitoConfiguration.html">CognitoConfiguration</a>
@@ -133,6 +144,8 @@
 </ul></li>
 <li><a href="#using-with-unauthenticated-client">Using with unauthenticated client</a></li>
 <li><a href="#secure-remote-password">Secure Remote Password</a></li>
+<li><a href="#credential-provider">Credential Provider</a></li>
+<li><a href="#reference">Reference</a></li>
 </ul>
 <h2 id='using-with-cognito-user-pools' class='heading'>Using with Cognito User Pools</h2>
 <h3 id='configuration' class='heading'>Configuration</h3>
@@ -308,12 +321,45 @@ let identifiable = CognitoIdentifiable(configuration: configuration)
     <span class="nv">requireAuthenticatedClient</span><span class="p">:</span> <span class="kc">false</span>
 <span class="p">)</span>
 </code></pre>
+<h2 id='credential-provider' class='heading'>Credential Provider</h2>
+
+<p>Soto Cognito Authentication Kit provides a credential provider that combines Cognito userpool authentication and Cognito Identity to generate credentials. It will refresh the credentials using the returned refresh token when required. It is setup as follows</p>
+<pre class="highlight swift"><code><span class="k">let</span> <span class="nv">credentialProvider</span><span class="p">:</span> <span class="kt">CredentialProviderFactory</span> <span class="o">=</span> <span class="o">.</span><span class="nf">cognitoUserPool</span><span class="p">(</span>
+    <span class="nv">userName</span><span class="p">:</span> <span class="n">username</span><span class="p">,</span>
+    <span class="nv">authentication</span><span class="p">:</span> <span class="o">.</span><span class="nf">password</span><span class="p">(</span><span class="n">password</span><span class="p">),</span>
+    <span class="nv">userPoolId</span><span class="p">:</span> <span class="n">userPoolId</span><span class="p">,</span>
+    <span class="nv">clientId</span><span class="p">:</span> <span class="n">clientId</span><span class="p">,</span>
+    <span class="nv">clientSecret</span><span class="p">:</span> <span class="n">clientSecret</span><span class="p">,</span>
+    <span class="nv">identityPoolId</span><span class="p">:</span> <span class="n">identityPoolId</span><span class="p">,</span>
+    <span class="nv">region</span><span class="p">:</span> <span class="n">region</span><span class="p">,</span>
+    <span class="nv">respondToChallenge</span><span class="p">:</span> <span class="p">{</span> <span class="n">challenge</span><span class="p">,</span> <span class="n">parameters</span><span class="p">,</span> <span class="n">error</span><span class="p">,</span> <span class="n">eventLoop</span> <span class="k">in</span>
+        <span class="c1">// Respond to any challenges returned by userpool authentication</span>
+        <span class="c1">// function parameters are</span>
+        <span class="c1">// challenge: Challange type</span>
+        <span class="c1">// parameters: Challenge parameters</span>
+        <span class="c1">// error: Error returned from a previous respondToChallenge response</span>
+        <span class="c1">// eventLoop: EventLoop to run everything on</span>
+        <span class="k">switch</span> <span class="n">challenge</span> <span class="p">{</span>
+        <span class="k">case</span> <span class="o">.</span><span class="nv">newPasswordRequired</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nf">respondToNewPassword</span><span class="p">()</span>
+        <span class="k">default</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">eventLoop</span><span class="o">.</span><span class="nf">makeSucceededFuture</span><span class="p">(</span><span class="kc">nil</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">)</span>
+<span class="k">let</span> <span class="nv">client</span> <span class="o">=</span> <span class="kt">AWSClient</span><span class="p">(</span><span class="nv">credentialProvider</span><span class="p">:</span> <span class="n">credentialProvider</span><span class="p">,</span> <span class="nv">httpClientProvider</span><span class="p">:</span> <span class="o">.</span><span class="n">createNew</span><span class="p">)</span>
+</code></pre>
+
+<p>The <code>authentication</code> parameter allows you to define how you want to authenticate with userpools. Possible option are <code>.password</code> which requires a password, <code>.refreshToken</code> which requires a refresh token you have already generated and if you have imported <code>SotoAuthenticationKitSRP</code> <code>.srp</code> gives you Secure Remote Password authentication.</p>
+<h3 id='reference' class='heading'>Reference</h3>
+
+<p>Reference documentation for SotoCognitoAuthenticationKit can be found <a href="https://soto-project.github.io/soto-cognito-authentication-kit/index.html">here</a>.</p>
 
           </section>
         </section>
         <section id="footer">
-          <p>&copy; 2021 <a class="link" href="" target="_blank" rel="external"></a>. All rights reserved. (Last updated: 2021-10-01)</p>
-          <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external">jazzy ♪♫ v0.13.1</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external">Realm</a> project.</p>
+          <p>&copy; 2021 <a class="link" href="" target="_blank" rel="external"></a>. All rights reserved. (Last updated: 2021-10-26)</p>
+          <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external">jazzy ♪♫ v0.13.6</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external">Realm</a> project.</p>
         </section>
       </article>
     </div>

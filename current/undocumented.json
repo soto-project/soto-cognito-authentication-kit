@@ -65,23 +65,30 @@
     },
     {
       "file": "/Users/adamfowler/Developer/macOS/lib/soto-project/soto-cognito-authentication-kit/Sources/SotoCognitoAuthenticationKit/Identifiable.swift",
+      "line": 22,
+      "symbol": "CognitoIdentifiable",
+      "symbol_kind": "source.lang.swift.decl.extension",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/adamfowler/Developer/macOS/lib/soto-project/soto-cognito-authentication-kit/Sources/SotoCognitoAuthenticationKit/Identifiable.swift",
       "line": 26,
       "symbol": "CognitoIdentifiable.init(configuration:)",
       "symbol_kind": "source.lang.swift.decl.function.method.instance",
       "warning": "undocumented"
     },
     {
-      "file": "/Users/adamfowler/Developer/macOS/lib/soto-project/soto-cognito-authentication-kit/Sources/SotoCognitoAuthenticationKit/Identifiable.swift",
-      "line": 78,
-      "symbol": "CognitoIdentifiable",
-      "symbol_kind": "source.lang.swift.decl.extension",
+      "file": "/Users/adamfowler/Developer/macOS/lib/soto-project/soto-cognito-authentication-kit/Sources/SotoCognitoAuthenticationKit/UserPoolCredentialProvider.swift",
+      "line": 20,
+      "symbol": "CognitoAuthenticationMethod.Method",
+      "symbol_kind": "source.lang.swift.decl.typealias",
       "warning": "undocumented"
     },
     {
-      "file": "/Users/adamfowler/Developer/macOS/lib/soto-project/soto-cognito-authentication-kit/Sources/SotoCognitoAuthenticationSRP/Authenticatable+SRP.swift",
-      "line": 200,
-      "symbol": "Array.random(count:)",
-      "symbol_kind": "source.lang.swift.decl.function.method.static",
+      "file": "/Users/adamfowler/Developer/macOS/lib/soto-project/soto-cognito-authentication-kit/Sources/SotoCognitoAuthenticationKit/UserPoolCredentialProvider.swift",
+      "line": 23,
+      "symbol": "CognitoAuthenticationMethod.init(authenticate:)",
+      "symbol_kind": "source.lang.swift.decl.function.method.instance",
       "warning": "undocumented"
     }
   ],

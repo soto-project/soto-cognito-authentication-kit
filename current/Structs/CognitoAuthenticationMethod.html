@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>CognitoAccessToken Structure Reference</title>
+    <title>CognitoAuthenticationMethod Structure Reference</title>
     <link rel="stylesheet" type="text/css" href="../css/jazzy.css" />
     <link rel="stylesheet" type="text/css" href="../css/highlight.css" />
     <meta charset='utf-8'>
@@ -13,8 +13,8 @@
     <script src="../js/jazzy.search.js" defer></script>
   </head>
   <body>
-    <a name="//apple_ref/swift/Struct/CognitoAccessToken" class="dashAnchor"></a>
-    <a title="CognitoAccessToken Structure Reference"></a>
+    <a name="//apple_ref/swift/Struct/CognitoAuthenticationMethod" class="dashAnchor"></a>
+    <a title="CognitoAuthenticationMethod Structure Reference"></a>
     <header>
       <div class="content-wrapper">
         <p><a href="../index.html"> Docs</a> (87% documented)</p>
@@ -29,7 +29,7 @@
       <p id="breadcrumbs">
         <a href="../index.html"> Reference</a>
         <img id="carat" src="../img/carat.png" />
-        CognitoAccessToken Structure Reference
+        CognitoAuthenticationMethod Structure Reference
       </p>
     </div>
     <div class="content-wrapper">
@@ -115,15 +115,15 @@
       <article class="main-content">
         <section>
           <section class="section">
-            <h1>CognitoAccessToken</h1>
+            <h1>CognitoAuthenticationMethod</h1>
               <div class="declaration">
                 <div class="language">
                   
-                  <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">struct</span> <span class="kt">CognitoAccessToken</span> <span class="p">:</span> <span class="kt">Codable</span></code></pre>
+                  <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">struct</span> <span class="kt">CognitoAuthenticationMethod</span></code></pre>
 
                 </div>
               </div>
-            <p>Struct returned when authenticating an access token</p>
+            <p>Cognito authentication method used by <code>CredentialProviderFactory.cognitoUserPool</code>.</p>
 
           </section>
           <section class="section task-group-section">
@@ -132,9 +132,9 @@
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:28SotoCognitoAuthenticationKit0B11AccessTokenV8usernameSSvp"></a>
-                    <a name="//apple_ref/swift/Property/username" class="dashAnchor"></a>
-                    <a class="token" href="#/s:28SotoCognitoAuthenticationKit0B11AccessTokenV8usernameSSvp">username</a>
+                    <a name="/s:28SotoCognitoAuthenticationKit0bC6MethodV0E0a"></a>
+                    <a name="//apple_ref/swift/Alias/Method" class="dashAnchor"></a>
+                    <a class="token" href="#/s:28SotoCognitoAuthenticationKit0bC6MethodV0E0a">Method</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -149,7 +149,7 @@
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="k">let</span> <span class="nv">username</span><span class="p">:</span> <span class="kt">String</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">typealias</span> <span class="kt">Method</span> <span class="o">=</span> <span class="p">(</span><span class="kt"><a href="../Classes/CognitoAuthenticatable.html">CognitoAuthenticatable</a></span><span class="p">,</span> <span class="kt">String</span><span class="p">,</span> <span class="kt">EventLoop</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">EventLoopFuture</span><span class="o">&lt;</span><span class="kt"><a href="../Enums/CognitoAuthenticateResponse.html">CognitoAuthenticateResponse</a></span><span class="o">&gt;</span></code></pre>
 
                         </div>
                       </div>
@@ -159,9 +159,9 @@
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:28SotoCognitoAuthenticationKit0B11AccessTokenV7subject10Foundation4UUIDVvp"></a>
-                    <a name="//apple_ref/swift/Property/subject" class="dashAnchor"></a>
-                    <a class="token" href="#/s:28SotoCognitoAuthenticationKit0B11AccessTokenV7subject10Foundation4UUIDVvp">subject</a>
+                    <a name="/s:28SotoCognitoAuthenticationKit0bC6MethodV12authenticateAC7NIOCore15EventLoopFutureCyAA0B20AuthenticateResponseOGAA0B15AuthenticatableC_SSAE0hI0_ptc_tcfc"></a>
+                    <a name="//apple_ref/swift/Method/init(authenticate:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:28SotoCognitoAuthenticationKit0bC6MethodV12authenticateAC7NIOCore15EventLoopFutureCyAA0B20AuthenticateResponseOGAA0B15AuthenticatableC_SSAE0hI0_ptc_tcfc">init(authenticate:<wbr>)</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -176,7 +176,7 @@
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="k">let</span> <span class="nv">subject</span><span class="p">:</span> <span class="kt">UUID</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="nf">init</span><span class="p">(</span><span class="nv">authenticate</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="kt"><a href="../Structs/CognitoAuthenticationMethod.html#/s:28SotoCognitoAuthenticationKit0bC6MethodV0E0a">Method</a></span><span class="p">)</span></code></pre>
 
                         </div>
                       </div>
@@ -186,9 +186,9 @@
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:28SotoCognitoAuthenticationKit0B11AccessTokenV14expirationTime10Foundation4DateVvp"></a>
-                    <a name="//apple_ref/swift/Property/expirationTime" class="dashAnchor"></a>
-                    <a class="token" href="#/s:28SotoCognitoAuthenticationKit0B11AccessTokenV14expirationTime10Foundation4DateVvp">expirationTime</a>
+                    <a name="/s:28SotoCognitoAuthenticationKit0bC6MethodV8passwordyACSSFZ"></a>
+                    <a name="//apple_ref/swift/Method/password(_:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:28SotoCognitoAuthenticationKit0bC6MethodV8passwordyACSSFZ">password(_:<wbr>)</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -196,14 +196,68 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Undocumented</p>
+                        <p>Authenticate with password</p>
 
                       </div>
                       <div class="declaration">
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="k">let</span> <span class="nv">expirationTime</span><span class="p">:</span> <span class="kt">Date</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">static</span> <span class="kd">func</span> <span class="nf">password</span><span class="p">(</span><span class="n">_</span> <span class="nv">password</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">CognitoAuthenticationMethod</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:28SotoCognitoAuthenticationKit0bC6MethodV12refreshTokenyACSSFZ"></a>
+                    <a name="//apple_ref/swift/Method/refreshToken(_:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:28SotoCognitoAuthenticationKit0bC6MethodV12refreshTokenyACSSFZ">refreshToken(_:<wbr>)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Authenticate with refresh token</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">static</span> <span class="kd">func</span> <span class="nf">refreshToken</span><span class="p">(</span><span class="n">_</span> <span class="nv">token</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">CognitoAuthenticationMethod</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:28SotoCognitoAuthenticationKit0bC6MethodV0abC3SRPE3srpyACSSFZ"></a>
+                    <a name="//apple_ref/swift/Method/srp(_:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:28SotoCognitoAuthenticationKit0bC6MethodV0abC3SRPE3srpyACSSFZ">srp(_:<wbr>)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Authenticate with secure remote password</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">static</span> <span class="kd">func</span> <span class="nf">srp</span><span class="p">(</span><span class="n">_</span> <span class="nv">password</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">CognitoAuthenticationMethod</span></code></pre>
 
                         </div>
                       </div>
