@@ -128,7 +128,7 @@ final class CognitoSRPAsyncTests: XCTestCase {
             for: Data(testName.utf8),
             using: SymmetricKey(data: Data(Self.authenticatable.configuration.userPoolId.utf8))
         )
-        let password = messageHmac.description + "1!A"
+        let password = String(messageHmac.flatMap { String(format: "%x", $0) }) + "1!A"
 
         do {
             _ = try await Self.authenticatable.createUser(

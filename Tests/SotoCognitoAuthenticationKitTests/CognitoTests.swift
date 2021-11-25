@@ -115,7 +115,7 @@ final class CognitoTests: XCTestCase {
                 for: Data(testName.utf8),
                 using: SymmetricKey(data: Data(CognitoTests.authenticatable.configuration.userPoolId.utf8))
             )
-            self.password = messageHmac.description + "1!A"
+            self.password = String(messageHmac.flatMap { String(format: "%x", $0) }) + "1!A"
 
             let create = CognitoTests.authenticatable.createUser(username: self.username, attributes: attributes, temporaryPassword: self.password, messageAction: .suppress, on: eventloop)
                 .map { _ in return }
