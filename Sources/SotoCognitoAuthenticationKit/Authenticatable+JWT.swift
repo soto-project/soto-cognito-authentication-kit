@@ -85,11 +85,10 @@ extension CognitoAuthenticatable {
             return self.jwtSignersLock.withLock { eventLoopGroup.next().makeSucceededFuture(jwtSigners) }
         }
 
-        let JWTSignersURL = "https://cognito-idp.\(configuration.region.rawValue).amazonaws.com/\(configuration.userPoolId)/.well-known/jwks.json"
+        let jwtSignersURL = "https://cognito-idp.\(configuration.region.rawValue).amazonaws.com/\(configuration.userPoolId)/.well-known/jwks.json"
         let httpClient = configuration.cognitoIDP.client.httpClient
-        let request = AWSHTTPRequest(url: URL(string: JWTSignersURL)!, method: .GET, headers: [:], body: .empty)
         return httpClient
-            .execute(request: request, timeout: TimeAmount.seconds(10), on: eventLoopGroup.next(), logger: AWSClient.loggingDisabled)
+            .get(url: jwtSignersURL, deadline: .now() + .seconds(20))
             .flatMapThrowing { response in
                 let signers = JWTSigners()
                 guard let body = response.body else { return JWTSigners() }
