@@ -21,7 +21,6 @@ import NIO
 @_exported import SotoCognitoIdentityProvider
 
 /// Public interface functions for authenticating with CognitoIdentityProvider and generating access and id tokens.
-@available(macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0, *)
 extension CognitoAuthenticatable {
     // MARK: Async/Await Methods
 
@@ -425,7 +424,6 @@ extension CognitoAuthenticatable {
     }
 }
 
-@available(macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0, *)
 public extension CognitoAuthenticatable {
     /// Return an authorization request future. This is an internal function and shouldn't need to be called
     func initiateAuthRequest(
