@@ -65,6 +65,7 @@ public extension CognitoAuthenticatable {
     }
 }
 
+@available(macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0, *)
 extension CognitoAuthenticatable {
     /// load JSON web keys and create JWT signers from them
     func loadSigners(region: Region, on eventLoop: EventLoop) async throws -> JWTSigners {
