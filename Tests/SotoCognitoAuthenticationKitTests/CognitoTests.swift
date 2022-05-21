@@ -222,7 +222,7 @@ final class CognitoTests: XCTestCase {
             let testData = try TestData(#function, on: eventLoop)
 
             let result = try login(testData, authenticatable: Self.authenticatable, on: eventLoop)
-                .flatMap { (response) -> EventLoopFuture<CognitoAccessToken> in
+                .flatMap { response -> EventLoopFuture<CognitoAccessToken> in
                     guard case .authenticated(let authenticated) = response else { return eventLoop.makeFailedFuture(AWSCognitoTestError.notAuthenticated) }
                     guard let accessToken = authenticated.accessToken else { return eventLoop.makeFailedFuture(AWSCognitoTestError.missingToken) }
 
@@ -252,7 +252,7 @@ final class CognitoTests: XCTestCase {
             let testData = try TestData(#function, attributes: attributes, on: eventLoop)
 
             let result = try login(testData, authenticatable: Self.authenticatable, on: eventLoop)
-                .flatMap { (response) -> EventLoopFuture<User> in
+                .flatMap { response -> EventLoopFuture<User> in
                     guard case .authenticated(let authenticated) = response else { return eventLoop.makeFailedFuture(AWSCognitoTestError.notAuthenticated) }
                     guard let idToken = authenticated.idToken else { return eventLoop.makeFailedFuture(AWSCognitoTestError.missingToken) }
 
@@ -271,14 +271,14 @@ final class CognitoTests: XCTestCase {
             let testData = try TestData(#function, on: eventLoop)
 
             _ = try login(testData, authenticatable: Self.authenticatable, on: eventLoop)
-                .flatMap { (response) -> EventLoopFuture<CognitoAuthenticateResponse> in
+                .flatMap { response -> EventLoopFuture<CognitoAuthenticateResponse> in
                     guard case .authenticated(let authenticated) = response else { return eventLoop.makeFailedFuture(AWSCognitoTestError.notAuthenticated) }
                     guard let refreshToken = authenticated.refreshToken else { return eventLoop.makeFailedFuture(AWSCognitoTestError.missingToken) }
                     let context = AWSCognitoContextTest()
 
                     return Self.authenticatable.refresh(username: testData.username, refreshToken: refreshToken, context: context, on: eventLoop)
                 }
-                .flatMap { (response) -> EventLoopFuture<CognitoAccessToken> in
+                .flatMap { response -> EventLoopFuture<CognitoAccessToken> in
                     guard case .authenticated(let authenticated) = response else { return eventLoop.makeFailedFuture(AWSCognitoTestError.notAuthenticated) }
                     guard let accessToken = authenticated.accessToken else { return eventLoop.makeFailedFuture(AWSCognitoTestError.missingToken) }
 
@@ -303,7 +303,7 @@ final class CognitoTests: XCTestCase {
                 .flatMap { _ in
                     self.login(testData, authenticatable: Self.authenticatable, on: eventLoop)
                 }
-                .flatMap { (response) -> EventLoopFuture<User> in
+                .flatMap { response -> EventLoopFuture<User> in
                     guard case .authenticated(let authenticated) = response else { return eventLoop.makeFailedFuture(AWSCognitoTestError.notAuthenticated) }
                     guard let idToken = authenticated.idToken else { return eventLoop.makeFailedFuture(AWSCognitoTestError.missingToken) }
 
@@ -327,7 +327,7 @@ final class CognitoTests: XCTestCase {
             var storedAccessToken = ""
 
             let future = login(testData, authenticatable: Self.authenticatable, on: eventLoop)
-                .flatMap { (response) -> EventLoopFuture<User> in
+                .flatMap { response -> EventLoopFuture<User> in
                     guard case .authenticated(let authenticated) = response else { return eventLoop.makeFailedFuture(AWSCognitoTestError.notAuthenticated) }
                     guard let accessToken = authenticated.accessToken else { return eventLoop.makeFailedFuture(AWSCognitoTestError.missingToken) }
                     guard let idToken = authenticated.idToken else { return eventLoop.makeFailedFuture(AWSCognitoTestError.missingToken) }
@@ -377,7 +377,7 @@ final class CognitoTests: XCTestCase {
             let testData = try TestData(#function, on: eventLoop)
 
             let result = try login(testData, authenticatable: authenticatable, on: eventLoop)
-                .flatMap { (response) -> EventLoopFuture<CognitoAccessToken> in
+                .flatMap { response -> EventLoopFuture<CognitoAccessToken> in
                     guard case .authenticated(let authenticated) = response else { return eventLoop.makeFailedFuture(AWSCognitoTestError.notAuthenticated) }
                     guard let accessToken = authenticated.accessToken else { return eventLoop.makeFailedFuture(AWSCognitoTestError.missingToken) }
 
@@ -478,12 +478,12 @@ final class CognitoTests: XCTestCase {
             let eventLoop = Self.cognitoIDP.client.eventLoopGroup.next()
             let testData = try TestData(#function, on: eventLoop)
             let result = login(testData, authenticatable: Self.authenticatable, on: eventLoop)
-                .flatMap { (response) -> EventLoopFuture<(String, String)> in
+                .flatMap { response -> EventLoopFuture<(String, String)> in
                     guard case .authenticated(let authenticated) = response else { return eventLoop.makeFailedFuture(AWSCognitoTestError.notAuthenticated) }
                     guard let idToken = authenticated.idToken else { return eventLoop.makeFailedFuture(AWSCognitoTestError.missingToken) }
 
                     return Self.identifiable.getIdentityId(idToken: idToken, on: eventLoop).map { id in (id, idToken) }
-                }.flatMap { (id, idToken) -> EventLoopFuture<CognitoIdentity.Credentials> in
+                }.flatMap { id, idToken -> EventLoopFuture<CognitoIdentity.Credentials> in
                     return Self.identifiable.getCredentialForIdentity(identityId: id, idToken: idToken, on: eventLoop)
                 }
             XCTAssertThrowsError(try result.wait()) { error in
