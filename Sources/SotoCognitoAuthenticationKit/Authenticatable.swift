@@ -60,7 +60,7 @@ public enum CognitoAuthenticateResponse: Codable {
     /// Response containing an authentication challenge
     public struct ChallengedResponse: Codable {
         /// Name of challenge
-        public let name: String?
+        public let name: CognitoChallengeName?
         /// Challenge parameters
         public let parameters: [String: String]?
         /// Session id to include in challenge response
@@ -371,7 +371,7 @@ public class CognitoAuthenticatable {
                 // if there was no tokens returned, return challenge if it exists
                 if let challengeName = response.challengeName {
                     return .challenged(.init(
-                        name: challengeName.rawValue,
+                        name: challengeName,
                         parameters: response.challengeParameters,
                         session: response.session
                     )
@@ -586,7 +586,7 @@ public extension CognitoAuthenticatable {
                 // if there was no tokens returned, return challenge if it exists
                 if let challengeName = response.challengeName {
                     return .challenged(.init(
-                        name: challengeName.rawValue,
+                        name: challengeName,
                         parameters: response.challengeParameters,
                         session: response.session
                     ))
