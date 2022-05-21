@@ -95,7 +95,7 @@ public enum CognitoAuthenticateResponse: Codable {
 }
 
 /// Public interface functions for authenticating with CognitoIdentityProvider and generating access and id tokens.
-public class CognitoAuthenticatable {
+public final class CognitoAuthenticatable {
     // MARK: Member variables
 
     /// Configuration
@@ -616,3 +616,8 @@ public extension CognitoAuthenticatable {
         }
     }
 }
+
+#if compiler(>=5.6)
+// jwtSigners is mutable so required to use @unchecked here.
+extension CognitoAuthenticatable: @unchecked Sendable {}
+#endif
