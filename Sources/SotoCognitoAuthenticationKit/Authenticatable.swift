@@ -35,7 +35,7 @@ public enum SotoCognitoError: Error {
 }
 
 /// Response to `createUser`
-public struct CognitoCreateUserResponse: Codable {
+public struct CognitoCreateUserResponse: Codable, _SotoSendable {
     /// name of user
     public var userName: String
     /// status of user account
@@ -43,14 +43,14 @@ public struct CognitoCreateUserResponse: Codable {
 }
 
 /// Authentication response
-public enum CognitoAuthenticateResponse: Codable {
+public enum CognitoAuthenticateResponse: Codable, _SotoSendable {
     /// Response with authentication details
     case authenticated(AuthenticatedResponse)
     /// Response containing a challenge
     case challenged(ChallengedResponse)
 
     /// Authenticated Response
-    public struct AuthenticatedResponse: Codable {
+    public struct AuthenticatedResponse: Codable, _SotoSendable {
         public let accessToken: String?
         public let idToken: String?
         public let refreshToken: String?
@@ -58,7 +58,7 @@ public enum CognitoAuthenticateResponse: Codable {
     }
 
     /// Response containing an authentication challenge
-    public struct ChallengedResponse: Codable {
+    public struct ChallengedResponse: Codable, _SotoSendable {
         /// Name of challenge
         public let name: String?
         /// Challenge parameters
