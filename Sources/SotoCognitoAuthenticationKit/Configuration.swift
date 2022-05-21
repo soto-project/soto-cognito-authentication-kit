@@ -60,7 +60,7 @@ public struct CognitoConfiguration: _SotoSendable {
 ///
 /// See [Cognito Identity Pools](https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-identity.html)
 /// documention for more information.
-public struct CognitoIdentityConfiguration {
+public struct CognitoIdentityConfiguration: _SotoSendable {
     /// Cognito identity pool id
     public let identityPoolId: String
     /// Identity provider
