@@ -36,6 +36,7 @@ public extension CognitoAuthenticatable {
         password: String,
         clientMetadata: [String: String]? = nil,
         context: CognitoContextData? = nil,
+        logger: Logger = AWSClient.loggingDisabled,
         on eventLoop: EventLoop? = nil
     ) -> EventLoopFuture<CognitoAuthenticateResponse> {
         let eventLoop = eventLoop ?? configuration.cognitoIDP.eventLoopGroup.next()
@@ -52,6 +53,7 @@ public extension CognitoAuthenticatable {
             authParameters: authParameters,
             clientMetadata: clientMetadata,
             context: context,
+            logger: logger,
             on: eventLoop
         )
         .flatMap { response in
@@ -97,6 +99,7 @@ public extension CognitoAuthenticatable {
                 responses: authResponse,
                 session: challenge.session,
                 context: context,
+                logger: logger,
                 on: eventLoop
             )
         }

@@ -38,6 +38,7 @@ public extension CognitoAuthenticatable {
         password: String,
         clientMetadata: [String: String]? = nil,
         context: CognitoContextData? = nil,
+        logger: Logger = AWSClient.loggingDisabled,
         on eventLoop: EventLoop? = nil
     ) async throws -> CognitoAuthenticateResponse {
         let srp = SRP<SHA256>()
@@ -53,6 +54,7 @@ public extension CognitoAuthenticatable {
             authParameters: authParameters,
             clientMetadata: clientMetadata,
             context: context,
+            logger: logger,
             on: eventLoop
         )
 
@@ -103,6 +105,7 @@ public extension CognitoAuthenticatable {
             responses: authResponse,
             session: challenge.session,
             context: context,
+            logger: logger,
             on: eventLoop
         )
     }
