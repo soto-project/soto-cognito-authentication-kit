@@ -16,6 +16,7 @@ import Crypto
 import Foundation
 import JWTKit
 import NIO
+import NIOConcurrencyHelpers
 @_exported import SotoCognitoIdentityProvider
 
 /// Authentication challenge returned by Cognito
@@ -99,8 +100,10 @@ public class CognitoAuthenticatable {
 
     /// Configuration
     public let configuration: CognitoConfiguration
-    /// JWT SIgners
+    /// JWT Signers
     var jwtSigners: JWTSigners?
+    /// control access to jwtSigners
+    internal let jwtSignersLock: Lock
 
     // MARK: Initialization
 
@@ -109,6 +112,7 @@ public class CognitoAuthenticatable {
     public init(configuration: CognitoConfiguration) {
         self.configuration = configuration
         self.jwtSigners = nil
+        self.jwtSignersLock = .init()
     }
 
     // MARK: Methods
@@ -359,7 +363,7 @@ public class CognitoAuthenticatable {
         return respondFuture.flatMapErrorThrowing { error in
             throw self.translateError(error: error)
         }
-        .flatMapThrowing { (response) -> CognitoAuthenticateResponse in
+        .flatMapThrowing { response -> CognitoAuthenticateResponse in
             guard let authenticationResult = response.authenticationResult,
                   let accessToken = authenticationResult.accessToken,
                   let idToken = authenticationResult.idToken
@@ -574,7 +578,7 @@ public extension CognitoAuthenticatable {
         return initAuthFuture.flatMapErrorThrowing { error in
             throw self.translateError(error: error)
         }
-        .flatMapThrowing { (response) -> CognitoAuthenticateResponse in
+        .flatMapThrowing { response -> CognitoAuthenticateResponse in
             guard let authenticationResult = response.authenticationResult,
                   let accessToken = authenticationResult.accessToken,
                   let idToken = authenticationResult.idToken
