@@ -97,6 +97,7 @@ extension CognitoAuthenticatable {
             return self.jwtSignersLock.withLock { eventLoop.makeSucceededFuture(jwtSigners) }
         }
 
+        logger.debug("Load jwks.json")
         let jwtSignersURL = "https://cognito-idp.\(configuration.region.rawValue).amazonaws.com/\(configuration.userPoolId)/.well-known/jwks.json"
         let httpClient = configuration.cognitoIDP.client.httpClient
         return httpClient
