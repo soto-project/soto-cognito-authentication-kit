@@ -27,10 +27,14 @@ extension CognitoIdentifiable {
     ///     - on: Event loop request is running on.
     /// - returns:
     ///     Identity id
-    public func getIdentityId(idToken: String, on eventLoop: EventLoop? = nil) async throws -> String {
+    public func getIdentityId(
+        idToken: String,
+        logger: Logger = AWSClient.loggingDisabled,
+        on eventLoop: EventLoop? = nil
+    ) async throws -> String {
         do {
             let request = CognitoIdentity.GetIdInput(identityPoolId: self.configuration.identityPoolId, logins: [self.configuration.identityProvider: idToken])
-            let response = try await self.configuration.cognitoIdentity.getId(request, on: eventLoop)
+            let response = try await self.configuration.cognitoIdentity.getId(request, logger: logger, on: eventLoop)
             guard let identityId = response.identityId else { throw SotoCognitoError.unexpectedResult(reason: "AWS did not return an identity id") }
             return identityId
         } catch {
@@ -48,11 +52,19 @@ extension CognitoIdentifiable {
     public func getCredentialForIdentity(
         identityId: String,
         idToken: String,
+        logger: Logger = AWSClient.loggingDisabled,
         on eventLoop: EventLoop? = nil
     ) async throws -> CognitoIdentity.Credentials {
         do {
-            let request = CognitoIdentity.GetCredentialsForIdentityInput(identityId: identityId, logins: [self.configuration.identityProvider: idToken])
-            let response = try await self.configuration.cognitoIdentity.getCredentialsForIdentity(request, on: eventLoop)
+            let request = CognitoIdentity.GetCredentialsForIdentityInput(
+                identityId: identityId,
+                logins: [self.configuration.identityProvider: idToken]
+            )
+            let response = try await self.configuration.cognitoIdentity.getCredentialsForIdentity(
+                request,
+                logger: logger,
+                on: eventLoop
+            )
             guard let credentials = response.credentials else { throw SotoCognitoError.unexpectedResult(reason: "AWS did not supply any credentials") }
             return credentials
         } catch {
