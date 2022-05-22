@@ -39,6 +39,7 @@ extension CognitoAuthenticatable {
         password: String,
         attributes: [String: String],
         clientMetadata: [String: String]? = nil,
+        logger: Logger = AWSClient.loggingDisabled,
         on eventLoop: EventLoop? = nil
     ) async throws -> CognitoIdentityProvider.SignUpResponse {
         let userAttributes = attributes.map { return CognitoIdentityProvider.AttributeType(name: $0.key, value: $0.value) }
@@ -51,7 +52,7 @@ extension CognitoAuthenticatable {
             username: username
         )
         do {
-            return try await self.configuration.cognitoIDP.signUp(request, on: eventLoop)
+            return try await self.configuration.cognitoIDP.signUp(request, logger: logger, on: eventLoop)
         } catch {
             throw self.translateError(error: error)
         }
@@ -69,6 +70,7 @@ extension CognitoAuthenticatable {
         username: String,
         confirmationCode: String,
         clientMetadata: [String: String]? = nil,
+        logger: Logger = AWSClient.loggingDisabled,
         on eventLoop: EventLoop? = nil
     ) async throws {
         let request = CognitoIdentityProvider.ConfirmSignUpRequest(
@@ -80,7 +82,7 @@ extension CognitoAuthenticatable {
             username: username
         )
         do {
-            _ = try await self.configuration.cognitoIDP.confirmSignUp(request, on: eventLoop)
+            _ = try await self.configuration.cognitoIDP.confirmSignUp(request, logger: logger, on: eventLoop)
         } catch {
             throw self.translateError(error: error)
         }
@@ -104,6 +106,7 @@ extension CognitoAuthenticatable {
         temporaryPassword: String? = nil,
         messageAction: CognitoIdentityProvider.MessageActionType? = nil,
         clientMetadata: [String: String]? = nil,
+        logger: Logger = AWSClient.loggingDisabled,
         on eventLoop: EventLoop? = nil
     ) async throws -> CognitoCreateUserResponse {
         guard self.configuration.adminClient == true else {
@@ -120,7 +123,11 @@ extension CognitoAuthenticatable {
             userPoolId: self.configuration.userPoolId
         )
         do {
-            let response = try await self.configuration.cognitoIDP.adminCreateUser(request, on: eventLoop)
+            let response = try await self.configuration.cognitoIDP.adminCreateUser(
+                request, 
+                logger: logger,
+                on: eventLoop
+            )
             guard let user = response.user,
                   let username = user.username,
                   let userStatus = user.userStatus
@@ -147,6 +154,7 @@ extension CognitoAuthenticatable {
         password: String,
         clientMetadata: [String: String]? = nil,
         context: CognitoContextData? = nil,
+        logger: Logger = AWSClient.loggingDisabled,
         on eventLoop: EventLoop? = nil
     ) async throws -> CognitoAuthenticateResponse {
         let authFlow: CognitoIdentityProvider.AuthFlowType = self.configuration.adminClient ? .adminUserPasswordAuth : .userPasswordAuth
@@ -160,6 +168,7 @@ extension CognitoAuthenticatable {
             authParameters: authParameters,
             clientMetadata: clientMetadata,
             context: context,
+            logger: logger,
             on: eventLoop
         )
     }
@@ -180,6 +189,7 @@ extension CognitoAuthenticatable {
         refreshToken: String,
         clientMetadata: [String: String]? = nil,
         context: CognitoContextData? = nil,
+        logger: Logger = AWSClient.loggingDisabled,
         on eventLoop: EventLoop? = nil
     ) async throws -> CognitoAuthenticateResponse {
         var authParameters: [String: String] = [
@@ -193,6 +203,7 @@ extension CognitoAuthenticatable {
             authParameters: authParameters,
             clientMetadata: clientMetadata,
             context: context,
+            logger: logger,
             on: eventLoop
         )
     }
@@ -220,6 +231,7 @@ extension CognitoAuthenticatable {
         session: String?,
         clientMetadata: [String: String]? = nil,
         context: CognitoContextData? = nil,
+        logger: Logger = AWSClient.loggingDisabled,
         on eventLoop: EventLoop? = nil
     ) async throws -> CognitoAuthenticateResponse {
         var challengeResponses = responses
@@ -240,7 +252,7 @@ extension CognitoAuthenticatable {
                     session: session,
                     userPoolId: self.configuration.userPoolId
                 )
-                response = try await self.configuration.cognitoIDP.adminRespondToAuthChallenge(request, on: eventLoop)
+                response = try await self.configuration.cognitoIDP.adminRespondToAuthChallenge(request, logger: logger, on: eventLoop)
             } else {
                 let request = CognitoIdentityProvider.RespondToAuthChallengeRequest(
                     challengeName: name,
@@ -249,7 +261,11 @@ extension CognitoAuthenticatable {
                     clientMetadata: clientMetadata,
                     session: session
                 )
-                let challengeResponse = try await self.configuration.cognitoIDP.respondToAuthChallenge(request, on: eventLoop)
+                let challengeResponse = try await self.configuration.cognitoIDP.respondToAuthChallenge(
+                    request, 
+                    logger: logger,
+                    on: eventLoop
+                )
                 response = CognitoIdentityProvider.AdminRespondToAuthChallengeResponse(
                     authenticationResult: challengeResponse.authenticationResult,
                     challengeName: challengeResponse.challengeName,
@@ -298,6 +314,7 @@ extension CognitoAuthenticatable {
         password: String,
         session: String?,
         context: CognitoContextData? = nil,
+        logger: Logger = AWSClient.loggingDisabled,
         on eventLoop: EventLoop? = nil
     ) async throws -> CognitoAuthenticateResponse {
         return try await self.respondToChallenge(
@@ -306,6 +323,7 @@ extension CognitoAuthenticatable {
             responses: ["NEW_PASSWORD": password],
             session: session,
             context: context,
+            logger: logger,
             on: eventLoop
         )
     }
@@ -325,6 +343,7 @@ extension CognitoAuthenticatable {
         token: String,
         session: String?,
         context: CognitoContextData? = nil,
+        logger: Logger = AWSClient.loggingDisabled,
         on eventLoop: EventLoop? = nil
     ) async throws -> CognitoAuthenticateResponse {
         return try await self.respondToChallenge(
@@ -333,6 +352,7 @@ extension CognitoAuthenticatable {
             responses: ["SMS_MFA_CODE": token],
             session: session,
             context: context,
+            logger: logger,
             on: eventLoop
         )
     }
@@ -345,6 +365,7 @@ extension CognitoAuthenticatable {
     public func updateUserAttributes(
         username: String,
         attributes: [String: String],
+        logger: Logger = AWSClient.loggingDisabled,
         on eventLoop: EventLoop? = nil
     ) async throws {
         guard self.configuration.adminClient == true else {
@@ -353,7 +374,7 @@ extension CognitoAuthenticatable {
         let attributes = attributes.map { CognitoIdentityProvider.AttributeType(name: $0.key, value: $0.value) }
         let request = CognitoIdentityProvider.AdminUpdateUserAttributesRequest(userAttributes: attributes, username: username, userPoolId: self.configuration.userPoolId)
         do {
-            _ = try await self.configuration.cognitoIDP.adminUpdateUserAttributes(request, on: eventLoop)
+            _ = try await self.configuration.cognitoIDP.adminUpdateUserAttributes(request, logger: logger, on: eventLoop)
         } catch {
             throw self.translateError(error: error)
         }
@@ -368,12 +389,13 @@ extension CognitoAuthenticatable {
         accessToken: String,
         attributes: [String: String],
         clientMetadata: [String: String]? = nil,
+        logger: Logger = AWSClient.loggingDisabled,
         on eventLoop: EventLoop? = nil
     ) async throws {
         let attributes = attributes.map { CognitoIdentityProvider.AttributeType(name: $0.key, value: $0.value) }
         let request = CognitoIdentityProvider.UpdateUserAttributesRequest(accessToken: accessToken, clientMetadata: clientMetadata, userAttributes: attributes)
         do {
-            _ = try await self.configuration.cognitoIDP.updateUserAttributes(request, on: eventLoop)
+            _ = try await self.configuration.cognitoIDP.updateUserAttributes(request, logger: logger,on: eventLoop)
         } catch {
             throw self.translateError(error: error)
         }
@@ -387,6 +409,7 @@ extension CognitoAuthenticatable {
     public func forgotPassword(
         username: String,
         clientMetadata: [String: String]? = nil,
+        logger: Logger = AWSClient.loggingDisabled,
         on eventLoop: EventLoop? = nil
     ) async throws {
         let request = CognitoIdentityProvider.ForgotPasswordRequest(
@@ -395,7 +418,7 @@ extension CognitoAuthenticatable {
             secretHash: self.secretHash(username: username),
             username: username
         )
-        _ = try await self.configuration.cognitoIDP.forgotPassword(request, on: eventLoop)
+        _ = try await self.configuration.cognitoIDP.forgotPassword(request, logger: logger, on: eventLoop)
     }
 
     /// Confirm new password in forgot password flow
@@ -410,6 +433,7 @@ extension CognitoAuthenticatable {
         newPassword: String,
         confirmationCode: String,
         clientMetadata: [String: String]? = nil,
+        logger: Logger = AWSClient.loggingDisabled,
         on eventLoop: EventLoop? = nil
     ) async throws {
         let request = CognitoIdentityProvider.ConfirmForgotPasswordRequest(
@@ -420,7 +444,7 @@ extension CognitoAuthenticatable {
             secretHash: self.secretHash(username: username),
             username: username
         )
-        _ = try await self.configuration.cognitoIDP.confirmForgotPassword(request, on: eventLoop)
+        _ = try await self.configuration.cognitoIDP.confirmForgotPassword(request, logger: logger, on: eventLoop)
     }
 }
 
@@ -431,6 +455,7 @@ public extension CognitoAuthenticatable {
         authParameters: [String: String],
         clientMetadata: [String: String]? = nil,
         context: CognitoContextData?,
+        logger: Logger,
         on eventLoop: EventLoop?
     ) async throws -> CognitoAuthenticateResponse {
         do {
@@ -445,7 +470,7 @@ public extension CognitoAuthenticatable {
                     contextData: context,
                     userPoolId: self.configuration.userPoolId
                 )
-                initAuthResponse = try await self.configuration.cognitoIDP.adminInitiateAuth(request, on: eventLoop)
+                initAuthResponse = try await self.configuration.cognitoIDP.adminInitiateAuth(request, logger: logger, on: eventLoop)
             } else {
                 let request = CognitoIdentityProvider.InitiateAuthRequest(
                     authFlow: authFlow,
@@ -453,7 +478,11 @@ public extension CognitoAuthenticatable {
                     clientId: self.configuration.clientId,
                     clientMetadata: clientMetadata
                 )
-                let response = try await self.configuration.cognitoIDP.initiateAuth(request, on: eventLoop)
+                let response = try await self.configuration.cognitoIDP.initiateAuth(
+                    request, 
+                    logger: logger,
+                    on: eventLoop
+                )
                 initAuthResponse = CognitoIdentityProvider.AdminInitiateAuthResponse(
                     authenticationResult: response.authenticationResult,
                     challengeName: response.challengeName,

@@ -132,6 +132,7 @@ public class CognitoAuthenticatable {
         password: String,
         attributes: [String: String],
         clientMetadata: [String: String]? = nil,
+        logger: Logger = AWSClient.loggingDisabled,
         on eventLoop: EventLoop? = nil
     ) -> EventLoopFuture<CognitoIdentityProvider.SignUpResponse> {
         let eventLoop = eventLoop ?? self.configuration.cognitoIDP.eventLoopGroup.next()
@@ -144,7 +145,7 @@ public class CognitoAuthenticatable {
             userAttributes: userAttributes,
             username: username
         )
-        return self.configuration.cognitoIDP.signUp(request)
+        return self.configuration.cognitoIDP.signUp(request, logger: logger, on: eventLoop)
             .flatMapErrorThrowing { error in
                 throw self.translateError(error: error)
             }
@@ -165,6 +166,7 @@ public class CognitoAuthenticatable {
         username: String,
         confirmationCode: String,
         clientMetadata: [String: String]? = nil,
+        logger: Logger = AWSClient.loggingDisabled,
         on eventLoop: EventLoop? = nil
     ) -> EventLoopFuture<Void> {
         let eventLoop = eventLoop ?? self.configuration.cognitoIDP.eventLoopGroup.next()
@@ -176,7 +178,7 @@ public class CognitoAuthenticatable {
             secretHash: secretHash(username: username),
             username: username
         )
-        return self.configuration.cognitoIDP.confirmSignUp(request)
+        return self.configuration.cognitoIDP.confirmSignUp(request, logger: logger, on: eventLoop)
             .flatMapErrorThrowing { error in
                 throw self.translateError(error: error)
             }
@@ -204,6 +206,7 @@ public class CognitoAuthenticatable {
         temporaryPassword: String? = nil,
         messageAction: CognitoIdentityProvider.MessageActionType? = nil,
         clientMetadata: [String: String]? = nil,
+        logger: Logger = AWSClient.loggingDisabled,
         on eventLoop: EventLoop? = nil
     ) -> EventLoopFuture<CognitoCreateUserResponse> {
         let eventLoop = eventLoop ?? self.configuration.cognitoIDP.eventLoopGroup.next()
@@ -220,7 +223,7 @@ public class CognitoAuthenticatable {
             username: username,
             userPoolId: self.configuration.userPoolId
         )
-        return self.configuration.cognitoIDP.adminCreateUser(request)
+        return self.configuration.cognitoIDP.adminCreateUser(request, logger: logger, on: eventLoop)
             .flatMapErrorThrowing { error in
                 throw self.translateError(error: error)
             }
@@ -250,6 +253,7 @@ public class CognitoAuthenticatable {
         password: String,
         clientMetadata: [String: String]? = nil,
         context: CognitoContextData? = nil,
+        logger: Logger = AWSClient.loggingDisabled,
         on eventLoop: EventLoop? = nil
     ) -> EventLoopFuture<CognitoAuthenticateResponse> {
         let eventLoop = eventLoop ?? self.configuration.cognitoIDP.eventLoopGroup.next()
@@ -264,6 +268,7 @@ public class CognitoAuthenticatable {
             authParameters: authParameters,
             clientMetadata: clientMetadata,
             context: context,
+            logger: logger,
             on: eventLoop
         )
     }
@@ -285,6 +290,7 @@ public class CognitoAuthenticatable {
         refreshToken: String,
         clientMetadata: [String: String]? = nil,
         context: CognitoContextData? = nil,
+        logger: Logger = AWSClient.loggingDisabled,
         on eventLoop: EventLoop? = nil
     ) -> EventLoopFuture<CognitoAuthenticateResponse> {
         let eventLoop = eventLoop ?? self.configuration.cognitoIDP.eventLoopGroup.next()
@@ -299,6 +305,7 @@ public class CognitoAuthenticatable {
             authParameters: authParameters,
             clientMetadata: clientMetadata,
             context: context,
+            logger: logger,
             on: eventLoop
         )
     }
@@ -326,6 +333,7 @@ public class CognitoAuthenticatable {
         session: String?,
         clientMetadata: [String: String]? = nil,
         context: CognitoContextData? = nil,
+        logger: Logger = AWSClient.loggingDisabled,
         on eventLoop: EventLoop? = nil
     ) -> EventLoopFuture<CognitoAuthenticateResponse> {
         let eventLoop = eventLoop ?? self.configuration.cognitoIDP.eventLoopGroup.next()
@@ -346,7 +354,7 @@ public class CognitoAuthenticatable {
                 session: session,
                 userPoolId: self.configuration.userPoolId
             )
-            respondFuture = self.configuration.cognitoIDP.adminRespondToAuthChallenge(request)
+            respondFuture = self.configuration.cognitoIDP.adminRespondToAuthChallenge(request, logger: logger, on: eventLoop)
         } else {
             let request = CognitoIdentityProvider.RespondToAuthChallengeRequest(
                 challengeName: name,
@@ -355,7 +363,11 @@ public class CognitoAuthenticatable {
                 clientMetadata: clientMetadata,
                 session: session
             )
-            respondFuture = self.configuration.cognitoIDP.respondToAuthChallenge(request).map { response in
+            respondFuture = self.configuration.cognitoIDP.respondToAuthChallenge(
+                request,
+                logger: logger,
+                on: eventLoop
+            ).map { response in
                 return CognitoIdentityProvider.AdminRespondToAuthChallengeResponse(authenticationResult: response.authenticationResult, challengeName: response.challengeName, challengeParameters: response.challengeParameters, session: response.session)
             }
         }
@@ -405,6 +417,7 @@ public class CognitoAuthenticatable {
         password: String,
         session: String?,
         context: CognitoContextData? = nil,
+        logger: Logger = AWSClient.loggingDisabled,
         on eventLoop: EventLoop? = nil
     ) -> EventLoopFuture<CognitoAuthenticateResponse> {
         return self.respondToChallenge(
@@ -413,6 +426,7 @@ public class CognitoAuthenticatable {
             responses: ["NEW_PASSWORD": password],
             session: session,
             context: context,
+            logger: logger,
             on: eventLoop
         )
     }
@@ -432,6 +446,7 @@ public class CognitoAuthenticatable {
         token: String,
         session: String?,
         context: CognitoContextData? = nil,
+        logger: Logger = AWSClient.loggingDisabled,
         on eventLoop: EventLoop? = nil
     ) -> EventLoopFuture<CognitoAuthenticateResponse> {
         return self.respondToChallenge(
@@ -440,6 +455,7 @@ public class CognitoAuthenticatable {
             responses: ["SMS_MFA_CODE": token],
             session: session,
             context: context,
+            logger: logger,
             on: eventLoop
         )
     }
@@ -452,6 +468,7 @@ public class CognitoAuthenticatable {
     public func updateUserAttributes(
         username: String,
         attributes: [String: String],
+        logger: Logger = AWSClient.loggingDisabled,
         on eventLoop: EventLoop? = nil
     ) -> EventLoopFuture<Void> {
         let eventLoop = eventLoop ?? self.configuration.cognitoIDP.eventLoopGroup.next()
@@ -460,7 +477,7 @@ public class CognitoAuthenticatable {
         }
         let attributes = attributes.map { CognitoIdentityProvider.AttributeType(name: $0.key, value: $0.value) }
         let request = CognitoIdentityProvider.AdminUpdateUserAttributesRequest(userAttributes: attributes, username: username, userPoolId: self.configuration.userPoolId)
-        return self.configuration.cognitoIDP.adminUpdateUserAttributes(request, on: eventLoop)
+        return self.configuration.cognitoIDP.adminUpdateUserAttributes(request, logger: logger, on: eventLoop)
             .flatMapErrorThrowing { error in
                 throw self.translateError(error: error)
             }
@@ -476,12 +493,13 @@ public class CognitoAuthenticatable {
         accessToken: String,
         attributes: [String: String],
         clientMetadata: [String: String]? = nil,
+        logger: Logger = AWSClient.loggingDisabled,
         on eventLoop: EventLoop? = nil
     ) -> EventLoopFuture<Void> {
         let eventLoop = eventLoop ?? self.configuration.cognitoIDP.eventLoopGroup.next()
         let attributes = attributes.map { CognitoIdentityProvider.AttributeType(name: $0.key, value: $0.value) }
         let request = CognitoIdentityProvider.UpdateUserAttributesRequest(accessToken: accessToken, clientMetadata: clientMetadata, userAttributes: attributes)
-        return self.configuration.cognitoIDP.updateUserAttributes(request, on: eventLoop)
+        return self.configuration.cognitoIDP.updateUserAttributes(request, logger: logger, on: eventLoop)
             .flatMapErrorThrowing { error in
                 throw self.translateError(error: error)
             }
@@ -496,6 +514,7 @@ public class CognitoAuthenticatable {
     public func forgotPassword(
         username: String,
         clientMetadata: [String: String]? = nil,
+        logger: Logger = AWSClient.loggingDisabled,
         on eventLoop: EventLoop? = nil
     ) -> EventLoopFuture<Void> {
         let eventLoop = eventLoop ?? self.configuration.cognitoIDP.eventLoopGroup.next()
@@ -505,7 +524,11 @@ public class CognitoAuthenticatable {
             secretHash: self.secretHash(username: username),
             username: username
         )
-        return self.configuration.cognitoIDP.forgotPassword(request, on: eventLoop).map { _ in }
+        return self.configuration.cognitoIDP.forgotPassword(
+            request,
+            logger: logger,
+            on: eventLoop
+        ).map { _ in }
     }
 
     /// Confirm new password in forgot password flow
@@ -520,6 +543,7 @@ public class CognitoAuthenticatable {
         newPassword: String,
         confirmationCode: String,
         clientMetadata: [String: String]? = nil,
+        logger: Logger = AWSClient.loggingDisabled,
         on eventLoop: EventLoop? = nil
     ) -> EventLoopFuture<Void> {
         let eventLoop = eventLoop ?? self.configuration.cognitoIDP.eventLoopGroup.next()
@@ -531,7 +555,11 @@ public class CognitoAuthenticatable {
             secretHash: self.secretHash(username: username),
             username: username
         )
-        return self.configuration.cognitoIDP.confirmForgotPassword(request, on: eventLoop).map { _ in }
+        return self.configuration.cognitoIDP.confirmForgotPassword(
+            request, 
+            logger: logger,
+            on: eventLoop
+        ).map { _ in }
     }
 }
 
@@ -550,6 +578,7 @@ public extension CognitoAuthenticatable {
         authParameters: [String: String],
         clientMetadata: [String: String]? = nil,
         context: CognitoContextData?,
+        logger: Logger,
         on eventLoop: EventLoop
     ) -> EventLoopFuture<CognitoAuthenticateResponse> {
         let initAuthFuture: EventLoopFuture<CognitoIdentityProvider.AdminInitiateAuthResponse>
@@ -563,7 +592,7 @@ public extension CognitoAuthenticatable {
                 contextData: context,
                 userPoolId: self.configuration.userPoolId
             )
-            initAuthFuture = self.configuration.cognitoIDP.adminInitiateAuth(request)
+            initAuthFuture = self.configuration.cognitoIDP.adminInitiateAuth(request, logger: logger, on: eventLoop)
         } else {
             let request = CognitoIdentityProvider.InitiateAuthRequest(
                 authFlow: authFlow,
@@ -571,7 +600,7 @@ public extension CognitoAuthenticatable {
                 clientId: self.configuration.clientId,
                 clientMetadata: clientMetadata
             )
-            initAuthFuture = self.configuration.cognitoIDP.initiateAuth(request).map { response in
+            initAuthFuture = self.configuration.cognitoIDP.initiateAuth(request, logger: logger, on: eventLoop).map { response in
                 return CognitoIdentityProvider.AdminInitiateAuthResponse(authenticationResult: response.authenticationResult, challengeName: response.challengeName, challengeParameters: response.challengeParameters, session: response.session)
             }
         }
