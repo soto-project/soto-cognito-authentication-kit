@@ -44,7 +44,7 @@ else
 fi
 
 printf "=> Checking license headers... "
-tmp=$(mktemp /tmp/.soto-core-sanity_XXXXXX)
+tmp=$(mktemp /tmp/.soto-core-validate_XXXXXX)
 
 for language in swift-or-c; do
   declare -a matching_files
