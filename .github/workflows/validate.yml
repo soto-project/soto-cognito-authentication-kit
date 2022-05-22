@@ -1,4 +1,4 @@
-name: Sanity Check
+name: Validity Check
 
 on:
   pull_request:
