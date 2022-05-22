@@ -36,8 +36,12 @@ public extension CognitoAuthenticatable {
     ///     - on: Event loop to run on
     /// - returns:
     ///     Payload structure.
-    func authenticate<Payload: Codable>(idToken: String, on eventLoop: EventLoop) async throws -> Payload {
-        let signers = try await loadSigners(region: configuration.region, on: eventLoop)
+    func authenticate<Payload: Codable>(
+        idToken: String,
+        logger: Logger = AWSClient.loggingDisabled,
+        on eventLoop: EventLoop
+    ) async throws -> Payload {
+        let signers = try await loadSigners(region: configuration.region, logger: logger, on: eventLoop)
         let jwtPayload = try signers.verify(idToken, as: VerifiedToken<IdTokenVerifier, Payload>.self)
         guard jwtPayload.token.audience == self.configuration.clientId else { throw SotoCognitoError.unauthorized(reason: "invalid token") }
         guard jwtPayload.token.issuer == "https://cognito-idp.\(self.configuration.region.rawValue).amazonaws.com/\(self.configuration.userPoolId)" else {
@@ -54,8 +58,12 @@ public extension CognitoAuthenticatable {
     ///     - on: Event loop to run on
     /// - returns:
     ///     Structure with the username and UUID for the user.
-    func authenticate(accessToken: String, on eventLoop: EventLoop) async throws -> CognitoAccessToken {
-        let signers = try await loadSigners(region: configuration.region, on: eventLoop)
+    func authenticate(
+        accessToken: String,
+        logger: Logger = AWSClient.loggingDisabled,
+        on eventLoop: EventLoop
+    ) async throws -> CognitoAccessToken {
+        let signers = try await loadSigners(region: configuration.region, logger: logger, on: eventLoop)
         let jwtPayload = try signers.verify(accessToken, as: VerifiedToken<AccessTokenVerifier, CognitoAccessToken>.self)
         guard jwtPayload.token.issuer == "https://cognito-idp.\(self.configuration.region.rawValue).amazonaws.com/\(self.configuration.userPoolId)" else {
             throw SotoCognitoError.unauthorized(reason: "invalid token")
@@ -66,7 +74,11 @@ public extension CognitoAuthenticatable {
 
 extension CognitoAuthenticatable {
     /// load JSON web keys and create JWT signers from them
-    func loadSigners(region: Region, on eventLoop: EventLoop) async throws -> JWTSigners {
+    func loadSigners(
+        region: Region,
+        logger: Logger = AWSClient.loggingDisabled,
+        on eventLoop: EventLoop
+    ) async throws -> JWTSigners {
         // check we haven't already loaded the jwt signing key set
         let jwtSigners = self.jwtSignersLock.withLock { self.jwtSigners }
         if let jwtSigners = jwtSigners {
@@ -77,7 +89,8 @@ extension CognitoAuthenticatable {
         let httpClient = configuration.cognitoIDP.client.httpClient
         let response = try await httpClient.get(
             url: jwtSignersURL,
-            deadline: .now() + .seconds(20)
+            deadline: .now() + .seconds(20),
+            logger: logger
         ).get()
         let signers = JWTSigners()
         guard let body = response.body else { return JWTSigners() }
