@@ -93,8 +93,7 @@ extension CognitoAuthenticatable {
         on eventLoop: EventLoop
     ) -> EventLoopFuture<JWTSigners> {
         // check we haven't already loaded the jwt signing key set
-        let jwtSigners = self.jwtSignersLock.withLock { self.jwtSigners }
-        if let jwtSigners = jwtSigners {
+        if let jwtSigners = self.jwtSigners {
             return eventLoop.makeSucceededFuture(jwtSigners)
         }
 
@@ -109,7 +108,7 @@ extension CognitoAuthenticatable {
                 if let data = body.getString(at: body.readerIndex, length: body.readableBytes) {
                     try signers.use(jwksJSON: data)
                 }
-                self.jwtSignersLock.withLock { self.jwtSigners = signers }
+                self.jwtSigners = signers
                 return signers
             }
     }
