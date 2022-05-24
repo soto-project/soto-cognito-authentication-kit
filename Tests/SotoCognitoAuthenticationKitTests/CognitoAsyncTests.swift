@@ -163,7 +163,7 @@ final class CognitoAsyncTests: XCTestCase {
             on: eventLoop
         )
         if case .challenged(let challenged) = response, let session = challenged.session {
-            if challenged.name == "NEW_PASSWORD_REQUIRED" {
+            if challenged.name == .newPasswordRequired {
                 return try await authenticatable.respondToNewPasswordChallenge(
                     username: username,
                     password: password,

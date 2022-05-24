@@ -81,8 +81,7 @@ extension IdentityProviderFactory {
             let tokenPromise = context.eventLoop.makePromise(of: String.self)
 
             func _respond(to challenge: CognitoAuthenticateResponse.ChallengedResponse, error: Error?) {
-                guard let challengeName = challenge.name,
-                      let challengeId = CognitoChallengeName(rawValue: challengeName)
+                guard let challengeName = challenge.name
                 else {
                     tokenPromise.fail(SotoCognitoError.unexpectedResult(reason: "Challenge response does not have valid challenge name"))
                     return
@@ -95,13 +94,13 @@ extension IdentityProviderFactory {
                     tokenPromise.fail(SotoCognitoError.unauthorized(reason: "Failed to produce valid response to challenge \(challengeName)"))
                     return
                 }
-                respondToChallenge(challengeId, challenge.parameters, error, context.eventLoop)
+                respondToChallenge(challengeName, challenge.parameters, error, context.eventLoop)
                     .flatMap { parameters in
                         // if nil parameters is sent then throw did not respond error
                         guard let parameters = parameters else {
                             return context.eventLoop.makeFailedFuture(SotoCognitoError.unauthorized(reason: "Did not respond to challenge \(challengeName)"))
                         }
-                        return authenticatable.respondToChallenge(username: currentUserName, name: challengeId, responses: parameters, session: challenge.session)
+                        return authenticatable.respondToChallenge(username: currentUserName, name: challengeName, responses: parameters, session: challenge.session)
                     }
                     .whenComplete { (result: Result<CognitoAuthenticateResponse, Error>) -> Void in
                         challengeResponseAttempts += 1

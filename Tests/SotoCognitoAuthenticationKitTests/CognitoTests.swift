@@ -199,7 +199,7 @@ final class CognitoTests: XCTestCase {
             on: eventLoop
         ).flatMap { response in
             if case .challenged(let challenged) = response, let session = challenged.session {
-                if challenged.name == "NEW_PASSWORD_REQUIRED" {
+                if challenged.name == .newPasswordRequired {
                     return authenticatable.respondToNewPasswordChallenge(
                         username: testData.username,
                         password: testData.password,
@@ -437,7 +437,7 @@ final class CognitoTests: XCTestCase {
             }
         }
         do {
-            let challenged = CognitoAuthenticateResponse.ChallengedResponse(name: "NEW_PASSWORD_REQUIRED", parameters: ["USERNAME": "JohnDoe"], session: "SessionId")
+            let challenged = CognitoAuthenticateResponse.ChallengedResponse(name: .newPasswordRequired, parameters: ["USERNAME": "JohnDoe"], session: "SessionId")
             let response: CognitoAuthenticateResponse = .challenged(challenged)
             let data = try JSONEncoder().encode(response)
             let decoded = try JSONDecoder().decode(CognitoAuthenticateResponse.self, from: data)

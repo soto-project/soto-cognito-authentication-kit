@@ -264,7 +264,7 @@ extension CognitoAuthenticatable {
                 // if there was no tokens returned, return challenge if it exists
                 if let challengeName = response.challengeName {
                     return .challenged(.init(
-                        name: challengeName.rawValue,
+                        name: challengeName,
                         parameters: response.challengeParameters,
                         session: response.session
                     )
@@ -468,7 +468,7 @@ public extension CognitoAuthenticatable {
                 // if there was no tokens returned, return challenge if it exists
                 if let challengeName = initAuthResponse.challengeName {
                     return .challenged(.init(
-                        name: challengeName.rawValue,
+                        name: challengeName,
                         parameters: initAuthResponse.challengeParameters,
                         session: initAuthResponse.session
                     ))
