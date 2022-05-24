@@ -39,7 +39,7 @@ enum AWSCognitoTestError: Error {
 }
 
 /// eventLoop with context object used for tests
-class AWSCognitoContextTest: CognitoContextData {
+struct AWSCognitoContextTest: CognitoContextData {
     var contextData: CognitoIdentityProvider.ContextDataType? {
         return CognitoIdentityProvider.ContextDataType(httpHeaders: [], ipAddress: "127.0.0.1", serverName: "127.0.0.1", serverPath: "/")
     }

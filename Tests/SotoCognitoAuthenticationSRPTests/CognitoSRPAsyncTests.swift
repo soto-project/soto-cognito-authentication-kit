@@ -16,7 +16,11 @@
 
 import BigNum
 import Crypto
+#if compiler(>=5.6)
+@preconcurrency import Foundation
+#else
 import Foundation
+#endif
 import NIO
 import SotoCognitoAuthenticationKit
 @testable import SotoCognitoAuthenticationSRP
@@ -24,7 +28,7 @@ import SotoCognitoIdentityProvider
 import SotoCore
 import XCTest
 
-public func XCTRunAsyncAndBlock(_ closure: @escaping () async throws -> Void) {
+public func XCTRunAsyncAndBlock(_ closure: @Sendable @escaping () async throws -> Void) {
     let dg = DispatchGroup()
     dg.enter()
     Task {
@@ -119,7 +123,7 @@ final class CognitoSRPAsyncTests: XCTestCase {
     func test(
         _ testName: String,
         attributes: [String: String] = [:],
-        _ work: @escaping (String, String) async throws -> Void
+        _ work: @Sendable @escaping (String, String) async throws -> Void
     ) async throws {
         let username = testName + Self.randomString()
         let messageHmac: HashedAuthenticationCode<SHA256> = HMAC.authenticationCode(
