@@ -30,7 +30,8 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-crypto.git", .upToNextMajor(from: "1.0.0")),
-        .package(url: "https://github.com/soto-project/soto.git", .upToNextMajor(from: "5.12.0")),
+        .package(url: "https://github.com/soto-project/soto.git", from: "6.0.0-rc"),
+        .package(url: "https://github.com/swift-server/async-http-client.git", from: "1.10.0"),
         .package(url: "https://github.com/vapor/jwt-kit.git", .upToNextMajor(from: "4.2.6")),
         // for SRP
         .package(url: "https://github.com/adam-fowler/big-num.git", .upToNextMajor(from: "2.0.0")),
@@ -41,6 +42,7 @@ let package = Package(
             dependencies: [
                 .product(name: "SotoCognitoIdentity", package: "soto"),
                 .product(name: "SotoCognitoIdentityProvider", package: "soto"),
+                .product(name: "AsyncHTTPClient", package: "async-http-client"),
                 .product(name: "JWTKit", package: "jwt-kit"),
                 .product(name: "Crypto", package: "swift-crypto"),
             ]
