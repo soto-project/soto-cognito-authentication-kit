@@ -70,8 +70,9 @@ extension CognitoAuthenticatable {
     /// load JSON web keys and create JWT signers from them
     func loadSigners(region: Region, on eventLoop: EventLoop) async throws -> JWTSigners {
         // check we haven't already loaded the jwt signing key set
-        if let jwtSigners = self.jwtSigners {
-            return self.jwtSignersLock.withLock { jwtSigners }
+        let jwtSigners = self.jwtSignersLock.withLock { self.jwtSigners }
+        if let jwtSigners = jwtSigners {
+            return jwtSigners
         }
 
         let JWTSignersURL = "https://cognito-idp.\(configuration.region.rawValue).amazonaws.com/\(configuration.userPoolId)/.well-known/jwks.json"
