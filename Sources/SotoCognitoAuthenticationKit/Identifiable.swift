@@ -35,10 +35,14 @@ public final class CognitoIdentifiable: _SotoSendable {
     ///     - on: Event loop request is running on.
     /// - returns:
     ///     Event Loop Future returning the identity id as a String
-    public func getIdentityId(idToken: String, on eventLoop: EventLoop? = nil) -> EventLoopFuture<String> {
+    public func getIdentityId(
+        idToken: String,
+        logger: Logger = AWSClient.loggingDisabled,
+        on eventLoop: EventLoop? = nil
+    ) -> EventLoopFuture<String> {
         let eventLoop = eventLoop ?? self.configuration.cognitoIdentity.eventLoopGroup.next()
         let request = CognitoIdentity.GetIdInput(identityPoolId: self.configuration.identityPoolId, logins: [self.configuration.identityProvider: idToken])
-        return self.configuration.cognitoIdentity.getId(request)
+        return self.configuration.cognitoIdentity.getId(request, logger: logger, on: eventLoop)
             .flatMapErrorThrowing { error in
                 throw self.translateError(error: error)
             }
@@ -59,11 +63,12 @@ public final class CognitoIdentifiable: _SotoSendable {
     public func getCredentialForIdentity(
         identityId: String,
         idToken: String,
+        logger: Logger = AWSClient.loggingDisabled,
         on eventLoop: EventLoop? = nil
     ) -> EventLoopFuture<CognitoIdentity.Credentials> {
         let eventLoop = eventLoop ?? self.configuration.cognitoIdentity.eventLoopGroup.next()
         let request = CognitoIdentity.GetCredentialsForIdentityInput(identityId: identityId, logins: [self.configuration.identityProvider: idToken])
-        return self.configuration.cognitoIdentity.getCredentialsForIdentity(request)
+        return self.configuration.cognitoIdentity.getCredentialsForIdentity(request, logger: logger, on: eventLoop)
             .flatMapErrorThrowing { error in
                 throw self.translateError(error: error)
             }
