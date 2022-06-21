@@ -24,7 +24,6 @@ import SotoCognitoIdentityProvider
 import SotoCore
 import XCTest
 
-@available(macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0, *)
 public func XCTRunAsyncAndBlock(_ closure: @escaping () async throws -> Void) {
     let dg = DispatchGroup()
     dg.enter()
@@ -39,7 +38,6 @@ public func XCTRunAsyncAndBlock(_ closure: @escaping () async throws -> Void) {
     dg.wait()
 }
 
-@available(macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0, *)
 final class CognitoSRPAsyncTests: XCTestCase {
     static var middlewares: [AWSServiceMiddleware] {
         ProcessInfo.processInfo.environment["CI"] == "true" ? [] : [AWSLoggingMiddleware()]
@@ -128,7 +126,7 @@ final class CognitoSRPAsyncTests: XCTestCase {
             for: Data(testName.utf8),
             using: SymmetricKey(data: Data(Self.authenticatable.configuration.userPoolId.utf8))
         )
-        let password = messageHmac.description + "1!A"
+        let password = String(messageHmac.flatMap { String(format: "%x", $0) }) + "1!A"
 
         do {
             _ = try await Self.authenticatable.createUser(
