@@ -29,12 +29,12 @@ let package = Package(
         .library(name: "SotoCognitoAuthenticationSRP", targets: ["SotoCognitoAuthenticationSRP"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-crypto.git", .upToNextMajor(from: "1.0.0")),
-        .package(url: "https://github.com/soto-project/soto.git", .branch("main")),
-        .package(url: "https://github.com/swift-server/async-http-client.git", from: "1.6.0"),
-        .package(url: "https://github.com/vapor/jwt-kit.git", .upToNextMajor(from: "4.2.6")),
+        .package(url: "https://github.com/apple/swift-crypto.git", from: "1.0.0"),
+        .package(url: "https://github.com/soto-project/soto.git", from: "6.0.0"),
+        .package(url: "https://github.com/swift-server/async-http-client.git", from: "1.9.0"),
+        .package(url: "https://github.com/vapor/jwt-kit.git", from: "4.5.0"),
         // for SRP
-        .package(url: "https://github.com/adam-fowler/big-num.git", .upToNextMajor(from: "2.0.0")),
+        .package(url: "https://github.com/adam-fowler/big-num.git", from: "2.0.0"),
     ],
     targets: [
         .target(
