@@ -124,7 +124,7 @@ extension CognitoAuthenticatable {
         )
         do {
             let response = try await self.configuration.cognitoIDP.adminCreateUser(
-                request, 
+                request,
                 logger: logger,
                 on: eventLoop
             )
@@ -262,7 +262,7 @@ extension CognitoAuthenticatable {
                     session: session
                 )
                 let challengeResponse = try await self.configuration.cognitoIDP.respondToAuthChallenge(
-                    request, 
+                    request,
                     logger: logger,
                     on: eventLoop
                 )
@@ -395,7 +395,7 @@ extension CognitoAuthenticatable {
         let attributes = attributes.map { CognitoIdentityProvider.AttributeType(name: $0.key, value: $0.value) }
         let request = CognitoIdentityProvider.UpdateUserAttributesRequest(accessToken: accessToken, clientMetadata: clientMetadata, userAttributes: attributes)
         do {
-            _ = try await self.configuration.cognitoIDP.updateUserAttributes(request, logger: logger,on: eventLoop)
+            _ = try await self.configuration.cognitoIDP.updateUserAttributes(request, logger: logger, on: eventLoop)
         } catch {
             throw self.translateError(error: error)
         }
@@ -479,7 +479,7 @@ public extension CognitoAuthenticatable {
                     clientMetadata: clientMetadata
                 )
                 let response = try await self.configuration.cognitoIDP.initiateAuth(
-                    request, 
+                    request,
                     logger: logger,
                     on: eventLoop
                 )

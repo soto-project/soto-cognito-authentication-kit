@@ -556,7 +556,7 @@ public class CognitoAuthenticatable {
             username: username
         )
         return self.configuration.cognitoIDP.confirmForgotPassword(
-            request, 
+            request,
             logger: logger,
             on: eventLoop
         ).map { _ in }
