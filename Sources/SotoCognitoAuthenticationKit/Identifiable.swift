@@ -15,7 +15,7 @@
 import NIO
 import SotoCognitoIdentity
 
-public final class CognitoIdentifiable: _SotoSendable {
+public final class CognitoIdentifiable: Sendable {
     // MARK: Member variables
 
     /// Configuration

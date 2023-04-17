@@ -35,7 +35,7 @@ public enum SotoCognitoError: Error {
 }
 
 /// Response to `createUser`
-public struct CognitoCreateUserResponse: Codable, _SotoSendable {
+public struct CognitoCreateUserResponse: Codable, Sendable {
     /// name of user
     public var userName: String
     /// status of user account
@@ -43,14 +43,14 @@ public struct CognitoCreateUserResponse: Codable, _SotoSendable {
 }
 
 /// Authentication response
-public enum CognitoAuthenticateResponse: Codable, _SotoSendable {
+public enum CognitoAuthenticateResponse: Codable, Sendable {
     /// Response with authentication details
     case authenticated(AuthenticatedResponse)
     /// Response containing a challenge
     case challenged(ChallengedResponse)
 
     /// Authenticated Response
-    public struct AuthenticatedResponse: Codable, _SotoSendable {
+    public struct AuthenticatedResponse: Codable, Sendable {
         public let accessToken: String?
         public let idToken: String?
         public let refreshToken: String?
@@ -58,7 +58,7 @@ public enum CognitoAuthenticateResponse: Codable, _SotoSendable {
     }
 
     /// Response containing an authentication challenge
-    public struct ChallengedResponse: Codable, _SotoSendable {
+    public struct ChallengedResponse: Codable, Sendable {
         /// Name of challenge
         public let name: CognitoChallengeName?
         /// Challenge parameters
@@ -107,7 +107,7 @@ public final class CognitoAuthenticatable {
     }
 
     private var _jwtSigners: JWTSigners?
-    private let jwtSignersLock: Lock
+    private let jwtSignersLock: NIOLock
 
     // MARK: Initialization
 
@@ -650,7 +650,5 @@ public extension CognitoAuthenticatable {
     }
 }
 
-#if compiler(>=5.6)
-// jwtSigners is mutable so required to use @unchecked here.
+// jwtSigners is mutable but access is controlled by a lock so required to use @unchecked here.
 extension CognitoAuthenticatable: @unchecked Sendable {}
-#endif

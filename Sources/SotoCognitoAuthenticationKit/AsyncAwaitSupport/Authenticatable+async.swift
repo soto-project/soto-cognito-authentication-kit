@@ -12,8 +12,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-#if compiler(>=5.5) && canImport(_Concurrency)
-
 import Crypto
 import Foundation
 import JWTKit
@@ -516,5 +514,3 @@ public extension CognitoAuthenticatable {
         }
     }
 }
-
-#endif // compiler(>=5.5) && canImport(_Concurrency)

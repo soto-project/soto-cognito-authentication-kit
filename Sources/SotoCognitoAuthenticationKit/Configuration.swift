@@ -20,7 +20,7 @@ import SotoCognitoIdentityProvider
 ///
 /// See [Cognito Userpool](https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-identity-pools.html)
 /// documention for more information.
-public struct CognitoConfiguration: _SotoSendable {
+public struct CognitoConfiguration: Sendable {
     /// user pool id
     public let userPoolId: String
     /// app client id
@@ -60,7 +60,7 @@ public struct CognitoConfiguration: _SotoSendable {
 ///
 /// See [Cognito Identity Pools](https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-identity.html)
 /// documention for more information.
-public struct CognitoIdentityConfiguration: _SotoSendable {
+public struct CognitoIdentityConfiguration: Sendable {
     /// Cognito identity pool id
     public let identityPoolId: String
     /// Identity provider
