@@ -12,8 +12,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-#if compiler(>=5.5) && canImport(_Concurrency)
-
 import NIO
 import SotoCognitoIdentity
 
@@ -72,5 +70,3 @@ extension CognitoIdentifiable {
         }
     }
 }
-
-#endif // compiler(>=5.5) && canImport(_Concurrency)

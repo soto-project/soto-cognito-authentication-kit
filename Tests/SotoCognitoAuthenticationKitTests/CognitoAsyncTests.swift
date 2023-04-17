@@ -12,15 +12,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-#if compiler(>=5.5) && canImport(_Concurrency)
-
 import AsyncHTTPClient
 import Crypto
-#if compiler(>=5.6)
-@preconcurrency import Foundation
-#else
 import Foundation
-#endif
 import NIO
 @testable import SotoCognitoAuthenticationKit
 import SotoCognitoIdentity
@@ -416,5 +410,3 @@ final class CognitoAsyncTests: XCTestCase {
         }
     }
 }
-
-#endif // compiler(>=5.5) && canImport(_Concurrency)

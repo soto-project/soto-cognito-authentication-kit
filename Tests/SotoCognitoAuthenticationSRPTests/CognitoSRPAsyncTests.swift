@@ -12,15 +12,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-#if compiler(>=5.5) && canImport(_Concurrency)
-
 import BigNum
 import Crypto
-#if compiler(>=5.6)
-@preconcurrency import Foundation
-#else
 import Foundation
-#endif
 import NIO
 import SotoCognitoAuthenticationKit
 @testable import SotoCognitoAuthenticationSRP
@@ -178,5 +172,3 @@ final class CognitoSRPAsyncTests: XCTestCase {
         }
     }
 }
-
-#endif // compiler(>=5.5) && canImport(_Concurrency)

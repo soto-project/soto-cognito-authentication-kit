@@ -650,7 +650,5 @@ public extension CognitoAuthenticatable {
     }
 }
 
-#if compiler(>=5.6)
-// jwtSigners is mutable so required to use @unchecked here.
+// jwtSigners is mutable but access is controlled by a lock so required to use @unchecked here.
 extension CognitoAuthenticatable: @unchecked Sendable {}
-#endif

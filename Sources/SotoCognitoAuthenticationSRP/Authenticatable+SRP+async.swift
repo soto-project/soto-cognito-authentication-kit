@@ -12,8 +12,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-#if compiler(>=5.5) && canImport(_Concurrency)
-
 import BigNum
 import Crypto
 import Foundation
@@ -110,5 +108,3 @@ public extension CognitoAuthenticatable {
         )
     }
 }
-
-#endif // compiler(>=5.5) && canImport(_Concurrency)
