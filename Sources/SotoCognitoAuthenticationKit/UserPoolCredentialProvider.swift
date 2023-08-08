@@ -17,7 +17,29 @@ import SotoCognitoIdentityProvider
 
 /// Cognito authentication method used by `CredentialProviderFactory.cognitoUserPool`.
 public struct CognitoAuthenticationMethod {
-    public typealias Method = (CognitoAuthenticatable, String) async throws -> CognitoAuthenticateResponse
+    public struct Context: Sendable {
+        public let authenticatable: CognitoAuthenticatable
+        public let userName: String
+        public let respondToChallenge: @Sendable (CognitoChallengeName, [String: String]?, Error?) async throws -> [String: String]?
+        public let maxChallengeResponseAttempts: Int
+        public let logger: Logger
+
+        public init(
+            authenticatable: CognitoAuthenticatable,
+            userName: String,
+            respondToChallenge: @escaping @Sendable (CognitoChallengeName, [String: String]?, Error?) async throws -> [String: String]?,
+            maxChallengeResponseAttempts: Int,
+            logger: Logger
+        ) {
+            self.authenticatable = authenticatable
+            self.userName = userName
+            self.respondToChallenge = respondToChallenge
+            self.maxChallengeResponseAttempts = maxChallengeResponseAttempts
+            self.logger = logger
+        }
+    }
+
+    public typealias Method = @Sendable (Context) async throws -> CognitoAuthenticateResponse.AuthenticatedResponse
     let authenticate: Method
 
     public init(authenticate: @escaping Method) {
@@ -28,24 +50,30 @@ public struct CognitoAuthenticationMethod {
 extension CognitoAuthenticationMethod {
     /// Authenticate with password
     public static func password(_ password: String) -> Self {
-        return .init { authenticatable, userName in
-            try await authenticatable.authenticate(
-                username: userName,
+        return .init { context in
+            try await context.authenticatable.authenticate(
+                username: context.userName,
                 password: password,
                 clientMetadata: nil,
-                context: nil
+                context: nil,
+                respondToChallenge: context.respondToChallenge,
+                maxChallengeResponseAttempts: context.maxChallengeResponseAttempts,
+                logger: context.logger
             )
         }
     }
 
     /// Authenticate with refresh token
     public static func refreshToken(_ token: String) -> Self {
-        return .init { authenticatable, userName in
-            try await authenticatable.refresh(
-                username: userName,
+        return .init { context in
+            try await context.authenticatable.refresh(
+                username: context.userName,
                 refreshToken: token,
                 clientMetadata: nil,
-                context: nil
+                context: nil,
+                respondToChallenge: context.respondToChallenge,
+                maxChallengeResponseAttempts: context.maxChallengeResponseAttempts,
+                logger: context.logger
             )
         }
     }
@@ -54,7 +82,7 @@ extension CognitoAuthenticationMethod {
 actor UserPoolIdentityProvider: IdentityProvider {
     let userPoolIdentityProvider: String
     let authenticatable: CognitoAuthenticatable
-    let respondToChallenge: (@Sendable (CognitoChallengeName, [String: String]?, Error?) async throws -> [String: String]?)?
+    let respondToChallenge: @Sendable (CognitoChallengeName, [String: String]?, Error?) async throws -> [String: String]?
     let maxChallengeResponseAttempts: Int
     let identityProviderContext: IdentityProviderFactory.Context
     var currentUserName: String
@@ -68,7 +96,7 @@ actor UserPoolIdentityProvider: IdentityProvider {
         identityProviderContext: IdentityProviderFactory.Context,
         clientId: String,
         clientSecret: String? = nil,
-        respondToChallenge: (@Sendable (CognitoChallengeName, [String: String]?, Error?) async throws -> [String: String]?)?,
+        respondToChallenge: @escaping @Sendable (CognitoChallengeName, [String: String]?, Error?) async throws -> [String: String]? = { _, _, _ in nil },
         maxChallengeResponseAttempts: Int = 4
     ) {
         self.userPoolIdentityProvider = "cognito-idp.\(identityProviderContext.cognitoIdentity.region).amazonaws.com/\(userPoolId)"
@@ -93,70 +121,33 @@ actor UserPoolIdentityProvider: IdentityProvider {
     }
 
     func getIdentity(logger: Logging.Logger) async throws -> CognitoIdentity.IdentityParams {
-        let idToken: String
-        do {
-            let authResponse = try await self.currentAuthentication.authenticate(self.authenticatable, self.currentUserName)
-            idToken = try await self.respondToAuthenticateResponse(authResponse, challenge: nil)
-        } catch {
-            idToken = try await self.respondToAuthenticateError(error, challenge: nil)
+        let context = CognitoAuthenticationMethod.Context(
+            authenticatable: self.authenticatable,
+            userName: self.currentUserName,
+            respondToChallenge: self.respondToChallenge,
+            maxChallengeResponseAttempts: self.maxChallengeResponseAttempts,
+            logger: logger
+        )
+        let authResponse = try await self.currentAuthentication.authenticate(context)
+        guard let idToken = authResponse.idToken else {
+            throw SotoCognitoError.unexpectedResult(reason: "Authenticated response does not authentication tokens")
         }
+
+        // if we received a refresh token then this is not via a refresh authentication and we should attempt to get
+        // the username from the access token to ensure we have the correct username
+        if let refreshToken = authResponse.refreshToken {
+            self.currentAuthentication = .refreshToken(refreshToken)
+            if let accessToken = authResponse.accessToken {
+                let accessAuthenticateResponse = try await authenticatable.authenticate(accessToken: accessToken)
+                self.currentUserName = accessAuthenticateResponse.username
+            }
+        }
+
         let logins = [userPoolIdentityProvider: idToken]
         let request = CognitoIdentity.GetIdInput(identityPoolId: self.identityProviderContext.identityPoolId, logins: logins)
-        let response = try await self.identityProviderContext.cognitoIdentity.getId(request, logger: self.identityProviderContext.logger)
-        guard let identityId = response.identityId else { throw CredentialProviderError.noProvider }
+        let idResponse = try await self.identityProviderContext.cognitoIdentity.getId(request, logger: self.identityProviderContext.logger)
+        guard let identityId = idResponse.identityId else { throw CredentialProviderError.noProvider }
         return .init(id: identityId, logins: logins)
-    }
-
-    func respondToAuthenticateResponse(_ response: CognitoAuthenticateResponse, challenge: CognitoAuthenticateResponse.ChallengedResponse?) async throws -> String {
-        switch response {
-        case .authenticated(let response):
-            guard let idToken = response.idToken else {
-                throw SotoCognitoError.unexpectedResult(reason: "Authenticated response does not authentication tokens")
-            }
-            // if we received a refresh token then this is not via a refresh authentication and we should attempt to get
-            // the username from the access token to ensure we have the correct username
-            if let refreshToken = response.refreshToken {
-                self.currentAuthentication = .refreshToken(refreshToken)
-                if let accessToken = response.accessToken {
-                    let accessAuthenticateResponse = try await authenticatable.authenticate(accessToken: accessToken)
-                    self.currentUserName = accessAuthenticateResponse.username
-                }
-            }
-            return idToken
-        case .challenged(let challenge):
-            return try await self.respondToChallenge(challenge, error: nil)
-        }
-    }
-
-    func respondToAuthenticateError(_ error: Error, challenge: CognitoAuthenticateResponse.ChallengedResponse?) async throws -> String {
-        if let error = error as? CognitoIdentityProviderErrorType, let prevChallenge = challenge {
-            return try await self.respondToChallenge(prevChallenge, error: error)
-        } else {
-            throw error
-        }
-    }
-
-    func respondToChallenge(_ challenge: CognitoAuthenticateResponse.ChallengedResponse, error: Error?) async throws -> String {
-        guard let challengeName = challenge.name else {
-            throw SotoCognitoError.unexpectedResult(reason: "Challenge response does not have valid challenge name")
-        }
-        guard let respondToChallenge = respondToChallenge else {
-            throw SotoCognitoError.unauthorized(reason: "Did not respond to challenge \(challengeName)")
-        }
-        guard self.challengeResponseAttempts < self.maxChallengeResponseAttempts else {
-            throw SotoCognitoError.unauthorized(reason: "Failed to produce valid response to challenge \(challengeName)")
-        }
-        do {
-            self.challengeResponseAttempts += 1
-            let parameters = try await respondToChallenge(challengeName, challenge.parameters, error)
-            guard let parameters = parameters else {
-                throw SotoCognitoError.unauthorized(reason: "Did not respond to challenge \(challengeName)")
-            }
-            let challengeResponse = try await authenticatable.respondToChallenge(username: self.currentUserName, name: challengeName, responses: parameters, session: challenge.session)
-            return try await self.respondToAuthenticateResponse(challengeResponse, challenge: challenge)
-        } catch {
-            return try await self.respondToAuthenticateError(error, challenge: challenge)
-        }
     }
 }
 
@@ -168,7 +159,7 @@ extension IdentityProviderFactory {
         userPoolId: String,
         clientId: String,
         clientSecret: String? = nil,
-        respondToChallenge: (@Sendable (CognitoChallengeName, [String: String]?, Error?) async throws -> [String: String]?)? = nil,
+        respondToChallenge: @escaping @Sendable (CognitoChallengeName, [String: String]?, Error?) async throws -> [String: String]? = { _, _, _ in nil },
         maxChallengeResponseAttempts: Int = 4
     ) -> Self {
         return .custom { context in
@@ -221,7 +212,7 @@ extension CredentialProviderFactory {
         clientSecret: String? = nil,
         identityPoolId: String,
         region: Region,
-        respondToChallenge: (@Sendable (CognitoChallengeName, [String: String]?, Error?) async throws -> [String: String]?)? = nil,
+        respondToChallenge: @escaping @Sendable (CognitoChallengeName, [String: String]?, Error?) async throws -> [String: String]? = { _, _, _ in nil },
         maxChallengeResponseAttempts: Int = 4,
         logger: Logger = AWSClient.loggingDisabled
     ) -> CredentialProviderFactory {

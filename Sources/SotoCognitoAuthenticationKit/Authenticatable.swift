@@ -300,6 +300,82 @@ public final class CognitoAuthenticatable {
         )
     }
 
+    /// Authenticate using a username and password.
+    /// This function uses the Admin version of the initiateAuthRequest so your CognitoIdentityProvider should be setup with AWS credentials.
+    ///
+    /// - parameters:
+    ///     - username: user name for user
+    ///     - password: password for user
+    ///     - clientMetadata: A map of custom key-value pairs that you can provide as input for AWS Lambda custom workflows
+    ///     - context: Context data for this request
+    ///     - logger: logger
+    /// - returns:
+    ///     An authentication response. This can contain a challenge which the user has to fulfill before being allowed to login, or authentication access, id and refresh keys
+    public func authenticate(
+        username: String,
+        password: String,
+        clientMetadata: [String: String]? = nil,
+        context: CognitoContextData? = nil,
+        respondToChallenge: @escaping @Sendable (CognitoChallengeName, [String: String]?, Error?) async throws -> [String: String]?,
+        maxChallengeResponseAttempts: Int = 4,
+        logger: Logger = AWSClient.loggingDisabled
+    ) async throws -> CognitoAuthenticateResponse.AuthenticatedResponse {
+        let authFlow: CognitoIdentityProvider.AuthFlowType = self.configuration.adminClient ? .adminUserPasswordAuth : .userPasswordAuth
+        var authParameters: [String: String] = [
+            "USERNAME": username,
+            "PASSWORD": password,
+        ]
+        authParameters["SECRET_HASH"] = secretHash(username: username)
+        return try await self.authRequest(
+            username: username,
+            authFlow: authFlow,
+            authParameters: authParameters,
+            clientMetadata: clientMetadata,
+            context: context,
+            respondToChallenge: respondToChallenge,
+            maxChallengeResponseAttempts: maxChallengeResponseAttempts,
+            logger: logger
+        )
+    }
+
+    /// Get new access and id tokens from a refresh token
+    ///
+    /// The username you provide here has to be the real username of the user not an alias like an email. You can get the real username by authenticing an access token
+    /// - parameters:
+    ///     - username: user name of user
+    ///     - refreshToken: refresh token required to generate new access and id tokens
+    ///     - clientMetadata: A map of custom key-value pairs that you can provide as input for AWS Lambda custom workflows
+    ///     - context: Context data for this request
+    ///     - logger: logger
+    /// - returns:
+    ///     - An authentication result which should include an id and status token
+    public func refresh(
+        username: String,
+        refreshToken: String,
+        clientMetadata: [String: String]? = nil,
+        context: CognitoContextData? = nil,
+        respondToChallenge: @escaping @Sendable (CognitoChallengeName, [String: String]?, Error?) async throws -> [String: String]?,
+        maxChallengeResponseAttempts: Int = 4,
+        logger: Logger = AWSClient.loggingDisabled
+    ) async throws -> CognitoAuthenticateResponse.AuthenticatedResponse {
+        var authParameters: [String: String] = [
+            "USERNAME": username,
+            "REFRESH_TOKEN": refreshToken,
+        ]
+        authParameters["SECRET_HASH"] = secretHash(username: username)
+
+        return try await self.authRequest(
+            username: username,
+            authFlow: .refreshTokenAuth,
+            authParameters: authParameters,
+            clientMetadata: clientMetadata,
+            context: context,
+            respondToChallenge: respondToChallenge,
+            maxChallengeResponseAttempts: maxChallengeResponseAttempts,
+            logger: logger
+        )
+    }
+
     /// respond to authentication challenge
     ///
     /// In some situations when logging in Cognito will respond with a challenge before you are allowed to login. These could be supplying a new password for a new account,
@@ -530,9 +606,51 @@ public final class CognitoAuthenticatable {
     }
 }
 
-public extension CognitoAuthenticatable {
+extension CognitoAuthenticatable {
+    public func authRequest(
+        username: String,
+        authFlow: CognitoIdentityProvider.AuthFlowType,
+        authParameters: [String: String],
+        clientMetadata: [String: String]? = nil,
+        context: CognitoContextData?,
+        respondToChallenge: @escaping @Sendable (CognitoChallengeName, [String: String]?, Error?) async throws -> [String: String]? = { _, _, _ in nil },
+        maxChallengeResponseAttempts: Int = 4,
+        logger: Logger
+    ) async throws -> CognitoAuthenticateResponse.AuthenticatedResponse {
+        var authResponse = try await self.initiateAuthRequest(authFlow: authFlow, authParameters: authParameters, clientMetadata: clientMetadata, context: context, logger: logger)
+        var prevError: CognitoIdentityProviderErrorType? = nil
+        var challengeResponseAttempts = 0
+        while true {
+            switch authResponse {
+            case .authenticated(let authenticated):
+                return authenticated
+            case .challenged(let challenge):
+                guard let challengeName = challenge.name else {
+                    throw SotoCognitoError.unexpectedResult(reason: "Challenge response does not have valid challenge name")
+                }
+                guard challengeResponseAttempts < maxChallengeResponseAttempts else {
+                    if let error = prevError {
+                        throw error
+                    } else {
+                        throw SotoCognitoError.unauthorized(reason: "Failed to produce valid response to challenge \(challengeName)")
+                    }
+                }
+                challengeResponseAttempts += 1
+                let parameters = try await respondToChallenge(challengeName, challenge.parameters, prevError)
+                guard let parameters = parameters else {
+                    throw SotoCognitoError.unauthorized(reason: "Did not respond to challenge \(challengeName)")
+                }
+                do {
+                    authResponse = try await self.respondToChallenge(username: username, name: challengeName, responses: parameters, session: challenge.session)
+                } catch let error as CognitoIdentityProviderErrorType {
+                    prevError = error
+                }
+            }
+        }
+    }
+
     /// Return an authorization request future. This is an internal function and shouldn't need to be called
-    func initiateAuthRequest(
+    public func initiateAuthRequest(
         authFlow: CognitoIdentityProvider.AuthFlowType,
         authParameters: [String: String],
         clientMetadata: [String: String]? = nil,
@@ -597,9 +715,9 @@ public extension CognitoAuthenticatable {
     }
 }
 
-public extension CognitoAuthenticatable {
+extension CognitoAuthenticatable {
     /// Return secret hash to include in cognito identity provider calls. This is an internal function and shouldn't need to be called
-    func secretHash(username: String) -> String? {
+    public func secretHash(username: String) -> String? {
         guard let clientSecret = configuration.clientSecret else { return nil }
         let message = username + self.configuration.clientId
         let messageHmac: HashedAuthenticationCode<SHA256> = HMAC.authenticationCode(for: Data(message.utf8), using: SymmetricKey(data: Data(clientSecret.utf8)))
@@ -607,7 +725,7 @@ public extension CognitoAuthenticatable {
     }
 
     /// Translate error from one thrown by Soto. This is an internal function and shouldn't need to be called
-    func translateError(error: Error) -> Error {
+    public func translateError(error: Error) -> Error {
         switch error {
         case let error as CognitoIdentityProviderErrorType where error == .notAuthorizedException:
             return SotoCognitoError.unauthorized(reason: error.message)
