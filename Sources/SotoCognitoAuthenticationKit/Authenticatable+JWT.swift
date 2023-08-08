@@ -44,21 +44,18 @@ public extension CognitoAuthenticatable {
     ///     - idToken: Id token, returned from login
     ///     - on: Event loop to run on
     /// - returns:
-    ///     An event loop future containing the payload structure.
+    ///     Payload structure.
     func authenticate<Payload: Codable>(
         idToken: String,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop
-    ) -> EventLoopFuture<Payload> {
-        return loadSigners(region: configuration.region, logger: logger, on: eventLoop)
-            .flatMapThrowing { signers in
-                let jwtPayload = try signers.verify(idToken, as: VerifiedToken<IdTokenVerifier, Payload>.self)
-                guard jwtPayload.token.audience == self.configuration.clientId else { throw SotoCognitoError.unauthorized(reason: "invalid token") }
-                guard jwtPayload.token.issuer == "https://cognito-idp.\(self.configuration.region.rawValue).amazonaws.com/\(self.configuration.userPoolId)" else {
-                    throw SotoCognitoError.unauthorized(reason: "invalid token")
-                }
-                return jwtPayload.payload
-            }
+        logger: Logger = AWSClient.loggingDisabled
+    ) async throws -> Payload {
+        let signers = try await loadSigners(region: configuration.region, logger: logger)
+        let jwtPayload = try signers.verify(idToken, as: VerifiedToken<IdTokenVerifier, Payload>.self)
+        guard jwtPayload.token.audience == self.configuration.clientId else { throw SotoCognitoError.unauthorized(reason: "invalid token") }
+        guard jwtPayload.token.issuer == "https://cognito-idp.\(self.configuration.region.rawValue).amazonaws.com/\(self.configuration.userPoolId)" else {
+            throw SotoCognitoError.unauthorized(reason: "invalid token")
+        }
+        return jwtPayload.payload
     }
 
     /// Verify access token JWT and return contents
@@ -68,20 +65,17 @@ public extension CognitoAuthenticatable {
     ///     - accessToken: Access token, returned from login
     ///     - on: Event loop to run on
     /// - returns:
-    ///     An event loop future returning a structure with the username and UUID for the user.
+    ///     Structure with the username and UUID for the user.
     func authenticate(
         accessToken: String,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop
-    ) -> EventLoopFuture<CognitoAccessToken> {
-        return loadSigners(region: configuration.region, logger: logger, on: eventLoop)
-            .flatMapThrowing { signers in
-                let jwtPayload = try signers.verify(accessToken, as: VerifiedToken<AccessTokenVerifier, CognitoAccessToken>.self)
-                guard jwtPayload.token.issuer == "https://cognito-idp.\(self.configuration.region.rawValue).amazonaws.com/\(self.configuration.userPoolId)" else {
-                    throw SotoCognitoError.unauthorized(reason: "invalid token")
-                }
-                return jwtPayload.payload
-            }
+        logger: Logger = AWSClient.loggingDisabled
+    ) async throws -> CognitoAccessToken {
+        let signers = try await loadSigners(region: configuration.region, logger: logger)
+        let jwtPayload = try signers.verify(accessToken, as: VerifiedToken<AccessTokenVerifier, CognitoAccessToken>.self)
+        guard jwtPayload.token.issuer == "https://cognito-idp.\(self.configuration.region.rawValue).amazonaws.com/\(self.configuration.userPoolId)" else {
+            throw SotoCognitoError.unauthorized(reason: "invalid token")
+        }
+        return jwtPayload.payload
     }
 }
 
@@ -89,27 +83,27 @@ extension CognitoAuthenticatable {
     /// load JSON web keys and create JWT signers from them
     func loadSigners(
         region: Region,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop
-    ) -> EventLoopFuture<JWTSigners> {
+        logger: Logger = AWSClient.loggingDisabled
+    ) async throws -> JWTSigners {
         // check we haven't already loaded the jwt signing key set
         if let jwtSigners = self.jwtSigners {
-            return eventLoop.makeSucceededFuture(jwtSigners)
+            return jwtSigners
         }
 
         logger.debug("Load jwks.json")
         let jwtSignersURL = "https://cognito-idp.\(configuration.region.rawValue).amazonaws.com/\(configuration.userPoolId)/.well-known/jwks.json"
         let httpClient = configuration.cognitoIDP.client.httpClient
-        return httpClient
-            .get(url: jwtSignersURL, deadline: .now() + .seconds(20), logger: logger)
-            .flatMapThrowing { response in
-                let signers = JWTSigners()
-                guard let body = response.body else { return JWTSigners() }
-                if let data = body.getString(at: body.readerIndex, length: body.readableBytes) {
-                    try signers.use(jwksJSON: data)
-                }
-                self.jwtSigners = signers
-                return signers
-            }
+        let response = try await httpClient.get(
+            url: jwtSignersURL,
+            deadline: .now() + .seconds(20),
+            logger: logger
+        ).get()
+        let signers = JWTSigners()
+        guard let body = response.body else { return JWTSigners() }
+        if let data = body.getString(at: body.readerIndex, length: body.readableBytes) {
+            try signers.use(jwksJSON: data)
+        }
+        self.jwtSigners = signers
+        return signers
     }
 }
