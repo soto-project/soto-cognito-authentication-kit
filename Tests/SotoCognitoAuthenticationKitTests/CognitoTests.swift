@@ -408,46 +408,38 @@ final class CognitoTests: XCTestCase {
         }
     }
 
-    /* func testCredentialProvider() {
-         XCTAssertNil(Self.setUpFailure)
-         attempt {
-             let eventLoop = Self.cognitoIDP.client.eventLoopGroup.next()
-             let testData = try TestData(#function)
-             let credentialProvider: CredentialProviderFactory = .cognitoUserPool(
-                 userName: testData.username,
-                 authentication: .password(testData.password),
-                 userPoolId: Self.userPoolId,
-                 clientId: Self.clientId,
-                 clientSecret: Self.clientSecret,
-                 identityPoolId: Self.identityPoolId,
-                 region: Self.region,
-                 respondToChallenge: { challenge, _, error, eventLoop in
-                     switch challenge {
-                     case .newPasswordRequired:
-                         if error == nil {
-                             return eventLoop.makeSucceededFuture(["NEW_PASSWORD": "NewPassword123"])
-                         } else {
-                             return eventLoop.makeSucceededFuture(["NEW_PASSWORD": "NewPassword123!"])
-                         }
-                     default:
-                         return eventLoop.makeSucceededFuture(nil)
-                     }
-                 }
-             )
-             let client = AWSClient(credentialProvider: credentialProvider, httpClientProvider: .createNew)
-             defer { XCTAssertNoThrow(try client.syncShutdown()) }
-             let credentialFuture = client.credentialProvider.getCredential(on: eventLoop, logger: AWSClient.loggingDisabled)
-                 .map { credential in
-                     print(credential)
-                 }
-             XCTAssertThrowsError(try credentialFuture.wait()) { error in
-                 switch error {
-                 case let error as CognitoIdentityErrorType where error == .invalidIdentityPoolConfigurationException:
-                     break
-                 default:
-                     XCTFail("\(error)")
-                 }
-             }
-         }
-     } */
+    func testCredentialProvider() async throws {
+        XCTAssertNil(Self.setUpFailure)
+        try await self.test(#function) { username, password in
+            let credentialProvider: CredentialProviderFactory = .cognitoUserPool(
+                userName: username,
+                authentication: .password(password),
+                userPoolId: Self.userPoolId,
+                clientId: Self.clientId,
+                clientSecret: Self.clientSecret,
+                identityPoolId: Self.identityPoolId,
+                region: Self.region,
+                respondToChallenge: { challenge, _, error in
+                    switch challenge {
+                    case .newPasswordRequired:
+                        if error == nil {
+                            return ["NEW_PASSWORD": "NewPassword123"]
+                        } else {
+                            return ["NEW_PASSWORD": "NewPassword123!"]
+                        }
+                    default:
+                        return nil
+                    }
+                }
+            )
+            let client = AWSClient(credentialProvider: credentialProvider, httpClientProvider: .createNew)
+            do {
+                _ = try await client.credentialProvider.getCredential(logger: AWSClient.loggingDisabled)
+            } catch let error as CognitoIdentityErrorType where error == .invalidIdentityPoolConfigurationException {
+            } catch {
+                XCTFail()
+            }
+            try await client.shutdown()
+        }
+    }
 }

@@ -60,66 +60,98 @@ public class AWSCognitoContextTest: CognitoContextData {
 
 final class CognitoSRPTests: XCTestCase {
     static let awsClient = AWSClient(middleware: AWSLoggingMiddleware(), httpClientProvider: .createNew)
+    static var region: Region = .useast1
     static let cognitoIDP = CognitoIdentityProvider(client: awsClient, region: .useast1)
+    static var cognitoIdentity: CognitoIdentity! = CognitoIdentity(client: awsClient, region: .useast1)
     static let userPoolName: String = "aws-cognito-authentication-tests"
     static let userPoolClientName: String = UUID().uuidString
     static var authenticatable: CognitoAuthenticatable!
     static var userPoolId: String!
     static var clientId: String!
+    static var clientSecret: String!
+    static let identityPoolName: String = UUID().uuidString
+    static var identityPoolId: String!
+    static var identifiable: CognitoIdentifiable!
 
     static var setUpFailure: String?
 
     override class func setUp() {
         XCTRunAsyncAndBlock {
             do {
-                let clientSecret: String?
-                // does userpool exist
-                let listRequest = CognitoIdentityProvider.ListUserPoolsRequest(maxResults: 60)
-                let userPools = try await cognitoIDP.listUserPools(listRequest).userPools
-                if let userPool = userPools?.first(where: { $0.name == userPoolName }) {
-                    self.userPoolId = userPool.id!
-                } else {
-                    // create userpool
-                    let createRequest = CognitoIdentityProvider.CreateUserPoolRequest(
-                        adminCreateUserConfig: CognitoIdentityProvider.AdminCreateUserConfigType(allowAdminCreateUserOnly: true),
-                        poolName: self.userPoolName
-                    )
-                    let createResponse = try await cognitoIDP.createUserPool(createRequest)
-                    self.userPoolId = createResponse.userPool!.id!
-                }
+                try await self.setupUserPool()
 
-                // does userpool client exist
-                let listClientRequest = CognitoIdentityProvider.ListUserPoolClientsRequest(maxResults: 60, userPoolId: self.userPoolId)
-                let clients = try await cognitoIDP.listUserPoolClients(listClientRequest).userPoolClients
-                if let client = clients?.first(where: { $0.clientName == userPoolClientName }) {
-                    self.clientId = client.clientId!
-                    let describeRequest = CognitoIdentityProvider.DescribeUserPoolClientRequest(clientId: self.clientId, userPoolId: self.userPoolId)
-                    let describeResponse = try await cognitoIDP.describeUserPoolClient(describeRequest)
-                    clientSecret = describeResponse.userPoolClient!.clientSecret
-                } else {
-                    // create userpool client
-                    let createClientRequest = CognitoIdentityProvider.CreateUserPoolClientRequest(
-                        clientName: self.userPoolClientName,
-                        explicitAuthFlows: [.allowUserSrpAuth, .allowRefreshTokenAuth],
-                        generateSecret: true,
-                        userPoolId: self.userPoolId
-                    )
-                    let createClientResponse = try await cognitoIDP.createUserPoolClient(createClientRequest)
-                    self.clientId = createClientResponse.userPoolClient!.clientId!
-                    clientSecret = createClientResponse.userPoolClient!.clientSecret
-                }
                 let configuration = CognitoConfiguration(
                     userPoolId: userPoolId,
                     clientId: clientId,
-                    clientSecret: clientSecret,
+                    clientSecret: self.clientSecret,
                     cognitoIDP: self.cognitoIDP,
                     adminClient: true
                 )
                 Self.authenticatable = CognitoAuthenticatable(configuration: configuration)
+
+                try await self.setupIdentityPool()
+
+                let identityConfiguration = CognitoIdentityConfiguration(
+                    identityPoolId: Self.identityPoolId,
+                    userPoolId: Self.userPoolId,
+                    region: Self.region,
+                    cognitoIdentity: Self.cognitoIdentity
+                )
+                Self.identifiable = CognitoIdentifiable(configuration: identityConfiguration)
             } catch {
                 self.setUpFailure = "\(error)"
             }
         }
+    }
+
+    static func setupUserPool() async throws {
+        // does userpool exist
+        let listRequest = CognitoIdentityProvider.ListUserPoolsRequest(maxResults: 60)
+        let userPools = try await cognitoIDP.listUserPools(listRequest).userPools
+        if let userPool = userPools?.first(where: { $0.name == userPoolName }) {
+            self.userPoolId = userPool.id!
+        } else {
+            // create userpool
+            let createRequest = CognitoIdentityProvider.CreateUserPoolRequest(
+                adminCreateUserConfig: CognitoIdentityProvider.AdminCreateUserConfigType(allowAdminCreateUserOnly: true),
+                poolName: self.userPoolName
+            )
+            let createResponse = try await cognitoIDP.createUserPool(createRequest)
+            self.userPoolId = createResponse.userPool!.id!
+        }
+
+        // does userpool client exist
+        let listClientRequest = CognitoIdentityProvider.ListUserPoolClientsRequest(maxResults: 60, userPoolId: self.userPoolId)
+        let clients = try await cognitoIDP.listUserPoolClients(listClientRequest).userPoolClients
+        if let client = clients?.first(where: { $0.clientName == userPoolClientName }) {
+            self.clientId = client.clientId!
+            let describeRequest = CognitoIdentityProvider.DescribeUserPoolClientRequest(clientId: self.clientId, userPoolId: self.userPoolId)
+            let describeResponse = try await cognitoIDP.describeUserPoolClient(describeRequest)
+            self.clientSecret = describeResponse.userPoolClient!.clientSecret
+        } else {
+            // create userpool client
+            let createClientRequest = CognitoIdentityProvider.CreateUserPoolClientRequest(
+                clientName: self.userPoolClientName,
+                explicitAuthFlows: [.allowUserSrpAuth, .allowRefreshTokenAuth],
+                generateSecret: true,
+                userPoolId: self.userPoolId
+            )
+            let createClientResponse = try await cognitoIDP.createUserPoolClient(createClientRequest)
+            self.clientId = createClientResponse.userPoolClient!.clientId!
+            self.clientSecret = createClientResponse.userPoolClient!.clientSecret
+        }
+    }
+
+    static func setupIdentityPool() async throws {
+        // create identity pool
+        let providerName = "cognito-idp.\(Self.region.rawValue).amazonaws.com/\(Self.userPoolId!)"
+        let createRequest = CognitoIdentity.CreateIdentityPoolInput(
+            allowUnauthenticatedIdentities: false,
+            cognitoIdentityProviders: [.init(clientId: Self.clientId, providerName: providerName)],
+            identityPoolName: self.identityPoolName
+        )
+        let createResponse = try await cognitoIdentity.createIdentityPool(createRequest)
+        Self.identityPoolId = createResponse.identityPoolId
     }
 
     override class func tearDown() {
@@ -252,41 +284,38 @@ final class CognitoSRPTests: XCTestCase {
         XCTAssertEqual(sha256Result.hexDigest().uppercased(), "398F838A6019FC27D99D90009A1FE0BF")
     }
 
-    /* func testCredentialProvider() {
-         XCTAssertNil(Self.setUpFailure)
-         attempt {
-             let eventLoop = Self.cognitoIDP.client.eventLoopGroup.next()
-             let testData = try TestData(#function, on: eventLoop)
-             let credentialProvider: CredentialProviderFactory = .cognitoUserPool(
-                 userName: testData.username,
-                 authentication: .srp(testData.password),
-                 userPoolId: Self.userPoolId,
-                 clientId: Self.clientId,
-                 identityPoolId: Self.identityPoolId,
-                 region: Self.region,
-                 respondToChallenge: { challenge, _, _, eventLoop in
-                     switch challenge {
-                     case .newPasswordRequired:
-                         return eventLoop.makeSucceededFuture(["NEW_PASSWORD": "NewPassword123!"])
-                     default:
-                         return eventLoop.makeFailedFuture(SotoCognitoError.unauthorized(reason: "Did not respond to challenge \(challenge.rawValue)"))
-                     }
-                 }
-             )
-             let client = AWSClient(credentialProvider: credentialProvider, httpClientProvider: .createNew)
-             defer { XCTAssertNoThrow(try client.syncShutdown()) }
-             let credentialFuture = client.credentialProvider.getCredential(on: eventLoop, logger: AWSClient.loggingDisabled)
-                 .map { credential in
-                     print(credential)
-                 }
-             XCTAssertThrowsError(try credentialFuture.wait()) { error in
-                 switch error {
-                 case let error as CognitoIdentityErrorType where error == .invalidIdentityPoolConfigurationException:
-                     break
-                 default:
-                     XCTFail("\(error)")
-                 }
-             }
-         }
-     } */
+    func testCredentialProvider() async throws {
+        XCTAssertNil(Self.setUpFailure)
+        try await self.test(#function) { username, password in
+            let credentialProvider: CredentialProviderFactory = .cognitoUserPool(
+                userName: username,
+                authentication: .srp(password),
+                userPoolId: Self.userPoolId,
+                clientId: Self.clientId,
+                clientSecret: Self.clientSecret,
+                identityPoolId: Self.identityPoolId,
+                region: Self.region,
+                respondToChallenge: { challenge, _, error in
+                    switch challenge {
+                    case .newPasswordRequired:
+                        if error == nil {
+                            return ["NEW_PASSWORD": "NewPassword123"]
+                        } else {
+                            return ["NEW_PASSWORD": "NewPassword123!"]
+                        }
+                    default:
+                        return nil
+                    }
+                }
+            )
+            let client = AWSClient(credentialProvider: credentialProvider, httpClientProvider: .createNew)
+            do {
+                _ = try await client.credentialProvider.getCredential(logger: AWSClient.loggingDisabled)
+            } catch let error as CognitoIdentityErrorType where error == .invalidIdentityPoolConfigurationException {
+            } catch {
+                XCTFail("Error: \(error)")
+            }
+            try await client.shutdown()
+        }
+    }
 }
