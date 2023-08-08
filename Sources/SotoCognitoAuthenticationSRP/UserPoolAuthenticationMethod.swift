@@ -17,13 +17,12 @@ import SotoCognitoAuthenticationKit
 extension CognitoAuthenticationMethod {
     /// Authenticate with secure remote password
     public static func srp(_ password: String) -> Self {
-        return .init { authenticatable, userName, eventLoop in
-            authenticatable.authenticateSRP(
+        return .init { authenticatable, userName in
+            try await authenticatable.authenticateSRP(
                 username: userName,
                 password: password,
                 clientMetadata: nil,
-                context: nil,
-                on: eventLoop
+                context: nil
             )
         }
     }
