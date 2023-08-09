@@ -127,6 +127,15 @@ extension CognitoAuthenticatable {
         }
     }
 
+    /// Generate response to SRP challenge
+    ///
+    /// See https://en.wikipedia.org/wiki/Secure_Remote_Password_protocol for details of SRP protocol
+    /// - Parameters:
+    ///   - parameters: Parameters from AWS
+    ///   - username: Username
+    ///   - password: Password
+    ///   - srp: SRP values used to initiate process
+    /// - Returns: Response to SRP challenge
     func respondToSRPChallenge(_ parameters: [String: String]?, username: String, password: String, srp: SRP<SHA256>) throws -> [String: String] {
         guard let parameters = parameters,
               let saltHex = parameters["SALT"],
@@ -160,7 +169,6 @@ extension CognitoAuthenticatable {
         // construct claim
         let claim = HMAC<SHA256>.authenticationCode(for: Data("\(userPoolName)\(srpUsername)".utf8) + secretBlock + Data(timestamp.utf8), using: SymmetricKey(data: key))
 
-        // print("claim \(claim.hexdigest())")
         var authResponse: [String: String] = [
             "USERNAME": srpUsername,
             "PASSWORD_CLAIM_SECRET_BLOCK": secretBlockBase64,
