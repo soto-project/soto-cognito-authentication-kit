@@ -79,6 +79,7 @@ extension CognitoAuthenticationMethod {
     }
 }
 
+/// Identity provider using Cognito UserPools
 actor UserPoolIdentityProvider: IdentityProvider {
     let userPoolIdentityProvider: String
     let authenticatable: CognitoAuthenticatable
@@ -120,6 +121,11 @@ actor UserPoolIdentityProvider: IdentityProvider {
         self.challengeResponseAttempts = 0
     }
 
+    /// Authenticate with Cognito UserPools
+    ///
+    /// - Get Identity token from Cognito UserPools
+    /// - Get Id from using this token
+    /// - Return identity params which can be used to get credentials
     func getIdentity(logger: Logging.Logger) async throws -> CognitoIdentity.IdentityParams {
         let context = CognitoAuthenticationMethod.Context(
             authenticatable: self.authenticatable,
@@ -138,14 +144,14 @@ actor UserPoolIdentityProvider: IdentityProvider {
         if let refreshToken = authResponse.refreshToken {
             self.currentAuthentication = .refreshToken(refreshToken)
             if let accessToken = authResponse.accessToken {
-                let accessAuthenticateResponse = try await authenticatable.authenticate(accessToken: accessToken)
+                let accessAuthenticateResponse = try await authenticatable.authenticate(accessToken: accessToken, logger: logger)
                 self.currentUserName = accessAuthenticateResponse.username
             }
         }
 
         let logins = [userPoolIdentityProvider: idToken]
         let request = CognitoIdentity.GetIdInput(identityPoolId: self.identityProviderContext.identityPoolId, logins: logins)
-        let idResponse = try await self.identityProviderContext.cognitoIdentity.getId(request, logger: self.identityProviderContext.logger)
+        let idResponse = try await self.identityProviderContext.cognitoIdentity.getId(request, logger: logger)
         guard let identityId = idResponse.identityId else { throw CredentialProviderError.noProvider }
         return .init(id: identityId, logins: logins)
     }

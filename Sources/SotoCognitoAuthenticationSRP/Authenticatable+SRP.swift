@@ -23,6 +23,57 @@ extension CognitoAuthenticatable {
 
     /// authenticate using SRP
     ///
+    /// This function combines the `initiateAuth`` and `respondToAuthChallenge` calls. If the initiateAuth returns
+    /// a challenge that is not the SRP password verifier then the provided closure `respondToChallenge` is called.
+    /// You should return a challenge response from this call, or if you do not know how to respond then return `nil`.
+    ///
+    /// - parameters:
+    ///     - username: user name for user
+    ///     - password: password for user
+    ///     - clientMetadata: A map of custom key-value pairs that you can provide as input for AWS Lambda custom workflows
+    ///     - context: Context data for this request
+    ///     - respondToChallenge: Function which returns challenge response parameters given a challenge, or the last challenge and the error it generated
+    ///     - maxChallengeResponseAttempts: Maximum number of times we are allowed to respond to challenges
+    ///     - logger: Logger
+    /// - returns:
+    ///     An authentication response. This can contain a challenge which the user has to fulfill before being allowed to login, or authentication access, id and refresh keys
+    public func authenticateSRP(
+        username: String,
+        password: String,
+        clientMetadata: [String: String]? = nil,
+        context: CognitoContextData? = nil,
+        respondToChallenge: @escaping @Sendable (CognitoChallengeName, [String: String]?, Error?) async throws -> [String: String]?,
+        maxChallengeResponseAttempts: Int = 4,
+        logger: Logger = AWSClient.loggingDisabled
+    ) async throws -> CognitoAuthenticateResponse.AuthenticatedResponse {
+        let srp = SRP<SHA256>()
+        var authParameters: [String: String] = [
+            "USERNAME": username,
+            "SRP_A": srp.A.hex,
+        ]
+        authParameters["SECRET_HASH"] = secretHash(username: username)
+
+        return try await self.authRequest(
+            username: username,
+            authFlow: .userSrpAuth,
+            authParameters: authParameters,
+            clientMetadata: clientMetadata,
+            context: context,
+            respondToChallenge: { name, parameters, error in
+                switch name {
+                case .passwordVerifier:
+                    return try self.respondToSRPChallenge(parameters, username: username, password: password, srp: srp)
+                default:
+                    return try await respondToChallenge(name, parameters, error)
+                }
+            },
+            maxChallengeResponseAttempts: maxChallengeResponseAttempts,
+            logger: logger
+        )
+    }
+
+    /// authenticate using SRP
+    ///
     /// - parameters:
     ///     - username: user name for user
     ///     - password: password for user
@@ -74,51 +125,6 @@ extension CognitoAuthenticatable {
         case .authenticated:
             return response
         }
-    }
-
-    /// authenticate using SRP
-    ///
-    /// - parameters:
-    ///     - username: user name for user
-    ///     - password: password for user
-    ///     - clientMetadata: A map of custom key-value pairs that you can provide as input for AWS Lambda custom workflows
-    ///     - context: Context data for this request
-    ///     - logger: Logger
-    /// - returns:
-    ///     An authentication response. This can contain a challenge which the user has to fulfill before being allowed to login, or authentication access, id and refresh keys
-    public func authenticateSRP(
-        username: String,
-        password: String,
-        clientMetadata: [String: String]? = nil,
-        context: CognitoContextData? = nil,
-        respondToChallenge: @escaping @Sendable (CognitoChallengeName, [String: String]?, Error?) async throws -> [String: String]?,
-        maxChallengeResponseAttempts: Int = 4,
-        logger: Logger = AWSClient.loggingDisabled
-    ) async throws -> CognitoAuthenticateResponse.AuthenticatedResponse {
-        let srp = SRP<SHA256>()
-        var authParameters: [String: String] = [
-            "USERNAME": username,
-            "SRP_A": srp.A.hex,
-        ]
-        authParameters["SECRET_HASH"] = secretHash(username: username)
-
-        return try await self.authRequest(
-            username: username,
-            authFlow: .userSrpAuth,
-            authParameters: authParameters,
-            clientMetadata: clientMetadata,
-            context: context,
-            respondToChallenge: { name, parameters, error in
-                switch name {
-                case .passwordVerifier:
-                    return try self.respondToSRPChallenge(parameters, username: username, password: password, srp: srp)
-                default:
-                    return try await respondToChallenge(name, parameters, error)
-                }
-            },
-            maxChallengeResponseAttempts: maxChallengeResponseAttempts,
-            logger: logger
-        )
     }
 
     func respondToSRPChallenge(_ parameters: [String: String]?, username: String, password: String, srp: SRP<SHA256>) throws -> [String: String] {

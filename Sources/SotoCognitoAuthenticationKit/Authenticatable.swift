@@ -235,13 +235,19 @@ public final class CognitoAuthenticatable {
     }
 
     /// Authenticate using a username and password.
-    /// This function uses the Admin version of the initiateAuthRequest so your CognitoIdentityProvider should be setup with AWS credentials.
+    ///
+    /// This function combines the `initiateAuth`` and `respondToAuthChallenge` calls. If the initiateAuth returns
+    /// a challenge then the provided closure `respondToChallenge` is called. You should return a challenge response
+    /// from this call, or if you do not know how to respond then return `nil`.
     ///
     /// - parameters:
     ///     - username: user name for user
     ///     - password: password for user
     ///     - clientMetadata: A map of custom key-value pairs that you can provide as input for AWS Lambda custom workflows
     ///     - context: Context data for this request
+    ///     - respondToChallenge: Function which returns challenge response parameters given a challenge, or the last
+    ///         challenge and the error it generated
+    ///     - maxChallengeResponseAttempts: Maximum number of times we are allowed to respond to challenges
     ///     - logger: logger
     /// - returns:
     ///     An authentication response. This can contain a challenge which the user has to fulfill before being allowed to login, or authentication access, id and refresh keys
@@ -250,31 +256,45 @@ public final class CognitoAuthenticatable {
         password: String,
         clientMetadata: [String: String]? = nil,
         context: CognitoContextData? = nil,
+        respondToChallenge: @escaping @Sendable (CognitoChallengeName, [String: String]?, Error?) async throws -> [String: String]?,
+        maxChallengeResponseAttempts: Int = 4,
         logger: Logger = AWSClient.loggingDisabled
-    ) async throws -> CognitoAuthenticateResponse {
+    ) async throws -> CognitoAuthenticateResponse.AuthenticatedResponse {
         let authFlow: CognitoIdentityProvider.AuthFlowType = self.configuration.adminClient ? .adminUserPasswordAuth : .userPasswordAuth
         var authParameters: [String: String] = [
             "USERNAME": username,
             "PASSWORD": password,
         ]
         authParameters["SECRET_HASH"] = secretHash(username: username)
-        return try await self.initiateAuthRequest(
+        return try await self.authRequest(
+            username: username,
             authFlow: authFlow,
             authParameters: authParameters,
             clientMetadata: clientMetadata,
             context: context,
+            respondToChallenge: respondToChallenge,
+            maxChallengeResponseAttempts: maxChallengeResponseAttempts,
             logger: logger
         )
     }
 
     /// Get new access and id tokens from a refresh token
     ///
-    /// The username you provide here has to be the real username of the user not an alias like an email. You can get the real username by authenticing an access token
+    /// The username you provide here has to be the real username of the user not an alias like an email. You can get
+    /// the real username by authenticing an access token.
+    ///
+    /// This function combines the `initiateAuth`` and `respondToAuthChallenge` calls. If the initiateAuth returns
+    /// a challenge then the provided closure `respondToChallenge` is called. You should return a challenge response
+    /// from this call, or if you do not know how to respond then return `nil`.
+    ///
     /// - parameters:
     ///     - username: user name of user
     ///     - refreshToken: refresh token required to generate new access and id tokens
     ///     - clientMetadata: A map of custom key-value pairs that you can provide as input for AWS Lambda custom workflows
     ///     - context: Context data for this request
+    ///     - respondToChallenge: Function which returns challenge response parameters given a challenge, or the last
+    ///         challenge and the error it generated
+    ///     - maxChallengeResponseAttempts: Maximum number of times we are allowed to respond to challenges
     ///     - logger: logger
     /// - returns:
     ///     - An authentication result which should include an id and status token
@@ -283,19 +303,24 @@ public final class CognitoAuthenticatable {
         refreshToken: String,
         clientMetadata: [String: String]? = nil,
         context: CognitoContextData? = nil,
+        respondToChallenge: @escaping @Sendable (CognitoChallengeName, [String: String]?, Error?) async throws -> [String: String]?,
+        maxChallengeResponseAttempts: Int = 4,
         logger: Logger = AWSClient.loggingDisabled
-    ) async throws -> CognitoAuthenticateResponse {
+    ) async throws -> CognitoAuthenticateResponse.AuthenticatedResponse {
         var authParameters: [String: String] = [
             "USERNAME": username,
             "REFRESH_TOKEN": refreshToken,
         ]
         authParameters["SECRET_HASH"] = secretHash(username: username)
 
-        return try await self.initiateAuthRequest(
+        return try await self.authRequest(
+            username: username,
             authFlow: .refreshTokenAuth,
             authParameters: authParameters,
             clientMetadata: clientMetadata,
             context: context,
+            respondToChallenge: respondToChallenge,
+            maxChallengeResponseAttempts: maxChallengeResponseAttempts,
             logger: logger
         )
     }
@@ -316,24 +341,19 @@ public final class CognitoAuthenticatable {
         password: String,
         clientMetadata: [String: String]? = nil,
         context: CognitoContextData? = nil,
-        respondToChallenge: @escaping @Sendable (CognitoChallengeName, [String: String]?, Error?) async throws -> [String: String]?,
-        maxChallengeResponseAttempts: Int = 4,
         logger: Logger = AWSClient.loggingDisabled
-    ) async throws -> CognitoAuthenticateResponse.AuthenticatedResponse {
+    ) async throws -> CognitoAuthenticateResponse {
         let authFlow: CognitoIdentityProvider.AuthFlowType = self.configuration.adminClient ? .adminUserPasswordAuth : .userPasswordAuth
         var authParameters: [String: String] = [
             "USERNAME": username,
             "PASSWORD": password,
         ]
         authParameters["SECRET_HASH"] = secretHash(username: username)
-        return try await self.authRequest(
-            username: username,
+        return try await self.initiateAuthRequest(
             authFlow: authFlow,
             authParameters: authParameters,
             clientMetadata: clientMetadata,
             context: context,
-            respondToChallenge: respondToChallenge,
-            maxChallengeResponseAttempts: maxChallengeResponseAttempts,
             logger: logger
         )
     }
@@ -354,24 +374,19 @@ public final class CognitoAuthenticatable {
         refreshToken: String,
         clientMetadata: [String: String]? = nil,
         context: CognitoContextData? = nil,
-        respondToChallenge: @escaping @Sendable (CognitoChallengeName, [String: String]?, Error?) async throws -> [String: String]?,
-        maxChallengeResponseAttempts: Int = 4,
         logger: Logger = AWSClient.loggingDisabled
-    ) async throws -> CognitoAuthenticateResponse.AuthenticatedResponse {
+    ) async throws -> CognitoAuthenticateResponse {
         var authParameters: [String: String] = [
             "USERNAME": username,
             "REFRESH_TOKEN": refreshToken,
         ]
         authParameters["SECRET_HASH"] = secretHash(username: username)
 
-        return try await self.authRequest(
-            username: username,
+        return try await self.initiateAuthRequest(
             authFlow: .refreshTokenAuth,
             authParameters: authParameters,
             clientMetadata: clientMetadata,
             context: context,
-            respondToChallenge: respondToChallenge,
-            maxChallengeResponseAttempts: maxChallengeResponseAttempts,
             logger: logger
         )
     }
@@ -641,7 +656,15 @@ extension CognitoAuthenticatable {
                     throw SotoCognitoError.unauthorized(reason: "Did not respond to challenge \(challengeName)")
                 }
                 do {
-                    authResponse = try await self.respondToChallenge(username: username, name: challengeName, responses: parameters, session: challenge.session)
+                    authResponse = try await self.respondToChallenge(
+                        username: username,
+                        name: challengeName,
+                        responses: parameters,
+                        session: challenge.session,
+                        clientMetadata: clientMetadata,
+                        context: context,
+                        logger: logger
+                    )
                 } catch let error as CognitoIdentityProviderErrorType {
                     prevError = error
                 }
