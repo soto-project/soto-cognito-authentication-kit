@@ -79,6 +79,8 @@ public extension CognitoAuthenticatable {
             // cognito expects the dateformat to have the timezone as UTC
             dateFormatter.dateFormat = "EEE MMM d HH:mm:ss 'UTC' yyyy"
             dateFormatter.timeZone = TimeZone(identifier: "UTC")
+            // cognito expects the dateformat to be in English
+            dateFormatter.locale = Locale(identifier: "en_US_POSIX")
             let timestamp = dateFormatter.string(from: Date())
 
             // construct claim
