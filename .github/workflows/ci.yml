@@ -9,6 +9,7 @@ on:
   pull_request:
     branches:
     - main
+    - 5.x.x
     paths:
     - '**.swift'
     - '.github/workflows/ci.yml'
