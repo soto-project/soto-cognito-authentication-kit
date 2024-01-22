@@ -126,20 +126,19 @@ public final class CognitoAuthenticatable {
     /// An email will be sent out with either a confirmation code or a link to confirm the user.
     /// - parameters:
     ///     - username: user name for new user
+    ///     - password: password for new user
     ///     - attributes: user attributes. These should be from the list of standard claims detailed in the [OpenID spec](https://openid.net/specs/openid-connect-core-1_0.html#StandardClaims). You can include custom attiibutes by prepending them with "custom:".
     ///     - clientMetadata: A map of custom key-value pairs that you can provide as input for AWS Lambda custom workflows
-    ///     - on: Event loop request is running on.
+    ///     - logger: logger
     /// - returns:
-    ///     EventLoopFuture holding the sign up response
+    ///     Sign up response
     public func signUp(
         username: String,
         password: String,
         attributes: [String: String],
         clientMetadata: [String: String]? = nil,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil
-    ) -> EventLoopFuture<CognitoIdentityProvider.SignUpResponse> {
-        let eventLoop = eventLoop ?? self.configuration.cognitoIDP.eventLoopGroup.next()
+        logger: Logger = AWSClient.loggingDisabled
+    ) async throws -> CognitoIdentityProvider.SignUpResponse {
         let userAttributes = attributes.map { return CognitoIdentityProvider.AttributeType(name: $0.key, value: $0.value) }
         let request = CognitoIdentityProvider.SignUpRequest(
             clientId: self.configuration.clientId,
@@ -149,11 +148,11 @@ public final class CognitoAuthenticatable {
             userAttributes: userAttributes,
             username: username
         )
-        return self.configuration.cognitoIDP.signUp(request, logger: logger, on: eventLoop)
-            .flatMapErrorThrowing { error in
-                throw self.translateError(error: error)
-            }
-            .hop(to: eventLoop)
+        do {
+            return try await self.configuration.cognitoIDP.signUp(request, logger: logger)
+        } catch {
+            throw self.translateError(error: error)
+        }
     }
 
     /// Confirm sign up of user
@@ -163,17 +162,13 @@ public final class CognitoAuthenticatable {
     ///     - username: user name for user
     ///     - confirmationCode: Confirmation code in email
     ///     - clientMetadata: A map of custom key-value pairs that you can provide as input for AWS Lambda custom workflows
-    ///     - on: Event loop request is running on.
-    /// - returns:
-    ///     Empty EventLoopFuture
+    ///     - logger: logger
     public func confirmSignUp(
         username: String,
         confirmationCode: String,
         clientMetadata: [String: String]? = nil,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil
-    ) -> EventLoopFuture<Void> {
-        let eventLoop = eventLoop ?? self.configuration.cognitoIDP.eventLoopGroup.next()
+        logger: Logger = AWSClient.loggingDisabled
+    ) async throws {
         let request = CognitoIdentityProvider.ConfirmSignUpRequest(
             clientId: self.configuration.clientId,
             clientMetadata: clientMetadata,
@@ -182,14 +177,11 @@ public final class CognitoAuthenticatable {
             secretHash: secretHash(username: username),
             username: username
         )
-        return self.configuration.cognitoIDP.confirmSignUp(request, logger: logger, on: eventLoop)
-            .flatMapErrorThrowing { error in
-                throw self.translateError(error: error)
-            }
-            .map { _ in
-                return
-            }
-            .hop(to: eventLoop)
+        do {
+            _ = try await self.configuration.cognitoIDP.confirmSignUp(request, logger: logger)
+        } catch {
+            throw self.translateError(error: error)
+        }
     }
 
     /// create a new AWS Cognito user.
@@ -198,24 +190,24 @@ public final class CognitoAuthenticatable {
     /// function it requires an `adminClient`.
     /// - parameters:
     ///     - username: user name for new user
-    ///     - attributes: user attributes. These should be from the list of standard claims detailed in the [OpenID spec](https://openid.net/specs/openid-connect-core-1_0.html#StandardClaims) . You can include custom attiibutes by prepending them with "custom:".
+    ///     - attributes: user attributes. These should be from the list of standard claims detailed in the [OpenID spec](https://openid.net/specs/openid-connect-core-1_0.html#StandardClaims) .
+    ///         You can include custom attributes by prepending them with "custom:".
+    ///     - temporaryPassword: Temporary password to give user
     ///     - messageAction: If this is set to `.resend` this will resend the message for an existing user. If this is set to `.suppress` the message sending is suppressed.
     ///     - clientMetadata: A map of custom key-value pairs that you can provide as input for AWS Lambda custom workflows
-    ///     - on: Event loop request is running on.
+    ///     - logger: logger
     /// - returns:
-    ///     EventLoopFuture holding the create user response
+    ///     Create user response
     public func createUser(
         username: String,
         attributes: [String: String],
         temporaryPassword: String? = nil,
         messageAction: CognitoIdentityProvider.MessageActionType? = nil,
         clientMetadata: [String: String]? = nil,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil
-    ) -> EventLoopFuture<CognitoCreateUserResponse> {
-        let eventLoop = eventLoop ?? self.configuration.cognitoIDP.eventLoopGroup.next()
+        logger: Logger = AWSClient.loggingDisabled
+    ) async throws -> CognitoCreateUserResponse {
         guard self.configuration.adminClient == true else {
-            return eventLoop.makeFailedFuture(SotoCognitoError.unauthorized(reason: "\(#function) requires an admin client with authenticated AWSClient"))
+            throw SotoCognitoError.unauthorized(reason: "\(#function) requires an admin client with authenticated AWSClient")
         }
         let userAttributes = attributes.map { return CognitoIdentityProvider.AttributeType(name: $0.key, value: $0.value) }
         let request = CognitoIdentityProvider.AdminCreateUserRequest(
@@ -227,18 +219,110 @@ public final class CognitoAuthenticatable {
             username: username,
             userPoolId: self.configuration.userPoolId
         )
-        return self.configuration.cognitoIDP.adminCreateUser(request, logger: logger, on: eventLoop)
-            .flatMapErrorThrowing { error in
-                throw self.translateError(error: error)
-            }
-            .flatMapThrowing { response in
-                guard let user = response.user,
-                      let username = user.username,
-                      let userStatus = user.userStatus
-                else { throw SotoCognitoError.unexpectedResult(reason: "AWS did not supply all the user information expected") }
-                return CognitoCreateUserResponse(userName: username, userStatus: userStatus)
-            }
-            .hop(to: eventLoop)
+        do {
+            let response = try await self.configuration.cognitoIDP.adminCreateUser(
+                request,
+                logger: logger
+            )
+            guard let user = response.user,
+                  let username = user.username,
+                  let userStatus = user.userStatus
+            else { throw SotoCognitoError.unexpectedResult(reason: "AWS did not supply all the user information expected") }
+            return CognitoCreateUserResponse(userName: username, userStatus: userStatus)
+        } catch {
+            throw self.translateError(error: error)
+        }
+    }
+
+    /// Authenticate using a username and password.
+    ///
+    /// This function combines the `initiateAuth`` and `respondToAuthChallenge` calls. If the initiateAuth returns
+    /// a challenge then the provided closure `respondToChallenge` is called. You should return a challenge response
+    /// from this call, or if you do not know how to respond then return `nil`.
+    ///
+    /// - parameters:
+    ///     - username: user name for user
+    ///     - password: password for user
+    ///     - clientMetadata: A map of custom key-value pairs that you can provide as input for AWS Lambda custom workflows
+    ///     - context: Context data for this request
+    ///     - respondToChallenge: Function which returns challenge response parameters given a challenge, or the last
+    ///         challenge and the error it generated
+    ///     - maxChallengeResponseAttempts: Maximum number of times we are allowed to respond to challenges
+    ///     - logger: logger
+    /// - returns:
+    ///     An authentication response. This can contain a challenge which the user has to fulfill before being allowed to login, or authentication access, id and refresh keys
+    public func authenticate(
+        username: String,
+        password: String,
+        clientMetadata: [String: String]? = nil,
+        context: CognitoContextData? = nil,
+        respondToChallenge: @escaping @Sendable (CognitoChallengeName, [String: String]?, Error?) async throws -> [String: String]?,
+        maxChallengeResponseAttempts: Int = 4,
+        logger: Logger = AWSClient.loggingDisabled
+    ) async throws -> CognitoAuthenticateResponse.AuthenticatedResponse {
+        let authFlow: CognitoIdentityProvider.AuthFlowType = self.configuration.adminClient ? .adminUserPasswordAuth : .userPasswordAuth
+        var authParameters: [String: String] = [
+            "USERNAME": username,
+            "PASSWORD": password,
+        ]
+        authParameters["SECRET_HASH"] = secretHash(username: username)
+        return try await self.authRequest(
+            username: username,
+            authFlow: authFlow,
+            authParameters: authParameters,
+            clientMetadata: clientMetadata,
+            context: context,
+            respondToChallenge: respondToChallenge,
+            maxChallengeResponseAttempts: maxChallengeResponseAttempts,
+            logger: logger
+        )
+    }
+
+    /// Get new access and id tokens from a refresh token
+    ///
+    /// The username you provide here has to be the real username of the user not an alias like an email. You can get
+    /// the real username by authenticing an access token.
+    ///
+    /// This function combines the `initiateAuth`` and `respondToAuthChallenge` calls. If the initiateAuth returns
+    /// a challenge then the provided closure `respondToChallenge` is called. You should return a challenge response
+    /// from this call, or if you do not know how to respond then return `nil`.
+    ///
+    /// - parameters:
+    ///     - username: user name of user
+    ///     - refreshToken: refresh token required to generate new access and id tokens
+    ///     - clientMetadata: A map of custom key-value pairs that you can provide as input for AWS Lambda custom workflows
+    ///     - context: Context data for this request
+    ///     - respondToChallenge: Function which returns challenge response parameters given a challenge, or the last
+    ///         challenge and the error it generated
+    ///     - maxChallengeResponseAttempts: Maximum number of times we are allowed to respond to challenges
+    ///     - logger: logger
+    /// - returns:
+    ///     - An authentication result which should include an id and status token
+    public func refresh(
+        username: String,
+        refreshToken: String,
+        clientMetadata: [String: String]? = nil,
+        context: CognitoContextData? = nil,
+        respondToChallenge: @escaping @Sendable (CognitoChallengeName, [String: String]?, Error?) async throws -> [String: String]?,
+        maxChallengeResponseAttempts: Int = 4,
+        logger: Logger = AWSClient.loggingDisabled
+    ) async throws -> CognitoAuthenticateResponse.AuthenticatedResponse {
+        var authParameters: [String: String] = [
+            "USERNAME": username,
+            "REFRESH_TOKEN": refreshToken,
+        ]
+        authParameters["SECRET_HASH"] = secretHash(username: username)
+
+        return try await self.authRequest(
+            username: username,
+            authFlow: .refreshTokenAuth,
+            authParameters: authParameters,
+            clientMetadata: clientMetadata,
+            context: context,
+            respondToChallenge: respondToChallenge,
+            maxChallengeResponseAttempts: maxChallengeResponseAttempts,
+            logger: logger
+        )
     }
 
     /// Authenticate using a username and password.
@@ -249,7 +333,7 @@ public final class CognitoAuthenticatable {
     ///     - password: password for user
     ///     - clientMetadata: A map of custom key-value pairs that you can provide as input for AWS Lambda custom workflows
     ///     - context: Context data for this request
-    ///     - on: Eventloop request should run on.
+    ///     - logger: logger
     /// - returns:
     ///     An authentication response. This can contain a challenge which the user has to fulfill before being allowed to login, or authentication access, id and refresh keys
     public func authenticate(
@@ -257,36 +341,32 @@ public final class CognitoAuthenticatable {
         password: String,
         clientMetadata: [String: String]? = nil,
         context: CognitoContextData? = nil,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil
-    ) -> EventLoopFuture<CognitoAuthenticateResponse> {
-        let eventLoop = eventLoop ?? self.configuration.cognitoIDP.eventLoopGroup.next()
+        logger: Logger = AWSClient.loggingDisabled
+    ) async throws -> CognitoAuthenticateResponse {
         let authFlow: CognitoIdentityProvider.AuthFlowType = self.configuration.adminClient ? .adminUserPasswordAuth : .userPasswordAuth
         var authParameters: [String: String] = [
             "USERNAME": username,
             "PASSWORD": password,
         ]
         authParameters["SECRET_HASH"] = secretHash(username: username)
-        return self.initiateAuthRequest(
+        return try await self.initiateAuthRequest(
             authFlow: authFlow,
             authParameters: authParameters,
             clientMetadata: clientMetadata,
             context: context,
-            logger: logger,
-            on: eventLoop
+            logger: logger
         )
     }
 
     /// Get new access and id tokens from a refresh token
     ///
-    /// The username you provide here has to be the real username of the user not an alias like an email. You can get the real username
-    /// by authenticing an access token, or extracting it found the return value of `createUser`.
+    /// The username you provide here has to be the real username of the user not an alias like an email. You can get the real username by authenticing an access token
     /// - parameters:
     ///     - username: user name of user
     ///     - refreshToken: refresh token required to generate new access and id tokens
     ///     - clientMetadata: A map of custom key-value pairs that you can provide as input for AWS Lambda custom workflows
     ///     - context: Context data for this request
-    ///     - on: Eventloop request should run on.
+    ///     - logger: logger
     /// - returns:
     ///     - An authentication result which should include an id and status token
     public func refresh(
@@ -294,23 +374,20 @@ public final class CognitoAuthenticatable {
         refreshToken: String,
         clientMetadata: [String: String]? = nil,
         context: CognitoContextData? = nil,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil
-    ) -> EventLoopFuture<CognitoAuthenticateResponse> {
-        let eventLoop = eventLoop ?? self.configuration.cognitoIDP.eventLoopGroup.next()
+        logger: Logger = AWSClient.loggingDisabled
+    ) async throws -> CognitoAuthenticateResponse {
         var authParameters: [String: String] = [
             "USERNAME": username,
             "REFRESH_TOKEN": refreshToken,
         ]
         authParameters["SECRET_HASH"] = secretHash(username: username)
 
-        return self.initiateAuthRequest(
+        return try await self.initiateAuthRequest(
             authFlow: .refreshTokenAuth,
             authParameters: authParameters,
             clientMetadata: clientMetadata,
             context: context,
-            logger: logger,
-            on: eventLoop
+            logger: logger
         )
     }
 
@@ -327,7 +404,7 @@ public final class CognitoAuthenticatable {
     ///     - session: Session id returned with challenge
     ///     - clientMetadata: A map of custom key-value pairs that you can provide as input for AWS Lambda custom workflows
     ///     - context: Context data for this request
-    ///     - on: Eventloop request should run on.
+    ///     - logger: logger
     /// - returns:
     ///     An authentication response. This can contain another challenge which the user has to fulfill before being allowed to login, or authentication access, id and refresh keys
     public func respondToChallenge(
@@ -337,49 +414,46 @@ public final class CognitoAuthenticatable {
         session: String?,
         clientMetadata: [String: String]? = nil,
         context: CognitoContextData? = nil,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil
-    ) -> EventLoopFuture<CognitoAuthenticateResponse> {
-        let eventLoop = eventLoop ?? self.configuration.cognitoIDP.eventLoopGroup.next()
+        logger: Logger = AWSClient.loggingDisabled
+    ) async throws -> CognitoAuthenticateResponse {
         var challengeResponses = responses
         challengeResponses["USERNAME"] = username
         challengeResponses["SECRET_HASH"] = secretHash(username: username)
 
-        let respondFuture: EventLoopFuture<CognitoIdentityProvider.AdminRespondToAuthChallengeResponse>
-        // If authentication required that use admin version of RespondToAuthChallenge
-        if self.configuration.adminClient {
-            let context = context?.contextData
-            let request = CognitoIdentityProvider.AdminRespondToAuthChallengeRequest(
-                challengeName: name,
-                challengeResponses: challengeResponses,
-                clientId: self.configuration.clientId,
-                clientMetadata: clientMetadata,
-                contextData: context,
-                session: session,
-                userPoolId: self.configuration.userPoolId
-            )
-            respondFuture = self.configuration.cognitoIDP.adminRespondToAuthChallenge(request, logger: logger, on: eventLoop)
-        } else {
-            let request = CognitoIdentityProvider.RespondToAuthChallengeRequest(
-                challengeName: name,
-                challengeResponses: challengeResponses,
-                clientId: self.configuration.clientId,
-                clientMetadata: clientMetadata,
-                session: session
-            )
-            respondFuture = self.configuration.cognitoIDP.respondToAuthChallenge(
-                request,
-                logger: logger,
-                on: eventLoop
-            ).map { response in
-                return CognitoIdentityProvider.AdminRespondToAuthChallengeResponse(authenticationResult: response.authenticationResult, challengeName: response.challengeName, challengeParameters: response.challengeParameters, session: response.session)
+        do {
+            let response: CognitoIdentityProvider.AdminRespondToAuthChallengeResponse
+            // If authentication required that use admin version of RespondToAuthChallenge
+            if self.configuration.adminClient {
+                let context = context?.contextData
+                let request = CognitoIdentityProvider.AdminRespondToAuthChallengeRequest(
+                    challengeName: name,
+                    challengeResponses: challengeResponses,
+                    clientId: self.configuration.clientId,
+                    clientMetadata: clientMetadata,
+                    contextData: context,
+                    session: session,
+                    userPoolId: self.configuration.userPoolId
+                )
+                response = try await self.configuration.cognitoIDP.adminRespondToAuthChallenge(request, logger: logger)
+            } else {
+                let request = CognitoIdentityProvider.RespondToAuthChallengeRequest(
+                    challengeName: name,
+                    challengeResponses: challengeResponses,
+                    clientId: self.configuration.clientId,
+                    clientMetadata: clientMetadata,
+                    session: session
+                )
+                let challengeResponse = try await self.configuration.cognitoIDP.respondToAuthChallenge(
+                    request,
+                    logger: logger
+                )
+                response = CognitoIdentityProvider.AdminRespondToAuthChallengeResponse(
+                    authenticationResult: challengeResponse.authenticationResult,
+                    challengeName: challengeResponse.challengeName,
+                    challengeParameters: challengeResponse.challengeParameters,
+                    session: challengeResponse.session
+                )
             }
-        }
-
-        return respondFuture.flatMapErrorThrowing { error in
-            throw self.translateError(error: error)
-        }
-        .flatMapThrowing { response -> CognitoAuthenticateResponse in
             guard let authenticationResult = response.authenticationResult,
                   let accessToken = authenticationResult.accessToken,
                   let idToken = authenticationResult.idToken
@@ -395,15 +469,15 @@ public final class CognitoAuthenticatable {
                 }
                 throw SotoCognitoError.unexpectedResult(reason: "Authenticated response is not authentication tokens or challenge information") // should have either an authenticated result or a challenge
             }
-
             return .authenticated(.init(
                 accessToken: accessToken,
                 idToken: idToken,
                 refreshToken: authenticationResult.refreshToken,
                 expiresIn: authenticationResult.expiresIn != nil ? Date(timeIntervalSinceNow: TimeInterval(authenticationResult.expiresIn!)) : nil
             ))
+        } catch {
+            throw self.translateError(error: error)
         }
-        .hop(to: eventLoop)
     }
 
     /// respond to new password authentication challenge
@@ -413,7 +487,7 @@ public final class CognitoAuthenticatable {
     ///     - password: new password
     ///     - session: Session id returned with challenge
     ///     - context: Context data for this request
-    ///     - on: Eventloop request should run on.
+    ///     - logger: logger
     /// - returns:
     ///     An authentication response. This can contain another challenge which the user has to fulfill before being allowed to login, or authentication access, id and refresh keys
     public func respondToNewPasswordChallenge(
@@ -421,17 +495,15 @@ public final class CognitoAuthenticatable {
         password: String,
         session: String?,
         context: CognitoContextData? = nil,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil
-    ) -> EventLoopFuture<CognitoAuthenticateResponse> {
-        return self.respondToChallenge(
+        logger: Logger = AWSClient.loggingDisabled
+    ) async throws -> CognitoAuthenticateResponse {
+        return try await self.respondToChallenge(
             username: username,
             name: .newPasswordRequired,
             responses: ["NEW_PASSWORD": password],
             session: session,
             context: context,
-            logger: logger,
-            on: eventLoop
+            logger: logger
         )
     }
 
@@ -442,7 +514,7 @@ public final class CognitoAuthenticatable {
     ///     - password: new password
     ///     - session: Session id returned with challenge
     ///     - context: Context data for this request
-    ///     - on: Eventloop request should run on.
+    ///     - logger: logger
     /// - returns:
     ///     An authentication response. This can contain another challenge which the user has to fulfill before being allowed to login, or authentication access, id and refresh keys
     public func respondToMFAChallenge(
@@ -450,17 +522,15 @@ public final class CognitoAuthenticatable {
         token: String,
         session: String?,
         context: CognitoContextData? = nil,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil
-    ) -> EventLoopFuture<CognitoAuthenticateResponse> {
-        return self.respondToChallenge(
+        logger: Logger = AWSClient.loggingDisabled
+    ) async throws -> CognitoAuthenticateResponse {
+        return try await self.respondToChallenge(
             username: username,
             name: .smsMfa,
             responses: ["SMS_MFA_CODE": token],
             session: session,
             context: context,
-            logger: logger,
-            on: eventLoop
+            logger: logger
         )
     }
 
@@ -468,89 +538,77 @@ public final class CognitoAuthenticatable {
     /// - parameters:
     ///     - username: user name of user
     ///     - attributes: list of updated attributes for user
-    ///     - on: Event loop request is running on.
+    ///     - logger: logger
     public func updateUserAttributes(
         username: String,
         attributes: [String: String],
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil
-    ) -> EventLoopFuture<Void> {
-        let eventLoop = eventLoop ?? self.configuration.cognitoIDP.eventLoopGroup.next()
+        logger: Logger = AWSClient.loggingDisabled
+    ) async throws {
         guard self.configuration.adminClient == true else {
-            return eventLoop.makeFailedFuture(SotoCognitoError.unauthorized(reason: "\(#function) requires an admin client with authenticated AWSClient"))
+            throw SotoCognitoError.unauthorized(reason: "\(#function) requires an admin client with authenticated AWSClient")
         }
         let attributes = attributes.map { CognitoIdentityProvider.AttributeType(name: $0.key, value: $0.value) }
         let request = CognitoIdentityProvider.AdminUpdateUserAttributesRequest(userAttributes: attributes, username: username, userPoolId: self.configuration.userPoolId)
-        return self.configuration.cognitoIDP.adminUpdateUserAttributes(request, logger: logger, on: eventLoop)
-            .flatMapErrorThrowing { error in
-                throw self.translateError(error: error)
-            }
-            .map { _ in return }
+        do {
+            _ = try await self.configuration.cognitoIDP.adminUpdateUserAttributes(request, logger: logger)
+        } catch {
+            throw self.translateError(error: error)
+        }
     }
 
     /// update the users attributes, given an access token
     /// - parameters:
     ///     - accessToken: user name of user
     ///     - attributes: list of updated attributes for user
-    ///     - on: Event loop request is running on.
+    ///     - logger: logger
     public func updateUserAttributes(
         accessToken: String,
         attributes: [String: String],
         clientMetadata: [String: String]? = nil,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil
-    ) -> EventLoopFuture<Void> {
-        let eventLoop = eventLoop ?? self.configuration.cognitoIDP.eventLoopGroup.next()
+        logger: Logger = AWSClient.loggingDisabled
+    ) async throws {
         let attributes = attributes.map { CognitoIdentityProvider.AttributeType(name: $0.key, value: $0.value) }
         let request = CognitoIdentityProvider.UpdateUserAttributesRequest(accessToken: accessToken, clientMetadata: clientMetadata, userAttributes: attributes)
-        return self.configuration.cognitoIDP.updateUserAttributes(request, logger: logger, on: eventLoop)
-            .flatMapErrorThrowing { error in
-                throw self.translateError(error: error)
-            }
-            .map { _ in return }
+        do {
+            _ = try await self.configuration.cognitoIDP.updateUserAttributes(request, logger: logger)
+        } catch {
+            throw self.translateError(error: error)
+        }
     }
 
     /// Start forgot password flow. An email/sms will be sent to the user with a reset code
     /// - Parameters:
-    ///   - username: user name of user
-    ///   - clientMetadata: A map of custom key-value pairs that you can provide as input for AWS Lambda custom workflows
-    ///   - eventLoop: Event loop request is running on.
+    ///     - username: user name of user
+    ///     - clientMetadata: A map of custom key-value pairs that you can provide as input for AWS Lambda custom workflows
+    ///     - logger: logger
     public func forgotPassword(
         username: String,
         clientMetadata: [String: String]? = nil,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil
-    ) -> EventLoopFuture<Void> {
-        let eventLoop = eventLoop ?? self.configuration.cognitoIDP.eventLoopGroup.next()
+        logger: Logger = AWSClient.loggingDisabled
+    ) async throws {
         let request = CognitoIdentityProvider.ForgotPasswordRequest(
             clientId: self.configuration.clientId,
             clientMetadata: clientMetadata,
             secretHash: self.secretHash(username: username),
             username: username
         )
-        return self.configuration.cognitoIDP.forgotPassword(
-            request,
-            logger: logger,
-            on: eventLoop
-        ).map { _ in }
+        _ = try await self.configuration.cognitoIDP.forgotPassword(request, logger: logger)
     }
 
     /// Confirm new password in forgot password flow
     /// - Parameters:
-    ///   - username: user name of user
-    ///   - newPassword: new password
-    ///   - confirmationCode: confirmation code sent to user
-    ///   - clientMetadata: A map of custom key-value pairs that you can provide as input for AWS Lambda custom workflows
-    ///   - eventLoop: Event loop request is running on.
+    ///     - username: user name of user
+    ///     - newPassword: new password
+    ///     - confirmationCode: confirmation code sent to user
+    ///     - clientMetadata: A map of custom key-value pairs that you can provide as input for AWS Lambda custom workflows
+    ///     - logger: logger
     public func confirmForgotPassword(
         username: String,
         newPassword: String,
         confirmationCode: String,
         clientMetadata: [String: String]? = nil,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil
-    ) -> EventLoopFuture<Void> {
-        let eventLoop = eventLoop ?? self.configuration.cognitoIDP.eventLoopGroup.next()
+        logger: Logger = AWSClient.loggingDisabled
+    ) async throws {
         let request = CognitoIdentityProvider.ConfirmForgotPasswordRequest(
             clientId: self.configuration.clientId,
             clientMetadata: clientMetadata,
@@ -559,69 +617,110 @@ public final class CognitoAuthenticatable {
             secretHash: self.secretHash(username: username),
             username: username
         )
-        return self.configuration.cognitoIDP.confirmForgotPassword(
-            request,
-            logger: logger,
-            on: eventLoop
-        ).map { _ in }
+        _ = try await self.configuration.cognitoIDP.confirmForgotPassword(request, logger: logger)
     }
 }
 
-public extension CognitoAuthenticatable {
-    /// Return secret hash to include in cognito identity provider calls. This is an internal function and shouldn't need to be called
-    func secretHash(username: String) -> String? {
-        guard let clientSecret = configuration.clientSecret else { return nil }
-        let message = username + self.configuration.clientId
-        let messageHmac: HashedAuthenticationCode<SHA256> = HMAC.authenticationCode(for: Data(message.utf8), using: SymmetricKey(data: Data(clientSecret.utf8)))
-        return Data(messageHmac).base64EncodedString()
-    }
-
-    /// Return an authorization request future. This is an internal function and shouldn't need to be called
-    func initiateAuthRequest(
+extension CognitoAuthenticatable {
+    public func authRequest(
+        username: String,
         authFlow: CognitoIdentityProvider.AuthFlowType,
         authParameters: [String: String],
         clientMetadata: [String: String]? = nil,
         context: CognitoContextData?,
-        logger: Logger,
-        on eventLoop: EventLoop
-    ) -> EventLoopFuture<CognitoAuthenticateResponse> {
-        let initAuthFuture: EventLoopFuture<CognitoIdentityProvider.AdminInitiateAuthResponse>
-        if self.configuration.adminClient {
-            let context = context?.contextData
-            let request = CognitoIdentityProvider.AdminInitiateAuthRequest(
-                authFlow: authFlow,
-                authParameters: authParameters,
-                clientId: self.configuration.clientId,
-                clientMetadata: clientMetadata,
-                contextData: context,
-                userPoolId: self.configuration.userPoolId
-            )
-            initAuthFuture = self.configuration.cognitoIDP.adminInitiateAuth(request, logger: logger, on: eventLoop)
-        } else {
-            let request = CognitoIdentityProvider.InitiateAuthRequest(
-                authFlow: authFlow,
-                authParameters: authParameters,
-                clientId: self.configuration.clientId,
-                clientMetadata: clientMetadata
-            )
-            initAuthFuture = self.configuration.cognitoIDP.initiateAuth(request, logger: logger, on: eventLoop).map { response in
-                return CognitoIdentityProvider.AdminInitiateAuthResponse(authenticationResult: response.authenticationResult, challengeName: response.challengeName, challengeParameters: response.challengeParameters, session: response.session)
+        respondToChallenge: @escaping @Sendable (CognitoChallengeName, [String: String]?, Error?) async throws -> [String: String]? = { _, _, _ in nil },
+        maxChallengeResponseAttempts: Int = 4,
+        logger: Logger
+    ) async throws -> CognitoAuthenticateResponse.AuthenticatedResponse {
+        var authResponse = try await self.initiateAuthRequest(authFlow: authFlow, authParameters: authParameters, clientMetadata: clientMetadata, context: context, logger: logger)
+        var prevError: CognitoIdentityProviderErrorType? = nil
+        var challengeResponseAttempts = 0
+        while true {
+            switch authResponse {
+            case .authenticated(let authenticated):
+                return authenticated
+            case .challenged(let challenge):
+                guard let challengeName = challenge.name else {
+                    throw SotoCognitoError.unexpectedResult(reason: "Challenge response does not have valid challenge name")
+                }
+                guard challengeResponseAttempts < maxChallengeResponseAttempts else {
+                    if let error = prevError {
+                        throw error
+                    } else {
+                        throw SotoCognitoError.unauthorized(reason: "Failed to produce valid response to challenge \(challengeName)")
+                    }
+                }
+                challengeResponseAttempts += 1
+                let parameters = try await respondToChallenge(challengeName, challenge.parameters, prevError)
+                guard let parameters = parameters else {
+                    throw SotoCognitoError.unauthorized(reason: "Did not respond to challenge \(challengeName)")
+                }
+                do {
+                    authResponse = try await self.respondToChallenge(
+                        username: username,
+                        name: challengeName,
+                        responses: parameters,
+                        session: challenge.session,
+                        clientMetadata: clientMetadata,
+                        context: context,
+                        logger: logger
+                    )
+                } catch let error as CognitoIdentityProviderErrorType {
+                    prevError = error
+                }
             }
         }
-        return initAuthFuture.flatMapErrorThrowing { error in
-            throw self.translateError(error: error)
-        }
-        .flatMapThrowing { response -> CognitoAuthenticateResponse in
-            guard let authenticationResult = response.authenticationResult,
+    }
+
+    /// Return an authorization request future. This is an internal function and shouldn't need to be called
+    public func initiateAuthRequest(
+        authFlow: CognitoIdentityProvider.AuthFlowType,
+        authParameters: [String: String],
+        clientMetadata: [String: String]? = nil,
+        context: CognitoContextData?,
+        logger: Logger
+    ) async throws -> CognitoAuthenticateResponse {
+        do {
+            let initAuthResponse: CognitoIdentityProvider.AdminInitiateAuthResponse
+            if self.configuration.adminClient {
+                let context = context?.contextData
+                let request = CognitoIdentityProvider.AdminInitiateAuthRequest(
+                    authFlow: authFlow,
+                    authParameters: authParameters,
+                    clientId: self.configuration.clientId,
+                    clientMetadata: clientMetadata,
+                    contextData: context,
+                    userPoolId: self.configuration.userPoolId
+                )
+                initAuthResponse = try await self.configuration.cognitoIDP.adminInitiateAuth(request, logger: logger)
+            } else {
+                let request = CognitoIdentityProvider.InitiateAuthRequest(
+                    authFlow: authFlow,
+                    authParameters: authParameters,
+                    clientId: self.configuration.clientId,
+                    clientMetadata: clientMetadata
+                )
+                let response = try await self.configuration.cognitoIDP.initiateAuth(
+                    request,
+                    logger: logger
+                )
+                initAuthResponse = CognitoIdentityProvider.AdminInitiateAuthResponse(
+                    authenticationResult: response.authenticationResult,
+                    challengeName: response.challengeName,
+                    challengeParameters: response.challengeParameters,
+                    session: response.session
+                )
+            }
+            guard let authenticationResult = initAuthResponse.authenticationResult,
                   let accessToken = authenticationResult.accessToken,
                   let idToken = authenticationResult.idToken
             else {
                 // if there was no tokens returned, return challenge if it exists
-                if let challengeName = response.challengeName {
+                if let challengeName = initAuthResponse.challengeName {
                     return .challenged(.init(
                         name: challengeName,
-                        parameters: response.challengeParameters,
-                        session: response.session
+                        parameters: initAuthResponse.challengeParameters,
+                        session: initAuthResponse.session
                     ))
                 }
                 throw SotoCognitoError.unexpectedResult(reason: "Authenticated response does not authentication tokens or challenge information") // should have either an authenticated result or a challenge
@@ -633,12 +732,23 @@ public extension CognitoAuthenticatable {
                 refreshToken: authenticationResult.refreshToken,
                 expiresIn: authenticationResult.expiresIn != nil ? Date(timeIntervalSinceNow: TimeInterval(authenticationResult.expiresIn!)) : nil
             ))
+        } catch {
+            throw self.translateError(error: error)
         }
-        .hop(to: eventLoop)
+    }
+}
+
+extension CognitoAuthenticatable {
+    /// Return secret hash to include in cognito identity provider calls. This is an internal function and shouldn't need to be called
+    public func secretHash(username: String) -> String? {
+        guard let clientSecret = configuration.clientSecret else { return nil }
+        let message = username + self.configuration.clientId
+        let messageHmac: HashedAuthenticationCode<SHA256> = HMAC.authenticationCode(for: Data(message.utf8), using: SymmetricKey(data: Data(clientSecret.utf8)))
+        return Data(messageHmac).base64EncodedString()
     }
 
     /// Translate error from one thrown by Soto. This is an internal function and shouldn't need to be called
-    func translateError(error: Error) -> Error {
+    public func translateError(error: Error) -> Error {
         switch error {
         case let error as CognitoIdentityProviderErrorType where error == .notAuthorizedException:
             return SotoCognitoError.unauthorized(reason: error.message)
