@@ -42,7 +42,7 @@ enum AWSCognitoTestError: Error {
     case missingToken
 }
 
-/// eventLoop with context object used for tests
+/// context object used for tests
 struct AWSCognitoContextTest: CognitoContextData {
     var contextData: CognitoIdentityProvider.ContextDataType? {
         return CognitoIdentityProvider.ContextDataType(httpHeaders: [], ipAddress: "127.0.0.1", serverName: "127.0.0.1", serverPath: "/")

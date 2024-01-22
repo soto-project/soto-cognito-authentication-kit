@@ -21,6 +21,7 @@ import SotoCognitoAuthenticationKit
 import SotoCognitoIdentity
 import SotoCognitoIdentityProvider
 import SotoCore
+@_spi(SotoInternal) import SotoSignerV4
 import XCTest
 
 public func XCTRunAsyncAndBlock(_ closure: @Sendable @escaping () async throws -> Void) {
@@ -51,7 +52,7 @@ enum AWSCognitoTestError: Error {
     case missingToken
 }
 
-/// eventLoop with context object used for tests
+/// context object used for tests
 public class AWSCognitoContextTest: CognitoContextData {
     public var contextData: CognitoIdentityProvider.ContextDataType? {
         return CognitoIdentityProvider.ContextDataType(httpHeaders: [], ipAddress: "127.0.0.1", serverName: "127.0.0.1", serverPath: "/")

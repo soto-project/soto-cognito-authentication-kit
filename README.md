@@ -19,7 +19,6 @@ Table of Contents
 - [Using with Cognito Identity Pools](#using-with-cognito-identity-pools)
     - [Configuration](#configuration-1)
     - [Accessing AWS credentials](#accessing-aws-credentials)
-- [Using with unauthenticated client](#using-with-unauthenticated-client)
 - [Secure Remote Password](#secure-remote-password)
 - [Credential Provider](#credential-provider)
 - [Reference](#reference)
@@ -57,9 +56,9 @@ Assuming we have the `CognitoAuthenticatable` instance from above the following 
 ```
 let username = "johndoe"
 let attributes: [String: String] = ["email": "user@email.com", "name": "John Doe", "gender": "male"]
-return authenticatable.createUser(username: username, attributes: attributes, on: request.eventLoop)
+return authenticatable.createUser(username: username, attributes: attributes)
 ```
-The attributes you provide should match the attributes you selected when creating the user pool in the AWS Cognito console. Once you've created a user an email is sent to them detailing their username and randomly generated password. The `on:` parameter is an eventLoop to do the work on.
+The attributes you provide should match the attributes you selected when creating the user pool in the AWS Cognito console. Once you've created a user an email is sent to them detailing their username and randomly generated password.
 
 As an alternative you can use the `signUp` function which takes a `username` and `password`. This will send a confirmation email to the user which includes a confirmation code. You then call `confirmSignUp` with this confirmation code. For this path to be available you need to have the 'Allow users to sign themselves up' flag set in your user pool. 
 
@@ -67,18 +66,16 @@ As an alternative you can use the `signUp` function which takes a `username` and
 
 Once your user is created and confirmed in the signUp case. The following will generate JWT authentication tokens from a username and password. This function requires a `CognitoIdentityProvider` setup with AWS credentials, unless you pass the `requireAuthenticatedClient` parameter set to `false`.
 ```
-let response = authenticatable.authenticate(
+let response = try await authenticatable.authenticate(
     username: username, 
     password: password,
-    context: request,
-    on: request.eventLoop
-).flatMap { response in
-    if case .authenticated(let authenticated) = response {
-        let accessToken = authenticated.accessToken
-        let idToken = authenticated.idToken
-        let refreshToken = authenticated.refreshToken
-    ...
-}
+    context: request
+)
+if case .authenticated(let authenticated) = response {
+    let accessToken = authenticated.accessToken
+    let idToken = authenticated.idToken
+    let refreshToken = authenticated.refreshToken
+...
 ```
 The access token is used just to indicate a user has been granted access. It contains verification information, the username and a subject uuid which can be used to identify the user if you don't want to use the username. The token is valid for 60 minutes. The idToken contains claims about the identity of the user. It should contain all the attributes attached to the user. Again this token is only valid for 60 minutes. If you receive a `challenged` case then you have a login challenge and must respond to it before receiving authentication tokens. See [below](#responding-to-authentication-challenges). 
 
@@ -86,12 +83,10 @@ The access token is used just to indicate a user has been granted access. It con
 
 The following will verify whether a token gives access.
 ```
-let response = authenticatable.authenticate(accessToken: token, on: request.eventLoop)
-    .flatMap { response in
-        let username = response.username
-        let subject = response.subject
-        ...
-}
+let response = try await authenticatable.authenticate(accessToken: token)
+let username = response.username
+let subject = response.subject
+...
 ```
 If the access token has expired, was not issued by the user pool or not created for the app client this call will return a failed `Future` with a unauthorized error.
 
@@ -112,7 +107,7 @@ struct IdResponse: Codable {
         case gender = "gender"
     }
 }
-let response = authenticatable.authenticate(idToken: token, on: req.eventLoop)
+let response = authenticatable.authenticate(idToken: token)
     .map { (response: IdResponse)->IdResponse in
         let email = response.email
         let username = response.username
@@ -128,16 +123,14 @@ NB The username tag in an ID Token is "cognito:username"
 
 To avoid having to ask the user for their username and password every 60 minutes a refresh token is also provided. You can use this to generate new id and access tokens whenever they have expired or are about to expire. The refresh token is valid for 30 days. Although you can edit the length of this in the Cognito console. 
 ```
-let response = authenticatable.refresh(
+let response = try await authenticatable.refresh(
     username: username, 
     refreshToken: refreshToken, 
-    context: request,
-    on: request.eventLoop
-).flatMap { response in
-    let accessToken = response.authenticated?.accessToken
-    let idToken = response.authenticated?.idToken
-    ...
-}
+    context: request
+)
+let accessToken = response.authenticated?.accessToken
+let idToken = response.authenticated?.idToken
+...
 ```
 
 ### Responding to authentication challenges
@@ -146,19 +139,17 @@ Sometimes when you try to authenticate a username and password or a refresh toke
 ```
 let challengeName: CognitoChallengeName = .newPasswordRequired 
 let challengeResponse: [String: String] = ["NEW_PASSWORD":"MyNewPassword1"]
-let response = authenticatable.respondToChallenge(
+let response = try await authenticatable.respondToChallenge(
     username: username, 
     name: challengeName, 
     responses: challengeResponse, 
     session: session, 
-    context: request,
-    on: request.eventLoop
-).flatMap { response in
-    let accessToken = response.authenticated?.accessToken
-    let idToken = response.authenticated?.idToken
-    let refreshToken = response.authenticated?.refreshToken
-    ...
-}
+    context: request
+)
+let accessToken = response.authenticated?.accessToken
+let idToken = response.authenticated?.idToken
+let refreshToken = response.authenticated?.refreshToken
+...
 ```
 The `name` parameter is an enum containing all challenges. The `responses` parameter is a dictionary of inputs to the challenge. The `session` parameter was included in the challenge returned to you by the authentication request. If the challenge is successful you will get `response.authenticated` as a response. If another challenge is required then you will get details of that in `response.challenged`. There are custom versions of the `respondToChallenge` function for new password: `respondToNewPasswordChallenge` and for Multi Factor Authentication: `respondToMFAChallenge`.
 
@@ -192,10 +183,8 @@ The `identityPoolId` you can get from "Edit Identity Pool" section of the AWS co
 
 There are two steps to accessing AWS credentials. First you need to get an identity id and then with that identity id you can get your AWS credentials. This can be done with the following.
 ```
-return identifiable.getIdentityId(idToken: idToken, on: req.eventLoop)
-    .flatMap { identity in
-        return identifiable.getCredentialForIdentity(identityId: identity, idToken: token, on: req.eventLoop)
-}
+let identity = identifiable.getIdentityId(idToken: idToken)
+return identifiable.getCredentialForIdentity(identityId: identity, idToken: token)
 ```
 In the situation you are using Cognito user pools the `idToken` is the `idToken` returned when you authenticate a user.
 
@@ -224,18 +213,17 @@ let credentialProvider: CredentialProviderFactory = .cognitoUserPool(
     clientSecret: clientSecret,
     identityPoolId: identityPoolId,
     region: region,
-    respondToChallenge: { challenge, parameters, error, eventLoop in
+    respondToChallenge: { challenge, parameters, error in
         // Respond to any challenges returned by userpool authentication
         // function parameters are
         // challenge: Challange type
         // parameters: Challenge parameters
         // error: Error returned from a previous respondToChallenge response
-        // eventLoop: EventLoop to run everything on
         switch challenge {
         case .newPasswordRequired:
-            return respondToNewPassword()
+            return try await respondToNewPassword()
         default:
-            return eventLoop.makeSucceededFuture(nil)
+            return nil
         }
     }
 )
