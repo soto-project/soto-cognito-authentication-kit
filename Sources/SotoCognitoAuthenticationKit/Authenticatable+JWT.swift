@@ -18,7 +18,7 @@ import JWTKit
 import NIO
 
 /// Struct returned when authenticating an access token
-public struct CognitoAccessToken: Codable {
+public struct CognitoAccessToken: Codable, Sendable {
     public let username: String
     public let subject: UUID
     public let expirationTime: Date
