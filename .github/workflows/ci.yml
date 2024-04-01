@@ -7,12 +7,6 @@ on:
     paths:
     - '**.swift'
   pull_request:
-    branches:
-    - main
-    - 5.x.x
-    paths:
-    - '**.swift'
-    - '.github/workflows/ci.yml'
   workflow_dispatch:
 
 env:
@@ -21,7 +15,7 @@ env:
 
 jobs:
   macOS:
-    runs-on: macOS-latest
+    runs-on: macOS-13
     steps:
     - name: Checkout
       uses: actions/checkout@v3
@@ -42,9 +36,9 @@ jobs:
     strategy:
       matrix:
         image:
-          - swift:5.7
           - swift:5.8
           - swift:5.9
+          - swift:5.10
     runs-on: ubuntu-latest
     container:
       image: ${{ matrix.image }}
