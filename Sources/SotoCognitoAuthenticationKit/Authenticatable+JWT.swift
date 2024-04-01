@@ -91,18 +91,17 @@ extension CognitoAuthenticatable {
         }
 
         logger.debug("Load jwks.json")
-        let jwtSignersURL = "https://cognito-idp.\(configuration.region.rawValue).amazonaws.com/\(configuration.userPoolId)/.well-known/jwks.json"
+        let jwtSignersURL = URL(string: "https://cognito-idp.\(configuration.region.rawValue).amazonaws.com/\(configuration.userPoolId)/.well-known/jwks.json")!
         let httpClient = configuration.cognitoIDP.client.httpClient
-        let response = try await httpClient.get(
-            url: jwtSignersURL,
-            deadline: .now() + .seconds(20),
+        let request = AWSHTTPRequest(url: jwtSignersURL, method: .GET, headers: [:], body: .init())
+        let response = try await httpClient.execute(
+            request: request,
+            timeout: .seconds(20),
             logger: logger
-        ).get()
+        )
         let signers = JWTSigners()
-        guard let body = response.body else { return JWTSigners() }
-        if let data = body.getString(at: body.readerIndex, length: body.readableBytes) {
-            try signers.use(jwksJSON: data)
-        }
+        let data = try await response.body.collect(upTo: 1_000_000)
+        try signers.use(jwksJSON: String(buffer: data))
         self.jwtSigners = signers
         return signers
     }
