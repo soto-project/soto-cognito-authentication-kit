@@ -16,8 +16,8 @@ import BigNum
 import Crypto
 import Foundation
 
-/// Class to generate SRP password authentication key
-class SRP<H: HashFunction> {
+/// Generates SRP password authentication key
+struct SRP<H: HashFunction>: Sendable {
     let N: BigNum
     let g: BigNum
     let k: BigNum

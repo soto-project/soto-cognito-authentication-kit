@@ -16,7 +16,7 @@ import SotoCognitoIdentity
 import SotoCognitoIdentityProvider
 
 /// Cognito authentication method used by `CredentialProviderFactory.cognitoUserPool`.
-public struct CognitoAuthenticationMethod {
+public struct CognitoAuthenticationMethod: Sendable {
     public struct Context: Sendable {
         public let authenticatable: CognitoAuthenticatable
         public let userName: String
