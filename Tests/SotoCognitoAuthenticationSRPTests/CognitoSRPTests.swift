@@ -60,7 +60,7 @@ public class AWSCognitoContextTest: CognitoContextData {
 }
 
 final class CognitoSRPTests: XCTestCase {
-    static let awsClient = AWSClient(middleware: AWSLoggingMiddleware(), httpClientProvider: .createNew)
+    static let awsClient = AWSClient(middleware: AWSLoggingMiddleware())
     static var region: Region = .useast1
     static let cognitoIDP = CognitoIdentityProvider(client: awsClient, region: .useast1)
     static var cognitoIdentity: CognitoIdentity! = CognitoIdentity(client: awsClient, region: .useast1)
@@ -201,7 +201,7 @@ final class CognitoSRPTests: XCTestCase {
     func testAuthenticateSRP() async throws {
         XCTAssertNil(Self.setUpFailure)
 
-        let awsClient = AWSClient(credentialProvider: .empty, middleware: AWSLoggingMiddleware(), httpClientProvider: .createNew)
+        let awsClient = AWSClient(credentialProvider: .empty, middleware: AWSLoggingMiddleware())
         defer { XCTAssertNoThrow(try awsClient.syncShutdown()) }
         let cognitoIDPUnauthenticated = CognitoIdentityProvider(client: awsClient, region: .useast1)
         let configuration = CognitoConfiguration(
@@ -309,7 +309,7 @@ final class CognitoSRPTests: XCTestCase {
                     }
                 }
             )
-            let client = AWSClient(credentialProvider: credentialProvider, httpClientProvider: .createNew)
+            let client = AWSClient(credentialProvider: credentialProvider)
             do {
                 _ = try await client.credentialProvider.getCredential(logger: AWSClient.loggingDisabled)
             } catch let error as CognitoIdentityErrorType where error == .invalidIdentityPoolConfigurationException {

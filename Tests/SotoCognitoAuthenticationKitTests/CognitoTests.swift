@@ -72,9 +72,9 @@ final class CognitoTests: XCTestCase {
 
     override class func setUp() {
         if ProcessInfo.processInfo.environment["CI"] == "true" {
-            self.awsClient = AWSClient(httpClientProvider: .createNew)
+            self.awsClient = AWSClient()
         } else {
-            self.awsClient = AWSClient(middleware: AWSLoggingMiddleware(), httpClientProvider: .createNew)
+            self.awsClient = AWSClient(middleware: AWSLoggingMiddleware())
         }
 
         self.cognitoIDP = CognitoIdentityProvider(client: self.awsClient, region: self.region)
@@ -334,7 +334,7 @@ final class CognitoTests: XCTestCase {
     func testUnauthenticatdClient() async throws {
         XCTAssertNil(Self.setUpFailure)
         try await self.test(#function) { username, password in
-            let awsClient = AWSClient(credentialProvider: .empty, httpClientProvider: .shared(Self.awsClient.httpClient))
+            let awsClient = AWSClient(credentialProvider: .empty, httpClient: Self.awsClient.httpClient)
             defer { XCTAssertNoThrow(try awsClient.syncShutdown()) }
             let cognitoIdentityProvider = CognitoIdentityProvider(client: awsClient, region: Self.cognitoIDP.region)
             let configuration = CognitoConfiguration(
@@ -358,7 +358,7 @@ final class CognitoTests: XCTestCase {
     func testRequireAuthenticatedClient() async throws {
         XCTAssertNil(Self.setUpFailure)
         try await self.test(#function) { username, password in
-            let awsClient = AWSClient(credentialProvider: .empty, httpClientProvider: .shared(Self.awsClient.httpClient))
+            let awsClient = AWSClient(credentialProvider: .empty, httpClient: Self.awsClient.httpClient)
             defer { XCTAssertNoThrow(try awsClient.syncShutdown()) }
             let cognitoIdentityProvider = CognitoIdentityProvider(client: awsClient, region: Self.cognitoIDP.region)
             let configuration = CognitoConfiguration(
@@ -432,7 +432,7 @@ final class CognitoTests: XCTestCase {
                     }
                 }
             )
-            let client = AWSClient(credentialProvider: credentialProvider, httpClientProvider: .createNew)
+            let client = AWSClient(credentialProvider: credentialProvider)
             do {
                 _ = try await client.credentialProvider.getCredential(logger: AWSClient.loggingDisabled)
             } catch let error as CognitoIdentityErrorType where error == .invalidIdentityPoolConfigurationException {
