@@ -13,7 +13,7 @@
 ##
 ##===----------------------------------------------------------------------===##
 
-SWIFT_VERSION=5.1
+SWIFT_FORMAT_VERSION=0.51.15 
 
 set -eu
 here="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -22,14 +22,14 @@ which swiftformat > /dev/null 2>&1 || (echo "swiftformat not installed. You can 
 
 function replace_acceptable_years() {
     # this needs to replace all acceptable forms with 'YEARS'
-    sed -e 's/20[12][78901]-20[12][8901]/YEARS/' -e 's/20[12][8901]/YEARS/' -e '/^#!/ d'
+    sed -e 's/20[12][7890123456]-20[12][8901234567]/YEARS/' -e 's/20[12][8901234567]/YEARS/' -e '/^#!/ d'
 }
 
 printf "=> Checking format... "
 FIRST_OUT="$(git status --porcelain)"
 if [[ -n "${CI-""}" ]]; then
-  printf "(using v$(mint run NickLockwood/SwiftFormat@0.47.13 --version)) "
-  mint run NickLockwood/SwiftFormat@0.47.13 . > /dev/null 2>&1
+  printf "(using v$(mint run NickLockwood/SwiftFormat@$SWIFT_FORMAT_VERSION --version)) "
+  mint run NickLockwood/SwiftFormat@$SWIFT_FORMAT_VERSION . > /dev/null 2>&1
 else
   printf "(using v$(swiftformat --version)) "
   swiftformat . > /dev/null 2>&1

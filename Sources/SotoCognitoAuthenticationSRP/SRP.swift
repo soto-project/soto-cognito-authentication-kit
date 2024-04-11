@@ -16,8 +16,8 @@ import BigNum
 import Crypto
 import Foundation
 
-/// Class to generate SRP password authentication key
-class SRP<H: HashFunction> {
+/// Generates SRP password authentication key
+struct SRP<H: HashFunction>: Sendable {
     let N: BigNum
     let g: BigNum
     let k: BigNum
@@ -48,7 +48,7 @@ class SRP<H: HashFunction> {
         self.k = BigNum(bytes: [UInt8].init(H.hash(data: Self.pad(self.N.bytes) + self.g.bytes)))
         self.infoKey = [UInt8]("Caldera Derived Key".utf8)
 
-        if let a = a {
+        if let a {
             self.a = a
             self.A = self.g.power(a, modulus: self.N)
         } else {

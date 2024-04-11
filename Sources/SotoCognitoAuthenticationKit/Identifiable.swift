@@ -15,7 +15,7 @@
 import NIO
 import SotoCognitoIdentity
 
-public final class CognitoIdentifiable: Sendable {
+public struct CognitoIdentifiable: Sendable {
     // MARK: Member variables
 
     /// Configuration
@@ -34,23 +34,22 @@ public final class CognitoIdentifiable: Sendable {
     ///     - idToken: Id token returned from authenticating a user
     ///     - on: Event loop request is running on.
     /// - returns:
-    ///     Event Loop Future returning the identity id as a String
+    ///     Identity id
     public func getIdentityId(
         idToken: String,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil
-    ) -> EventLoopFuture<String> {
-        let eventLoop = eventLoop ?? self.configuration.cognitoIdentity.eventLoopGroup.next()
-        let request = CognitoIdentity.GetIdInput(identityPoolId: self.configuration.identityPoolId, logins: [self.configuration.identityProvider: idToken])
-        return self.configuration.cognitoIdentity.getId(request, logger: logger, on: eventLoop)
-            .flatMapErrorThrowing { error in
-                throw self.translateError(error: error)
-            }
-            .flatMapThrowing { response in
-                guard let identityId = response.identityId else { throw SotoCognitoError.unexpectedResult(reason: "AWS did not return an identity id") }
-                return identityId
-            }
-            .hop(to: eventLoop)
+        logger: Logger = AWSClient.loggingDisabled
+    ) async throws -> String {
+        do {
+            let request = CognitoIdentity.GetIdInput(
+                identityPoolId: self.configuration.identityPoolId,
+                logins: [self.configuration.identityProvider: idToken]
+            )
+            let response = try await self.configuration.cognitoIdentity.getId(request, logger: logger)
+            guard let identityId = response.identityId else { throw SotoCognitoError.unexpectedResult(reason: "AWS did not return an identity id") }
+            return identityId
+        } catch {
+            throw self.translateError(error: error)
+        }
     }
 
     /// Get AWS credentials from an identity id
@@ -59,24 +58,26 @@ public final class CognitoIdentifiable: Sendable {
     ///     - idToken: Id token returned from authenticating a user
     ///     - on: Event loop request is running on.
     /// - returns:
-    ///     Event loop future returning AWS credentials
+    ///     AWS credentials
     public func getCredentialForIdentity(
         identityId: String,
         idToken: String,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil
-    ) -> EventLoopFuture<CognitoIdentity.Credentials> {
-        let eventLoop = eventLoop ?? self.configuration.cognitoIdentity.eventLoopGroup.next()
-        let request = CognitoIdentity.GetCredentialsForIdentityInput(identityId: identityId, logins: [self.configuration.identityProvider: idToken])
-        return self.configuration.cognitoIdentity.getCredentialsForIdentity(request, logger: logger, on: eventLoop)
-            .flatMapErrorThrowing { error in
-                throw self.translateError(error: error)
-            }
-            .flatMapThrowing { response in
-                guard let credentials = response.credentials else { throw SotoCognitoError.unexpectedResult(reason: "AWS did not supply any credentials") }
-                return credentials
-            }
-            .hop(to: eventLoop)
+        logger: Logger = AWSClient.loggingDisabled
+    ) async throws -> CognitoIdentity.Credentials {
+        do {
+            let request = CognitoIdentity.GetCredentialsForIdentityInput(
+                identityId: identityId,
+                logins: [self.configuration.identityProvider: idToken]
+            )
+            let response = try await self.configuration.cognitoIdentity.getCredentialsForIdentity(
+                request,
+                logger: logger
+            )
+            guard let credentials = response.credentials else { throw SotoCognitoError.unexpectedResult(reason: "AWS did not supply any credentials") }
+            return credentials
+        } catch {
+            throw self.translateError(error: error)
+        }
     }
 }
 
