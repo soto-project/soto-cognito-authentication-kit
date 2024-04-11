@@ -137,7 +137,7 @@ extension CognitoAuthenticatable {
     ///   - srp: SRP values used to initiate process
     /// - Returns: Response to SRP challenge
     func respondToSRPChallenge(_ parameters: [String: String]?, username: String, password: String, srp: SRP<SHA256>) throws -> [String: String] {
-        guard let parameters = parameters,
+        guard let parameters,
               let saltHex = parameters["SALT"],
               let salt = BigNum(hex: saltHex)?.bytes,
               let secretBlockBase64 = parameters["SECRET_BLOCK"],

@@ -48,7 +48,7 @@ struct SRP<H: HashFunction>: Sendable {
         self.k = BigNum(bytes: [UInt8].init(H.hash(data: Self.pad(self.N.bytes) + self.g.bytes)))
         self.infoKey = [UInt8]("Caldera Derived Key".utf8)
 
-        if let a = a {
+        if let a {
             self.a = a
             self.A = self.g.power(a, modulus: self.N)
         } else {

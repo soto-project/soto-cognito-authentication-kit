@@ -652,7 +652,7 @@ extension CognitoAuthenticatable {
                 }
                 challengeResponseAttempts += 1
                 let parameters = try await respondToChallenge(challengeName, challenge.parameters, prevError)
-                guard let parameters = parameters else {
+                guard let parameters else {
                     throw SotoCognitoError.unauthorized(reason: "Did not respond to challenge \(challengeName)")
                 }
                 do {
