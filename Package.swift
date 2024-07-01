@@ -1,4 +1,4 @@
-// swift-tools-version:5.8
+// swift-tools-version:5.10
 //===----------------------------------------------------------------------===//
 //
 // This source file is part of the Soto for AWS open source project
@@ -24,9 +24,9 @@ let swiftSettings: [SwiftSetting] = [
 let package = Package(
     name: "soto-cognito-authentication-kit",
     platforms: [
-        .macOS(.v10_15),
-        .iOS(.v13),
-        .tvOS(.v13),
+        .macOS(.v13),
+        .iOS(.v16),
+        .tvOS(.v16),
     ],
     products: [
         .library(name: "SotoCognitoAuthenticationKit", targets: ["SotoCognitoAuthenticationKit"]),
@@ -34,9 +34,9 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-crypto.git", "1.0.0"..<"4.0.0"),
-        .package(url: "https://github.com/soto-project/soto.git", from: "7.0.0-beta"),
+        .package(url: "https://github.com/soto-project/soto.git", from: "7.0.0-rc.1"),
         .package(url: "https://github.com/swift-server/async-http-client.git", from: "1.10.0"),
-        .package(url: "https://github.com/vapor/jwt-kit.git", .upToNextMajor(from: "4.2.6")),
+        .package(url: "https://github.com/vapor/jwt-kit.git", from: "5.0.0-beta.4"),
         // for SRP
         .package(url: "https://github.com/adam-fowler/big-num.git", .upToNextMajor(from: "2.0.0")),
     ],

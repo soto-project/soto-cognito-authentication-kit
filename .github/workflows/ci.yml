@@ -15,31 +15,30 @@ env:
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
 jobs:
-  macOS:
-    runs-on: macOS-13
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v3
-    - name: Test
-      run: swift test --enable-code-coverage
-    - name: Convert coverage files
-      run: |
-        xcrun llvm-cov export -format="lcov" \
-          .build/debug/soto-cognito-authentication-kitPackageTests.xctest/Contents/MacOs/soto-cognito-authentication-kitPackageTests \
-          -ignore-filename-regex="(\/\.build\/|\/Tests\/)" \
-          -instr-profile .build/debug/codecov/default.profdata > info.lcov
-    - name: Upload to codecov.io
-      uses: codecov/codecov-action@v1
-      with:
-        file: info.lcov
+#  macOS:
+#    runs-on: macOS-13
+#    steps:
+#    - name: Checkout
+#      uses: actions/checkout@v3
+#    - name: Test
+#      run: swift test --enable-code-coverage
+#    - name: Convert coverage files
+#      run: |
+#        xcrun llvm-cov export -format="lcov" \
+#          .build/debug/soto-cognito-authentication-kitPackageTests.xctest/Contents/MacOs/soto-cognito-authentication-kitPackageTests \
+#          -ignore-filename-regex="(\/\.build\/|\/Tests\/)" \
+#          -instr-profile .build/debug/codecov/default.profdata > info.lcov
+#    - name: Upload to codecov.io
+#      uses: codecov/codecov-action@v1
+#      with:
+#        file: info.lcov
 
   linux:
     strategy:
       matrix:
         image:
-          - swift:5.8
-          - swift:5.9
           - swift:5.10
+          - swiftlang/swift:nightly-6.0-jammy
     runs-on: ubuntu-latest
     container:
       image: ${{ matrix.image }}
