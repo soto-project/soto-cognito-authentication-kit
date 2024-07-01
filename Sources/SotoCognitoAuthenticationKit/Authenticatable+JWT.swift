@@ -45,12 +45,12 @@ public extension CognitoAuthenticatable {
     ///     - on: Event loop to run on
     /// - returns:
     ///     Payload structure.
-    func authenticate<Payload: Codable>(
+    func authenticate<Payload: Codable & Sendable>(
         idToken: String,
         logger: Logger = AWSClient.loggingDisabled
     ) async throws -> Payload {
         let signers = try await loadSigners(region: configuration.region, logger: logger)
-        let jwtPayload = try signers.verify(idToken, as: VerifiedToken<IdTokenVerifier, Payload>.self)
+        let jwtPayload = try await signers.verify(idToken, as: VerifiedToken<IdTokenVerifier, Payload>.self)
         guard jwtPayload.token.audience == self.configuration.clientId else { throw SotoCognitoError.unauthorized(reason: "invalid token") }
         guard jwtPayload.token.issuer == "https://cognito-idp.\(self.configuration.region.rawValue).amazonaws.com/\(self.configuration.userPoolId)" else {
             throw SotoCognitoError.unauthorized(reason: "invalid token")
@@ -71,7 +71,7 @@ public extension CognitoAuthenticatable {
         logger: Logger = AWSClient.loggingDisabled
     ) async throws -> CognitoAccessToken {
         let signers = try await loadSigners(region: configuration.region, logger: logger)
-        let jwtPayload = try signers.verify(accessToken, as: VerifiedToken<AccessTokenVerifier, CognitoAccessToken>.self)
+        let jwtPayload = try await signers.verify(accessToken, as: VerifiedToken<AccessTokenVerifier, CognitoAccessToken>.self)
         guard jwtPayload.token.issuer == "https://cognito-idp.\(self.configuration.region.rawValue).amazonaws.com/\(self.configuration.userPoolId)" else {
             throw SotoCognitoError.unauthorized(reason: "invalid token")
         }
@@ -84,7 +84,7 @@ extension CognitoAuthenticatable {
     func loadSigners(
         region: Region,
         logger: Logger = AWSClient.loggingDisabled
-    ) async throws -> JWTSigners {
+    ) async throws -> JWTKeyCollection {
         // check we haven't already loaded the jwt signing key set
         if let jwtSigners = self.jwtSigners {
             return jwtSigners
@@ -99,9 +99,9 @@ extension CognitoAuthenticatable {
             timeout: .seconds(20),
             logger: logger
         )
-        let signers = JWTSigners()
+        let signers = JWTKeyCollection()
         let data = try await response.body.collect(upTo: 1_000_000)
-        try signers.use(jwksJSON: String(buffer: data))
+        try await signers.use(jwksJSON: String(buffer: data))
         self.jwtSigners = signers
         return signers
     }

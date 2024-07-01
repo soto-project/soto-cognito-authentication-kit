@@ -101,13 +101,7 @@ public final class CognitoAuthenticatable {
     /// Configuration
     public let configuration: CognitoConfiguration
     /// JWT Signers
-    var jwtSigners: JWTSigners? {
-        get { self.jwtSignersLock.withLock { self._jwtSigners }}
-        set { self.jwtSignersLock.withLock { self._jwtSigners = newValue }}
-    }
-
-    private var _jwtSigners: JWTSigners?
-    private let jwtSignersLock: NIOLock
+    var jwtSigners: JWTKeyCollection?
 
     // MARK: Initialization
 
@@ -115,8 +109,7 @@ public final class CognitoAuthenticatable {
     /// - Parameter configuration: cognito authentication configuration
     public init(configuration: CognitoConfiguration) {
         self.configuration = configuration
-        self._jwtSigners = nil
-        self.jwtSignersLock = .init()
+        self.jwtSigners = nil
     }
 
     // MARK: Methods

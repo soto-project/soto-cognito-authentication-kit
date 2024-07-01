@@ -12,6 +12,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+import Foundation
 import JWTKit
 
 /// JWT Access token
@@ -20,7 +21,7 @@ struct AccessTokenVerifier: JWTPayload {
     let issuer: String
     let tokenUse: String
 
-    func verify(using signer: JWTSigner) throws {
+    func verify(using algorithm: some JWTAlgorithm) async throws {
         guard self.expirationTime > Date() else { throw SotoCognitoError.unauthorized(reason: "token expired") }
         guard self.tokenUse == "access" else { throw SotoCognitoError.unauthorized(reason: "invalid token") }
     }
@@ -39,7 +40,7 @@ struct IdTokenVerifier: JWTPayload {
     let issuer: String
     let tokenUse: String
 
-    func verify(using signer: JWTSigner) throws {
+    func verify(using algorithm: some JWTAlgorithm) async throws {
         guard self.expirationTime > Date() else { throw SotoCognitoError.unauthorized(reason: "token expired") }
         guard self.tokenUse == "id" else { throw SotoCognitoError.unauthorized(reason: "invalid token") }
     }
@@ -53,7 +54,7 @@ struct IdTokenVerifier: JWTPayload {
 }
 
 /// JWT payload that encapsulates both a verified token and an output payload
-struct VerifiedToken<Token: JWTPayload, Payload: Codable>: JWTPayload {
+struct VerifiedToken<Token: JWTPayload, Payload: Codable & Sendable>: JWTPayload {
     let token: Token
     let payload: Payload
 
@@ -62,7 +63,7 @@ struct VerifiedToken<Token: JWTPayload, Payload: Codable>: JWTPayload {
         self.payload = try Payload(from: decoder)
     }
 
-    func verify(using signer: JWTSigner) throws {
-        try self.token.verify(using: signer)
+    func verify(using algorithm: some JWTAlgorithm) async throws {
+        try await self.token.verify(using: algorithm)
     }
 }
