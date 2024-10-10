@@ -38,7 +38,7 @@ jobs:
       matrix:
         image:
           - swift:5.10
-          - swiftlang/swift:nightly-6.0-jammy
+          - swift:6.0
     runs-on: ubuntu-latest
     container:
       image: ${{ matrix.image }}
