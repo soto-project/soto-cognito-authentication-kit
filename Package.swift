@@ -1,4 +1,4 @@
-// swift-tools-version:5.10
+// swift-tools-version:6.0
 //===----------------------------------------------------------------------===//
 //
 // This source file is part of the Soto for AWS open source project
@@ -16,10 +16,6 @@
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
-
-let swiftSettings: [SwiftSetting] = [
-    .enableExperimentalFeature("StrictConcurrency=complete"),
-]
 
 let package = Package(
     name: "soto-cognito-authentication-kit",
@@ -49,16 +45,14 @@ let package = Package(
                 .product(name: "AsyncHTTPClient", package: "async-http-client"),
                 .product(name: "JWTKit", package: "jwt-kit"),
                 .product(name: "Crypto", package: "swift-crypto"),
-            ],
-            swiftSettings: swiftSettings
+            ]
         ),
         .target(
             name: "SotoCognitoAuthenticationSRP",
             dependencies: [
                 .product(name: "BigNum", package: "big-num"),
                 .target(name: "SotoCognitoAuthenticationKit"),
-            ],
-            swiftSettings: swiftSettings
+            ]
         ),
         .testTarget(name: "SotoCognitoAuthenticationKitTests", dependencies: ["SotoCognitoAuthenticationKit"]),
         .testTarget(name: "SotoCognitoAuthenticationSRPTests", dependencies: ["SotoCognitoAuthenticationSRP"]),
