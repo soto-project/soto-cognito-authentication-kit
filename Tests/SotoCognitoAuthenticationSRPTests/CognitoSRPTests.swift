@@ -78,8 +78,8 @@ final class CognitoSRPTests: XCTestCase {
 
     override func setUp() async throws {
         self.awsClient = AWSClient(middleware: AWSLoggingMiddleware())
-        self.cognitoIDP = CognitoIdentityProvider(client: awsClient, region: .useast1)
-        self.cognitoIdentity = CognitoIdentity(client: awsClient, region: .useast1)
+        self.cognitoIDP = CognitoIdentityProvider(client: self.awsClient, region: .useast1)
+        self.cognitoIdentity = CognitoIdentity(client: self.awsClient, region: .useast1)
         do {
             try await self.setupUserPool()
 
