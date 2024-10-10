@@ -60,52 +60,53 @@ public class AWSCognitoContextTest: CognitoContextData {
 }
 
 final class CognitoSRPTests: XCTestCase {
-    static let awsClient = AWSClient(middleware: AWSLoggingMiddleware())
-    static var region: Region = .useast1
-    static let cognitoIDP = CognitoIdentityProvider(client: awsClient, region: .useast1)
-    static var cognitoIdentity: CognitoIdentity! = CognitoIdentity(client: awsClient, region: .useast1)
-    static let userPoolName: String = "aws-cognito-authentication-tests"
-    static let userPoolClientName: String = UUID().uuidString
-    static var authenticatable: CognitoAuthenticatable!
-    static var userPoolId: String!
-    static var clientId: String!
-    static var clientSecret: String!
-    static let identityPoolName: String = UUID().uuidString
-    static var identityPoolId: String!
-    static var identifiable: CognitoIdentifiable!
+    var awsClient: AWSClient!
+    var region: Region = .useast1
+    var cognitoIDP: CognitoIdentityProvider!
+    var cognitoIdentity: CognitoIdentity!
+    let userPoolName: String = "aws-cognito-authentication-tests"
+    let userPoolClientName: String = UUID().uuidString
+    var authenticatable: CognitoAuthenticatable!
+    var userPoolId: String!
+    var clientId: String!
+    var clientSecret: String!
+    let identityPoolName: String = UUID().uuidString
+    var identityPoolId: String!
+    var identifiable: CognitoIdentifiable!
 
-    static var setUpFailure: String?
+    var setUpFailure: String?
 
-    override class func setUp() {
-        XCTRunAsyncAndBlock {
-            do {
-                try await self.setupUserPool()
+    override func setUp() async throws {
+        self.awsClient = AWSClient(middleware: AWSLoggingMiddleware())
+        self.cognitoIDP = CognitoIdentityProvider(client: awsClient, region: .useast1)
+        self.cognitoIdentity = CognitoIdentity(client: awsClient, region: .useast1)
+        do {
+            try await self.setupUserPool()
 
-                let configuration = CognitoConfiguration(
-                    userPoolId: userPoolId,
-                    clientId: clientId,
-                    clientSecret: self.clientSecret,
-                    cognitoIDP: self.cognitoIDP,
-                    adminClient: true
-                )
-                Self.authenticatable = CognitoAuthenticatable(configuration: configuration)
+            let configuration = CognitoConfiguration(
+                userPoolId: userPoolId,
+                clientId: clientId,
+                clientSecret: self.clientSecret,
+                cognitoIDP: self.cognitoIDP,
+                adminClient: true
+            )
+            self.authenticatable = CognitoAuthenticatable(configuration: configuration)
 
-                try await self.setupIdentityPool()
+            try await self.setupIdentityPool()
 
-                let identityConfiguration = CognitoIdentityConfiguration(
-                    identityPoolId: Self.identityPoolId,
-                    userPoolId: Self.userPoolId,
-                    region: Self.region,
-                    cognitoIdentity: Self.cognitoIdentity
-                )
-                Self.identifiable = CognitoIdentifiable(configuration: identityConfiguration)
-            } catch {
-                self.setUpFailure = "\(error)"
-            }
+            let identityConfiguration = CognitoIdentityConfiguration(
+                identityPoolId: self.identityPoolId,
+                userPoolId: self.userPoolId,
+                region: self.region,
+                cognitoIdentity: self.cognitoIdentity
+            )
+            self.identifiable = CognitoIdentifiable(configuration: identityConfiguration)
+        } catch {
+            self.setUpFailure = "\(error)"
         }
     }
 
-    static func setupUserPool() async throws {
+    func setupUserPool() async throws {
         // does userpool exist
         let listRequest = CognitoIdentityProvider.ListUserPoolsRequest(maxResults: 60)
         let userPools = try await cognitoIDP.listUserPools(listRequest).userPools
@@ -143,42 +144,40 @@ final class CognitoSRPTests: XCTestCase {
         }
     }
 
-    static func setupIdentityPool() async throws {
+    func setupIdentityPool() async throws {
         // create identity pool
-        let providerName = "cognito-idp.\(Self.region.rawValue).amazonaws.com/\(Self.userPoolId!)"
+        let providerName = "cognito-idp.\(self.region.rawValue).amazonaws.com/\(self.userPoolId!)"
         let createRequest = CognitoIdentity.CreateIdentityPoolInput(
             allowUnauthenticatedIdentities: false,
-            cognitoIdentityProviders: [.init(clientId: Self.clientId, providerName: providerName)],
+            cognitoIdentityProviders: [.init(clientId: self.clientId, providerName: providerName)],
             identityPoolName: self.identityPoolName
         )
         let createResponse = try await cognitoIdentity.createIdentityPool(createRequest)
-        Self.identityPoolId = createResponse.identityPoolId
+        self.identityPoolId = createResponse.identityPoolId
     }
 
-    override class func tearDown() {
-        XCTRunAsyncAndBlock {
-            // delete client so we need to re-generate
-            let deleteClientRequest = CognitoIdentityProvider.DeleteUserPoolClientRequest(clientId: Self.clientId, userPoolId: Self.userPoolId)
-            try await self.cognitoIDP.deleteUserPoolClient(deleteClientRequest)
-            try await self.awsClient.shutdown()
-        }
+    override func tearDown() async throws {
+        // delete client so we need to re-generate
+        let deleteClientRequest = CognitoIdentityProvider.DeleteUserPoolClientRequest(clientId: self.clientId, userPoolId: self.userPoolId)
+        try await self.cognitoIDP.deleteUserPoolClient(deleteClientRequest)
+        try await self.awsClient.shutdown()
     }
 
     /// create new user for test, run test and delete user
     func test(
         _ testName: String,
         attributes: [String: String] = [:],
-        _ work: @Sendable @escaping (String, String) async throws -> Void
+        _ work: @escaping (String, String) async throws -> Void
     ) async throws {
-        let username = testName + Self.randomString()
+        let username = testName + self.randomString()
         let messageHmac: HashedAuthenticationCode<SHA256> = HMAC.authenticationCode(
             for: Data(testName.utf8),
-            using: SymmetricKey(data: Data(Self.authenticatable.configuration.userPoolId.utf8))
+            using: SymmetricKey(data: Data(self.authenticatable.configuration.userPoolId.utf8))
         )
         let password = String(messageHmac.flatMap { String(format: "%x", $0) }) + "1!A"
 
         do {
-            _ = try await Self.authenticatable.createUser(
+            _ = try await self.authenticatable.createUser(
                 username: username,
                 attributes: attributes,
                 temporaryPassword: password,
@@ -190,24 +189,24 @@ final class CognitoSRPTests: XCTestCase {
 
         try await work(username, password)
 
-        let deleteUserRequest = CognitoIdentityProvider.AdminDeleteUserRequest(username: username, userPoolId: Self.authenticatable.configuration.userPoolId)
-        try? await Self.cognitoIDP.adminDeleteUser(deleteUserRequest)
+        let deleteUserRequest = CognitoIdentityProvider.AdminDeleteUserRequest(username: username, userPoolId: self.authenticatable.configuration.userPoolId)
+        try? await self.cognitoIDP.adminDeleteUser(deleteUserRequest)
     }
 
-    static func randomString() -> String {
+    func randomString() -> String {
         return String((0...7).map { _ in "abcdefghijklmnopqrstuvwxyz".randomElement()! })
     }
 
     func testAuthenticateSRP() async throws {
-        XCTAssertNil(Self.setUpFailure)
+        XCTAssertNil(self.setUpFailure)
 
         let awsClient = AWSClient(credentialProvider: .empty, middleware: AWSLoggingMiddleware())
         defer { XCTAssertNoThrow(try awsClient.syncShutdown()) }
         let cognitoIDPUnauthenticated = CognitoIdentityProvider(client: awsClient, region: .useast1)
         let configuration = CognitoConfiguration(
-            userPoolId: Self.authenticatable.configuration.userPoolId,
-            clientId: Self.authenticatable.configuration.clientId,
-            clientSecret: Self.authenticatable.configuration.clientSecret,
+            userPoolId: self.authenticatable.configuration.userPoolId,
+            clientId: self.authenticatable.configuration.clientId,
+            clientSecret: self.authenticatable.configuration.clientSecret,
             cognitoIDP: cognitoIDPUnauthenticated,
             adminClient: false
         )
@@ -286,16 +285,16 @@ final class CognitoSRPTests: XCTestCase {
     }
 
     func testCredentialProvider() async throws {
-        XCTAssertNil(Self.setUpFailure)
+        XCTAssertNil(self.setUpFailure)
         try await self.test(#function) { username, password in
             let credentialProvider: CredentialProviderFactory = .cognitoUserPool(
                 userName: username,
                 authentication: .srp(password),
-                userPoolId: Self.userPoolId,
-                clientId: Self.clientId,
-                clientSecret: Self.clientSecret,
-                identityPoolId: Self.identityPoolId,
-                region: Self.region,
+                userPoolId: self.userPoolId,
+                clientId: self.clientId,
+                clientSecret: self.clientSecret,
+                identityPoolId: self.identityPoolId,
+                region: self.region,
                 respondToChallenge: { challenge, _, error in
                     switch challenge {
                     case .newPasswordRequired:
