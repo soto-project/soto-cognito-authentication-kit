@@ -1,4 +1,4 @@
-// swift-tools-version:5.10
+// swift-tools-version:6.0
 //===----------------------------------------------------------------------===//
 //
 // This source file is part of the Soto for AWS open source project
@@ -17,10 +17,6 @@
 
 import PackageDescription
 
-let swiftSettings: [SwiftSetting] = [
-    .enableExperimentalFeature("StrictConcurrency=complete"),
-]
-
 let package = Package(
     name: "soto-cognito-authentication-kit",
     platforms: [
@@ -33,10 +29,10 @@ let package = Package(
         .library(name: "SotoCognitoAuthenticationSRP", targets: ["SotoCognitoAuthenticationSRP"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-crypto.git", "1.0.0"..<"4.0.0"),
+        .package(url: "https://github.com/apple/swift-crypto.git", "1.0.0"..<"5.0.0"),
         .package(url: "https://github.com/soto-project/soto.git", from: "7.0.0"),
         .package(url: "https://github.com/swift-server/async-http-client.git", from: "1.10.0"),
-        .package(url: "https://github.com/vapor/jwt-kit.git", from: "5.0.0-rc.1"),
+        .package(url: "https://github.com/vapor/jwt-kit.git", from: "5.0.0"),
         // for SRP
         .package(url: "https://github.com/adam-fowler/big-num.git", .upToNextMajor(from: "2.0.0")),
     ],
@@ -49,16 +45,14 @@ let package = Package(
                 .product(name: "AsyncHTTPClient", package: "async-http-client"),
                 .product(name: "JWTKit", package: "jwt-kit"),
                 .product(name: "Crypto", package: "swift-crypto"),
-            ],
-            swiftSettings: swiftSettings
+            ]
         ),
         .target(
             name: "SotoCognitoAuthenticationSRP",
             dependencies: [
                 .product(name: "BigNum", package: "big-num"),
                 .target(name: "SotoCognitoAuthenticationKit"),
-            ],
-            swiftSettings: swiftSettings
+            ]
         ),
         .testTarget(name: "SotoCognitoAuthenticationKitTests", dependencies: ["SotoCognitoAuthenticationKit"]),
         .testTarget(name: "SotoCognitoAuthenticationSRPTests", dependencies: ["SotoCognitoAuthenticationSRP"]),

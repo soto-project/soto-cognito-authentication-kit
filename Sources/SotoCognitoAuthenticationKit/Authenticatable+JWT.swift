@@ -101,7 +101,7 @@ extension CognitoAuthenticatable {
         )
         let signers = JWTKeyCollection()
         let data = try await response.body.collect(upTo: 1_000_000)
-        try await signers.use(jwksJSON: String(buffer: data))
+        try await signers.add(jwksJSON: String(buffer: data))
         self.jwtSigners = signers
         return signers
     }
