@@ -54,7 +54,6 @@ let package = Package(
                 .target(name: "SotoCognitoAuthenticationKit"),
             ]
         ),
-        .testTarget(name: "SotoCognitoAuthenticationKitTests", dependencies: ["SotoCognitoAuthenticationKit"]),
-        .testTarget(name: "SotoCognitoAuthenticationSRPTests", dependencies: ["SotoCognitoAuthenticationSRP"]),
+        .testTarget(name: "SotoCognitoAuthenticationKitTests", dependencies: ["SotoCognitoAuthenticationKit", "SotoCognitoAuthenticationSRP"]),
     ]
 )
