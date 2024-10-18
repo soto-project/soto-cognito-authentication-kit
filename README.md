@@ -1,6 +1,6 @@
 # Soto Cognito Authentication Kit
-[<img src="http://img.shields.io/badge/swift-5.1-brightgreen.svg" alt="Swift 5.1" />](https://swift.org)
-[<img src="https://github.com/adam-fowler/soto-cognito-authentication-kit/workflows/Swift/badge.svg" />](https://github.com/adam-fowler/soto-cognito-authentication-kit/actions?query=workflow%3ASwift)
+[<img src="http://img.shields.io/badge/swift-6.0-brightgreen.svg" alt="Swift 6.0" />](https://swift.org)
+[<img src="https://github.com/soto-project/soto-cognito-authentication-kit/workflows/CI/badge.svg" />](https://github.com/soto-project/soto-cognito-authentication-kit/actions?query=workflow%3ACI)
 
 Amazon Cognito provides authentication, authorization, and user management for your web apps. Soto Cognito Authentication Kit is a Swift interface to Cognito.
 
