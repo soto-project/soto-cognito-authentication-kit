@@ -20,9 +20,9 @@ import PackageDescription
 let package = Package(
     name: "soto-cognito-authentication-kit",
     platforms: [
-        .macOS(.v13),
-        .iOS(.v16),
-        .tvOS(.v16),
+        .macOS(.v15),
+        .iOS(.v18),
+        .tvOS(.v18),
     ],
     products: [
         .library(name: "SotoCognitoAuthenticationKit", targets: ["SotoCognitoAuthenticationKit"]),
