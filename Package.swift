@@ -30,7 +30,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-crypto.git", "1.0.0"..<"5.0.0"),
-        .package(url: "https://github.com/soto-project/soto.git", from: "7.0.0"),
+        .package(url: "https://github.com/soto-project/soto.git", from: "7.1.0"),
         .package(url: "https://github.com/swift-server/async-http-client.git", from: "1.10.0"),
         .package(url: "https://github.com/vapor/jwt-kit.git", from: "5.0.0"),
         // for SRP
